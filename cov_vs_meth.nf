@@ -339,6 +339,7 @@ process combine_methylation {
 }
 process combine_counts {
     publishDir "$params.output_dir", mode: 'copy'
+    validExitStatus 0,141
 
     input:
         file(dfam_counts) from dfam_feature_counts
