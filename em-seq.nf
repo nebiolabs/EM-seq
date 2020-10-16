@@ -4,19 +4,20 @@
 
 flowcell = params.flowcell
 genome = params.genome
-tmp_dir =  params.tmp_dir ?: ENV['tmp']
-outputPath = params.outdir
-fastq_mode = params.fastq_mode ?: 'run_fastqs'
+params.tmp_dir = '/tmp'
+outputPath = params.outdir = 'output'
+fastq_mode = params.fastq_mode = 'run_fastqs'
 println "Processing " + flowcell + "... => " + outputPath
 
-
-Channel.from(params.fastqs_by_library).set{fq_set_channel}
+fastq_glob = params.fastq_glob ?: '*.{1,2}.fastq*'
+Channel.fromFilePairs(fastq_glob)
+    .map{ lib,read -> [flowcell: flowcell, library:lib, insert_read1:read[0], insert_read2:read[1], barcode:'N', lane:'all', tile:'all' ]}.set{fq_set_channel}
     
 process mapping {
     cpus fastq_mode == 'tile-fastq' ? 4 : 16
     errorStrategy 'retry'
     tag { [flowcell, fq_set.library] }
-    conda "bwameth=0.2.2 seqtk=1.3 sambamba=0.7.0 fastp=0.20.0 mark-nonconverted-reads=1.1"
+    conda "bwameth=0.2.2 seqtk=1.3 sambamba=0.7.0 fastp=0.20.1 mark-nonconverted-reads=1.1"
 
     input:
         val fq_set from fq_set_channel
@@ -24,18 +25,27 @@ process mapping {
     output:
         set val(fq_set.library), file("*.aln.bam") into aligned_files
         set val(fq_set.library), file("*.nonconverted.tsv") into nonconverted_counts
+        set val(fq_set.library), file("*_fastp.json") into fastp_log_files
 
     shell:
     '''
-    bwakit_path=\$(dirname \$(readlink -f \$(which run-bwamem)))
-    #todo: check for presence of executables?
-    export PATH="\${bwakit_path}:\${PATH}"
+    inst_name=$(zcat -f '!{fq_set.insert_read1}' | head -n 1 | cut -f 1 -d ':' | sed 's/^@//')
+    fastq_barcode=$(zcat -f '!{fq_set.insert_read1}' | head -n 1 | sed -r 's/.*://')
 
+    if [[ "${inst_name:0:2}" == 'A0' ]] || [[ "${inst_name:0:2}" == 'NS' ]] || \
+       [[ "${inst_name:0:2}" == 'NB' ]] || [[ "${inst_name:0:2}" == 'VH' ]] ; then
+       trim_polyg='--trim_poly_g'
+       echo '2-color instrument: poly-g trim mode on'
+    else
+       trim_polyg=''
+    fi
     seqtk mergepe <(zcat -f "!{fq_set.insert_read1}") <(zcat -f "!{fq_set.insert_read2}") \
-    | trimadap -5 AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT -3 AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -3 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT -3 ATCTCGTATGCCGTCTTCTGCTTG -3 CTGTCTCTTATACACATCTCCGAGCCCACGAGAC -3 CTGTCTCTTATACACATCTGACGCTGCCGACGA 2> "!{fq_set.library}_!{fq_set.barcode}!{fq_set.flowcell}_!{fq_set.lane}_!{fq_set.tile}.log.trim" \
-    | bwameth.py -p -t !{task.cpus} --read-group "@RG\tID:!{fq_set.barcode}\tSM:!{fq_set.library}" --reference !{genome} /dev/stdin 2>  "!{fq_set.library}_!{fq_set.barcode}!{fq_set.flowcell}_!{fq_set.lane}_!{fq_set.tile}.log.bwamem" \
-    | mark-nonconverted-reads.py 2> "!{fq_set.library}_!{fq_set.barcode}!{fq_set.flowcell}_!{fq_set.lane}_!{fq_set.tile}.nonconverted.tsv" \
-    | sambamba view -t 2 -S -f bam -o "!{fq_set.library}_!{fq_set.barcode}!{fq_set.flowcell}_!{fq_set.lane}_!{fq_set.tile}.aln.bam" /dev/stdin;
+    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis \
+            -j "!{fq_set.library}_fastp.json" 2> fastp.stderr \
+    | bwameth.py -p -t !{task.cpus} --read-group "@RG\\tID:${fastq_barcode}\\tSM:!{fq_set.library}" --reference !{genome} /dev/stdin \
+                 2>  "!{fq_set.library}_${fastq_barcode}!{fq_set.flowcell}_!{fq_set.lane}_!{fq_set.tile}.log.bwamem" \
+    | mark-nonconverted-reads.py 2> "!{fq_set.library}_${fastq_barcode}_!{fq_set.flowcell}_!{fq_set.lane}_!{fq_set.tile}.nonconverted.tsv" \
+    | sambamba view -t 2 -S -f bam -o "!{fq_set.library}_${fastq_barcode}_!{fq_set.flowcell}_!{fq_set.lane}_!{fq_set.tile}.aln.bam" /dev/stdin 2> sambamba.stderr;
     '''
 
 }
@@ -44,7 +54,7 @@ process mergeAndMarkDuplicates {
     cpus 8
     errorStrategy 'retry'
     tag { library }
-    publishDir "${outputDir}", mode: 'copy', pattern: '*.{md.bam}*'
+    publishDir "${outputPath}", mode: 'copy', pattern: '*.{md.bam}*'
     conda "samtools=1.9 samblaster=0.1.24 sambamba=0.7.0"
 
     input:
@@ -60,7 +70,7 @@ process mergeAndMarkDuplicates {
     | samtools view -h /dev/stdin \
     | samblaster 2> !{library}.log.samblaster \
     | sambamba view -t 2 -l 0 -S -f bam /dev/stdin \
-    | sambamba sort --tmpdir=!{tmp_dir} -t !{task.cpus} -m 20GB -o !{library}.md.bam /dev/stdin
+    | sambamba sort --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m 20GB -o !{library}.md.bam /dev/stdin
 
     '''
 }
@@ -81,12 +91,12 @@ process mergeAndMarkDuplicates {
         conda "methyldackel=0.4.0 samtools=1.9"
 
         input:
-            tuple email, library, file(md_file), file(md_bai) from md_files_for_mbias.groupTuple(by: [0,1])
+            tuple library, file(md_file), file(md_bai) from md_files_for_mbias.groupTuple()
 
         output:
-            tuple email, file('*.svg') into mbias_output_svg
-            tuple email, file('*.tsv') into mbias_output_tsv
-            tuple email, library, file('*.tsv') into mbias_for_aggregate
+            file('*.svg') into mbias_output_svg
+            file('*.tsv') into mbias_output_tsv
+            tuple library, file('*.tsv') into mbias_for_aggregate
 
         shell:
         '''
@@ -134,10 +144,10 @@ process mergeAndMarkDuplicates {
         conda "methyldackel=0.4.0 pigz=2.4"
 
         input:
-            tuple email, library, file(md_file), file(md_bai) from md_files_for_extract.groupTuple(by: [0,1])
+            tuple library, file(md_file), file(md_bai) from md_files_for_extract.groupTuple()
 
         output:
-            tuple email, library, file('*.methylKit.gz') into extract_output
+            tuple library, file('*.methylKit.gz') into extract_output
 
         shell:
         '''
@@ -150,14 +160,14 @@ process mergeAndMarkDuplicates {
     process select_human_reads {
         cpus 8
         tag {library}
-        conda "sambamba=0.7.1i bedtools="
+        conda "sambamba=0.7.1 bedtools=2.29.2"
 
         input:
-            tuple email, library, file(md_file), file(md_bai) from md_files_for_human_reads.groupTuple(by: [0,1])
+            tuple library, file(md_file), file(md_bai) from md_files_for_human_reads.groupTuple()
 
         output:
-            tuple email, library, file('*.human.bam') into human_bams_gc
-            tuple email, library, file('*.human.bam') into human_bams_inserts
+            tuple library, file('*.human.bam') into human_bams_gc
+            tuple library, file('*.human.bam') into human_bams_inserts
 
         shell:
         '''
@@ -177,11 +187,11 @@ process mergeAndMarkDuplicates {
         conda "fastqc=0.11.8"
 
         input:
-            tuple email, library, file(md_file), file(md_bai) from md_files_for_fastqc.groupTuple(by: [0,1])
+            tuple library, file(md_file), file(md_bai) from md_files_for_fastqc.groupTuple()
 
         output:
-            tuple email, file('*_fastqc.zip') into fastqc_results
-            tuple email, library, file('*_fastqc.zip') into fastqc_results_for_aggregate
+            file('*_fastqc.zip') into fastqc_results
+            tuple library, file('*_fastqc.zip') into fastqc_results_for_aggregate
 
         shell:
         '''
@@ -189,14 +199,15 @@ process mergeAndMarkDuplicates {
         '''
 
     }
+
     process sum_nonconverted_reads {	
 
         input:	
-            tuple email, library, file(count_files) from nonconverted_counts.groupTuple(by: [0,1])	
+            tuple library, file(count_files) from nonconverted_counts.groupTuple()	
 
         output:	
-            tuple email, file('*-nonconverted-counts.tsv') into cat_nonconversions	
-            tuple email, library, file('*-nonconverted-counts.tsv') into nonconverted_counts_for_aggregate
+            file('*-nonconverted-counts.tsv') into cat_nonconversions	
+            tuple library, file('*-nonconverted-counts.tsv') into nonconverted_counts_for_aggregate
 
         shell:	
         '''	
@@ -217,7 +228,7 @@ process mergeAndMarkDuplicates {
         publishDir "${outputPath}", mode: 'copy'	
 
         input:	
-            tuple email, file ('*') from cat_nonconversions.groupTuple()
+            file ('*') from cat_nonconversions
 
         output:	
             file ("combined-nonconverted.tsv")	
@@ -236,13 +247,13 @@ process mergeAndMarkDuplicates {
         conda "samtools=1.9"
 
         input:
-            tuple email, library, file(md_file),file(md_bai) from md_files_for_samflagstats.groupTuple(by: [0,1])
+            tuple library, file(md_file), file(md_bai) from md_files_for_samflagstats.groupTuple(by: 0)
 
         output:
-            tuple email, file('*.flagstat') into flagstats
-            tuple email, file('*.idxstat') into idxstats
-            tuple email, library, file('*.flagstat') into flagstats_for_aggregate
-            tuple email, library, file('*.idxstat') into idxstats_for_aggregate
+            file('*.flagstat') into flagstats
+            file('*.idxstat') into idxstats
+            tuple library, file('*.flagstat') into flagstats_for_aggregate
+            tuple library, file('*.idxstat') into idxstats_for_aggregate
             
 
         shell:
@@ -259,11 +270,11 @@ process mergeAndMarkDuplicates {
         conda "samtools=1.9"
 
         input:
-            tuple email, library, file(md_file),file(md_bai) from md_files_for_samstats.groupTuple(by: [0,1])
+            tuple library, file(md_file),file(md_bai) from md_files_for_samstats.groupTuple()
 
         output:
 
-            tuple email, file('*.samstat') into samstats
+            file('*.samstat') into samstats
 
         shell:
         '''
@@ -278,10 +289,10 @@ process mergeAndMarkDuplicates {
         conda "picard=2.20.7"
 
         input:
-            tuple email, library, file(md_file), file(md_bai) from md_files_for_picard_gc.groupTuple(by: [0,1])
+            tuple library, file(md_file), file(md_bai) from md_files_for_picard_gc.groupTuple()
 
         output:
-            tuple email, file('*gc_metrics') into picard_gc_stats
+            file('*gc_metrics') into picard_gc_stats
 
         shell:
         '''
@@ -297,10 +308,10 @@ process mergeAndMarkDuplicates {
         conda "picard=2.20.7"
 
         input:
-            tuple email, library, file(md_file), file(md_bai) from md_files_for_picard.groupTuple(by: [0,1])
+            tuple library, file(md_file), file(md_bai) from md_files_for_picard.groupTuple()
 
         output:
-            tuple email, file('*_metrics') into picard_stats
+            file('*_metrics') into picard_stats
 
         shell:
         '''
@@ -315,10 +326,10 @@ process mergeAndMarkDuplicates {
         conda "picard=2.20.7"
 
         input:
-            tuple email, library, file(md_file) from human_bams_gc.groupTuple(by: [0,1])
+            tuple library, file(md_file) from human_bams_gc.groupTuple()
 
         output:
-            tuple email, library, file('*gc_metrics') into human_gc_stats_for_aggregate
+            tuple library, file('*gc_metrics') into human_gc_stats_for_aggregate
 
         shell:
         '''
@@ -334,10 +345,10 @@ process mergeAndMarkDuplicates {
         conda "picard=2.20.7"
 
         input:
-            tuple email, library, file(md_file) from human_bams_inserts.groupTuple(by: [0,1])
+            tuple library, file(md_file) from human_bams_inserts.groupTuple()
 
         output:
-            tuple email, library, file('*insertsize_metrics') into human_stats_for_aggregate
+            tuple library, file('*insertsize_metrics') into human_stats_for_aggregate
 
         shell:
         '''
@@ -346,31 +357,21 @@ process mergeAndMarkDuplicates {
     }
 
     process goleft {
-    cpus 1
-    conda 'goleft=0.2.0'
+        cpus 1
+        conda 'goleft=0.2.0'
 
-    input:
-        tuple email, library, file(md_file), file(md_bai) from md_files_for_goleft.groupTuple(by: [0,1])
+        input:
+            tuple library, file(md_file), file(md_bai) from md_files_for_goleft.groupTuple()
 
-    output:
-        tuple email, file("${library}/*-indexcov.ped") into goleft_ped
-        tuple email, file("${library}/*-indexcov.roc") into goleft_roc
+        output:
+            file("${library}/*-indexcov.ped") into goleft_ped
+            file("${library}/*-indexcov.roc") into goleft_roc
 
-    shell:
-    '''
-        goleft indexcov --directory !{library} *.bam
-    '''
+        shell:
+        '''
+            goleft indexcov --directory !{library} *.bam
+        '''
     }
-
-    joined_for_multiqc = fastqc_results.groupTuple(by: 0).join(flagstats.groupTuple(by: 0), by: 0)
-        .join(idxstats.groupTuple(by: 0), by: 0)
-        .join(samstats.groupTuple(by: 0), by: 0)
-        .join(picard_stats.groupTuple(by: 0), by: 0)
-        .join(picard_gc_stats.groupTuple(by: 0), by: 0)
-        .join(goleft_ped.groupTuple(by: 0), by: 0)
-        .join(goleft_roc.groupTuple(by: 0), by: 0)
-        .join(samblaster_logs.groupTuple(by: 0))
-        .join(fastp_log_files.groupTuple(by: 0))
 
     process multiqc {
         cpus 1
@@ -378,7 +379,16 @@ process mergeAndMarkDuplicates {
         conda "multiqc=1.7"
 
         input:
-           tuple email, file(fastqc), file(flagstats), file(idxstats), file(samstats), file(picard_stats), file(picard_gc_stats), file(goleft_ped), file(goleft_roc), file(samblaster), file(fastp) from joined_for_multiqc
+            file('*') from fastqc_results.flatten().toList()
+            file('*') from flagstats.flatten().toList()
+            file('*') from idxstats.flatten().toList()
+            file('*') from samstats.flatten().toList()
+            file('*') from picard_stats.flatten().toList()
+            file('*') from picard_gc_stats.flatten().toList()
+            file('*') from goleft_ped.flatten().toList()
+            file('*') from goleft_roc.flatten().toList()
+            file('*') from samblaster_logs.flatten().toList()
+            file('*') from fastp_log_files.flatten().toList()
 
         output:
             file "*report.html"
@@ -390,7 +400,7 @@ process mergeAndMarkDuplicates {
     title: Bwameth Alignment Summary - !{flowcell}
     extra_fn_clean_exts:
         - '.md'
-        - '_combined_fastp'
+        - '_fastp'
     custom_plot_config:
         picard_insert_size:
             xmax: 1000
@@ -431,41 +441,41 @@ process mergeAndMarkDuplicates {
     }
 
     process combine_mbias_tsv {
-    publishDir "${outputPath}", mode: 'copy', pattern: 'combined*'
+        publishDir "${outputPath}", mode: 'copy', pattern: 'combined*'
 
-    input:
-        tuple email, file(tsv) from mbias_output_tsv.groupTuple(by: 0)
+        input:
+            file(tsv) from mbias_output_tsv
 
-    output:
-        file "combined-mbias.tsv"
+        output:
+            file "combined-mbias.tsv"
 
-    shell:
-    '''
-        echo -ne 'flowcell\tlibrary\t' > combined-mbias.tsv
-        ls *_mbias.tsv | head -n 1 | xargs head -n 1 >> combined-mbias.tsv
-        for f in *_mbias.tsv; do 
-            filebase=`basename "${f}" _combined_mbias.tsv`
-            paste <( yes "!{flowcell}	${filebase}" | head -n `nl "$f" | tail -n 1 | cut -f 1` ) "$f" | tail -n +2  >> combined-mbias.tsv
-        done
-    '''
+        shell:
+        '''
+            echo -ne 'flowcell\tlibrary\t' > combined-mbias.tsv
+            ls *_mbias.tsv | head -n 1 | xargs head -n 1 >> combined-mbias.tsv
+            for f in *_mbias.tsv; do 
+                filebase=`basename "${f}" _combined_mbias.tsv`
+                paste <( yes "!{flowcell}	${filebase}" | head -n `nl "$f" | tail -n 1 | cut -f 1` ) "$f" | tail -n +2  >> combined-mbias.tsv
+            done
+        '''
     }
 
     process combine_mbias_svg {
-    publishDir "${outputPath}", mode: 'copy', pattern: 'combined*'
-    conda 'cairosvg=2.4.2 ghostscript=9.22'
+        publishDir "${outputPath}", mode: 'copy', pattern: 'combined*'
+        conda 'cairosvg=2.4.2 ghostscript=9.22'
 
-    input:
-        tuple email, file(svg) from mbias_output_svg.transpose().groupTuple(by: 0)
+        input:
+            file(svg) from mbias_output_svg.groupTuple()
 
-    output:
-        file "combined-mbias.pdf"
+        output:
+            file "combined-mbias.pdf"
 
-    shell:
-    '''
-    for f in *.svg; do
-        cairosvg <(sed s/-nan/-1/ $f) -o $f.pdf
-    done
-    gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=combined-mbias.pdf *.pdf
-    '''
+        shell:
+        '''
+        for f in *.svg; do
+            cairosvg <(sed s/-nan/-1/ $f) -o $f.pdf
+        done
+        gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=combined-mbias.pdf *.pdf
+        '''
     }
 
