@@ -1,7 +1,7 @@
 This repository contains tools and data related to [Enzymatic Methylation Sequencing](https://www.neb.com/products/e7120-nebnext-enzymatic-methyl-seq-kit).
 
 There are 3 [nextflow](https://www.nextflow.io/) scripts:
- - emseq.nf (to align reads, filter and call methylation)
+ - em-seq.nf (to align reads, filter and call methylation)
  - bins.nf (to calculate binned coverage around the TSS
  - cov_vs_meth.nf (to generate the "coverage by feature type" figure from the paper)
 
