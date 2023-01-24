@@ -1,44 +1,104 @@
 #!/usr/bin/env nextflow
  
-params.genome = '/mnt/galaxy/data/genome/grch38_core+bs_controls/sam_indexes/grch38_core+bs_controls/grch38_core+bs_controls.fa'
+params.genome = '/mnt/galaxy/data/genome/grcm39+meth_controls/bwameth_index/grcm39+meth_controls/grcm39+meth_controls.fa'
 
 //CPG Islands from  UCSC table browser 
-//  	Database: hg38    Primary Table: cpgIslandExt    Row Count: 31,144   Data last updated: 2018-08-10
-params.ucsc_cpg_islands_gtf = 'grch38_cpgIsland_ext.gtf.gz'
-params.refseq_gtf = 'GRCh38_latest_genomic.gff.gz'
+//  	Database: mm39    Primary Table: cpgIslandExt    Row Count: 15,9665   Data downloaded: 2023-01-08
+params.ucsc_cpg_islands_gtf = '/mnt/home/langhorst/nebnext_projects/em-seq/mouse/grcm39_cpg_islands.gtf.gz'
 
-params.high_quality_meth_bed = '../200ng_4cycles_LB_1.downsampled.md.bam_CpG.txt.bgz'
+params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz'
+params.high_quality_mk_file = ''
 
-params.bam_files_glob = '../*.downsampled.md.{bam,bam.bai}'
+params.bam_files_glob = '*.md.{bam,bam.bai}'
 
 params.tmp_dir = '/state/partition1/sge_tmp/'
 params.output_dir = 'output'
-params.ncbi_assembly_report = 'GCF_000001405.39_GRCh38.p13_assembly_report.txt'
-params.dfam_out_file = 'grch38_dfam405_repeat_mask.fa.out'
+params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt'
+params.epd_promoter_bed_url = 'ftp://ccg.epfl.ch/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
+params.mm10_mm39_chain_url = 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
+//params.dfam_out_file = 'grch38_dfam405_repeat_mask.fa.out'
 
-Channel.value(file(params.high_quality_meth_bed)).set{ hq_meth_bed }
+Channel.fromPath(params.high_quality_meth_bed, checkIfExists: true).first().set { hq_methylkit }
 Channel.fromFilePairs(params.bam_files_glob, checkIfExists: true).into{ bams_for_epd; bams_for_cpgs; bams_for_refseq; bams_for_dfam }
-Channel.value(file(params.ucsc_cpg_islands_gtf)).set { ucsc_cpg_islands_gtf }
-Channel.value(file(params.refseq_gtf)).set { refseq_gtf }
-Channel.value(file(params.ncbi_assembly_report)).set { ncbi_assembly_report }
-Channel.value(file(params.dfam_out_file)).set { dfam_out }
-Channel.from(['promoter', 'transcriptional_cis_regulatory_region',
-              'enhancer', 'mobile_genetic_element', 'primary_transcript', 
-              'lnc_RNA', 'exon', 'mRNAexon1', 'mRNAexon' ]).into { refseq_feature_types; refseq_feature_types_for_gtf }
+Channel.fromPath(params.ucsc_cpg_islands_gtf, checkIfExists: true).first().set { ucsc_cpg_islands_gtf }
+Channel.value(params.ncbi_assembly_report_url).set { ncbi_assembly_report_url }
+//Channel.value(file(params.dfam_out_file)).set { dfam_out }
+Channel.value(params.refseq_gff_url).set { refseq_gff_url }
+Channel.value(params.epd_promoter_bed_url).set { epd_promoter_bed_url }
+Channel.value(params.mm10_mm39_chain_url).set { mm10_mm39_chain_url }
+  
+// 'mobile_genetic_element' not present in mouse col 3
+Channel.from(['transcriptional_cis_regulatory_region', 'enhancer','promoter',
+              'primary_transcript', 'snoRNA','snRNA', 'tRNA',
+              'lnc_RNA', 'exon', 'mRNAexon1', 'mRNAexon' ]).into { refseq_feature_types; refseq_feature_types_for_gff }
 
+process fetch_chain_file {
+  conda "curl"
+
+  input: 
+    val url from mm10_mm39_chain_url
+  output: 
+    file('*.chain.gz') into chain_file
+
+  shell:
+  '''
+    curl -O "!{url}"
+  '''
+}
+
+process fetch_refseq_assembly_report {
+   conda "curl"
+
+   input:
+     val url from ncbi_assembly_report_url
+   output:
+     file('*.txt') into ncbi_assembly_report
+   shell:
+   '''
+     curl -fsSl !{url} > assembly_report.txt
+   ''' 
+}
+
+process methylkit_to_bed {
+  conda "gawk gzip" 
+  
+  input: 
+    val mk_file from hq_methylkit
+  output:
+    file('*.bed.gz') into hq_methylkit_bed
+  
+  //chrBase chr     base    strand  coverage        freqC   freqT	
+  //CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
+  shell:
+  '''
+    zcat -f !{mk_file} | awk -v FS='\\t' -v OFS='\\t' '{ print $2,$3-1,$3,$5 }'| gzip > hq_methylkit.bed.gz
+  '''
+
+}
 
 process clean_epd_gtf {
-   conda "curl ucsc-bedtogenepred ucsc-genepredtogtf"
+   conda "curl ucsc-bedtogenepred ucsc-genepredtogtf crossmap"
+
+   input: 
+       val(url) from epd_promoter_bed_url
+       file(assembly_report) from ncbi_assembly_report
+       file(chain_file) from chain_file
 
    output:
-       file('grch38_promoters.gtf') into epd_promoters_gtf
+       file('epd_promoters.gtf') into epd_promoters_gtf
 
    shell:
    '''
-       curl -fsSL "ftp://ccg.epfl.ch/epdnew/H_sapiens/006/Hs_EPDnew_006_hg38.bed" \
+     curl -fsSL "!{url}" \
        | tr ' ' '\t' \
        | bedToGenePred /dev/stdin /dev/stdout \
-       | genePredToGtf file /dev/stdin /dev/stdout > grch38_promoters.gtf
+       | genePredToGtf file /dev/stdin /dev/stdout \
+       > epd_promoters_mm10.gtf && \
+       CrossMap.py gff !{chain_file} epd_promoters_mm10.gtf epd_promoters_mm39.gtf
+       
+     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
+       <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print $10,$5}' | tr -d '\\r')  \
+       <(zcat -f epd_promoters_mm39.gtf | grep -v '^#') > epd_promoters.gtf
    '''	
 }
 
@@ -47,8 +107,8 @@ process epd_methylation {
     publishDir "$params.output_dir", mode: 'copy'
 
     input:
-        file gtf from epd_promoters_gtf
-        file bed from hq_meth_bed
+        file(gtf) from epd_promoters_gtf
+        file(bed) from hq_methylkit_bed
 
     output:
         file 'epd_promoter_methylation.tsv' into epd_promoter_meth
@@ -56,11 +116,11 @@ process epd_methylation {
     shell:
     '''
     bedtools intersect -nonamecheck \
-    -wa -wb -loj \
-    -a !{gtf} -b <(bgzip -d < !{bed} ) \
-    | awk -v FS='\\t' -v OFS='\\t' '$14>0 {print $10,$11,$12,$1":"$4-1"-"$5,($15*1.0)/$14 }' \
-    | bedtools groupby -g 4 -o mean -c 5 \
-    > epd_promoter_methylation.tsv 
+      -wa -wb -loj \
+      -a !{gtf} -b <(bgzip -d < !{bed} ) \
+      | awk -v FS='\\t' -v OFS='\\t' '$14>0 {print $10,$11,$12,$1":"$4-1"-"$5,($15*1.0)/$14 }' \
+      | bedtools groupby -g 4 -o mean -c 5 \
+      > epd_promoter_methylation.tsv 
     '''
 }
 
@@ -69,7 +129,7 @@ process epd_promoter_counts{
     cpus 16
 
     input:
-        file gtf from epd_promoters_gtf
+        file(gtf) from epd_promoters_gtf
         path('*') from bams_for_epd.map{ [it[1][0],it[1][1]] }.flatten().toList()
 
     output:
@@ -87,17 +147,20 @@ process epd_promoter_counts{
 
 
 process clean_cpg_islands_gtf {
-
+    conda "gawk gzip"
     input:
         file ucsc_cpg_gtf from ucsc_cpg_islands_gtf
+        file(assembly_report) from ncbi_assembly_report
     output:
-        file('grch38_cpg_islands.uniqname.gtf') into cpg_islands_gtf 
+        file('cpg_islands.uniqname.gtf') into cpg_islands_gtf 
 
     shell:
     '''
-    zcat !{ucsc_cpg_gtf} \
+    awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
+      <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print $10,$5}' | tr -d '\\r')  \
+      <(zcat -f !{ucsc_cpg_gtf} | grep -v '^#') \
     |  awk -v FS='\t' -v OFS='\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
-    > grch38_cpg_islands.uniqname.gtf
+    > cpg_islands.uniqname.gtf
     '''
 }
 
@@ -107,7 +170,7 @@ process cpg_island_methylation {
 
     input:
         file gtf from cpg_islands_gtf
-        file bed from hq_meth_bed
+        file bed from hq_methylkit_bed
 
     output:
         file 'cpg_island_methylation.tsv' into cpg_island_meth
@@ -145,57 +208,67 @@ process cpg_island_counts{
 }
 
 
-process refseq_feature_gtfs {
+process refseq_feature_download {
+   conda "curl"
+
+   input:
+     val url from refseq_gff_url
+   output:
+     file('*.gff') into refseq_gff
+   shell:
+   '''
+     curl -fsSl !{url} | zcat -f > refseq.gff
+   ''' 
+}
+
+process refseq_feature_gffs {
     tag {feature}
     conda "subread=2.0.0 bedtools=2.29.2"
 
     input:
-        file(gtf) from refseq_gtf
+        file(gff) from refseq_gff
         file(assembly_report) from ncbi_assembly_report
-        val feature from refseq_feature_types_for_gtf
+        val feature from refseq_feature_types_for_gff
 
     output:
-        tuple feature, file('*.gtf') into feature_gtf_for_meth
+        tuple feature, file('*.gff') into feature_gff_for_meth
         tuple feature, file('*_flat.saf') into feature_saf_for_counts
 
     shell:
     '''
-    # uses awk to create a hash lookup from the first file (NCBI assembly report) 
-    # translating chr name in the second file
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
-    <(grep -v '^#' !{assembly_report} | cut -f 7,10 | tr -d '\\r')  \
-    <(zcat !{gtf} | grep -v '^#') \
+     <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print $7,$5}' | tr -d '\\r')  \
+     <(zcat -f !{gff} | grep -v '^#') \
     | grep "GeneID:" \
     | grep -P -v "_alt\\t" \
     | grep -P -v "^na\\t" \
     | sed -r 's/;Dbxref(=[^;]*)GeneID:([^,;]+)([;,])/;gene_id=\\2;Dbxref\\1GeneID:\\2\\3/' \
     | awk  -v OFS='\\t' -v FS='\\t' \
-        '($3=="exon") && (index($9,"gbkey=mRNA") > 0) && (index($9,"-1;Parent") > 0) \
-           { print($1,$2,"mRNAexon1",$4,$5,$6,$7,$8,$9); next }
-         ($3=="exon") && (index($9,"gbkey=mRNA") > 0)  \
-           { print($1,$2,"mRNAexon",$4,$5,$6,$7,$8,$9); next }
-         { print }  
-        ' \
-    > name_converted.gff
+       '($3=="exon") && (index($9,"gbkey=mRNA") > 0) && (index($9,"-1;Parent") > 0) \
+          { print($1,$2,"mRNAexon1",$4,$5,$6,$7,$8,$9); next }
+        ($3=="exon") && (index($9,"gbkey=mRNA") > 0) \
+          { print($1,$2,"mRNAexon",$4,$5,$6,$7,$8,$9); next }
+        { print }
+       ' > name_converted.gff
 
-    #exons overlap, we want only the longest to avoid 0 cov exons from featureCounts
+    # exons overlap, we want only the longest to avoid 0 cov exons from featureCounts
     flattenGTF -a name_converted.gff -o flat_name_converted.saf -t !{feature}
-
-    #need to switch to bed for intersection later
+ 
+    # need to switch to bed for intersection later
     tail -n +2 flat_name_converted.saf \
-      | awk -v OFS='\\t' -v FS='\\t' '{print $2,$3-1,$4,$1,"-",$5}' \
-      | bedtools sort -faidx !{params.genome}.fai -i /dev/stdin > !{feature}_flat.bed
-    
-    #filters by feature type
-    awk -v type=!{feature} -v OFS='\\t' -v FS='\\t' '($3==type) { print}' name_converted.gff \
-    > !{feature}.gtf
+     | awk -v OFS='\\t' -v FS='\\t' '{print $2,$3-1,$4,$1,"-",$5}' \
+     | bedtools sort -faidx !{params.genome}.fai -i /dev/stdin > !{feature}_flat.bed
 
-    #only include those entries that intersect with the desired feature type, back to SAF format
+    # filters by feature type
+    awk -v type=!{feature} -v OFS='\\t' -v FS='\\t' '($3==type) { print}' name_converted.gff > !{feature}.gff
+
+    # only include those entries that intersect with the desired feature type, back to SAF format
     echo "GeneID\tChr\tStart\tEnd\tStrand" > !{feature}_flat.saf
-    bedtools intersect -a !{feature}_flat.bed -b !{feature}.gtf  -u \
-      | awk -v OFS='\\t' -v FS='\\t' '{print $4,$1,$2+1,$3,$6}' >> !{feature}_flat.saf
+    bedtools intersect -a !{feature}_flat.bed -b !{feature}.gff  -u \
+    | awk -v OFS='\\t' -v FS='\\t' '{print $4,$1,$2+1,$3,$6}' >> !{feature}_flat.saf
     '''
 }
+
 
 process refseq_feature_methylation {
     tag {feature}
@@ -203,8 +276,8 @@ process refseq_feature_methylation {
     publishDir "$params.output_dir", mode: 'copy'
 
     input:
-        file bed from hq_meth_bed
-        tuple feature, file(feature_gtf) from feature_gtf_for_meth 
+        file bed from hq_methylkit_bed
+        tuple feature, file(feature_gff) from feature_gff_for_meth 
 
     output:
         file '*_methylation.tsv' into feature_methylation
@@ -213,7 +286,7 @@ process refseq_feature_methylation {
     '''
     bedtools intersect -nonamecheck \
     -wa -wb -loj \
-    -a !{feature_gtf} -b <(bgzip -d < !{bed} ) \
+    -a !{feature_gff} -b <(bgzip -d < !{bed} ) \
     | awk -v FS='\\t' -v OFS='\\t' '$14>0 {print $10,$11,$12,$1":"$4-1"-"$5,($15*1.0)/$14 }' \
     | bedtools groupby -g 4 -o mean -c 5 \
     > !{feature}_methylation.tsv 
@@ -249,7 +322,7 @@ process refseq_feature_counts {
     -o !{feature}_counts.tsv *.bam 
     '''
 }
-
+/*
 process dfam_out_to_gtf {
     conda "ucsc-bedtogenepred ucsc-genepredtogtf"
     input: 
@@ -264,7 +337,7 @@ process dfam_out_to_gtf {
        | bedToGenePred /dev/stdin /dev/stdout \
        | genePredToGtf file /dev/stdin /dev/stdout \
        | awk -v FS='\t' -v OFS='\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
-       > grch38_dfam405_repeat_mask.gtf
+       > dfam_repeats.gtf
     '''
 }
 
@@ -273,7 +346,7 @@ process dfam_feature_methylation {
     publishDir "$params.output_dir", mode: 'copy'
 
     input:
-        file bed from hq_meth_bed
+        file bed from hq_methylkit_bed
         file(gtf) from dfam_gtf_for_meth
 
     output:
@@ -314,12 +387,13 @@ process dfam_feature_counts {
         -o dfam_counts.tsv *.bam 
     '''
 }
+*/
 
 process combine_methylation {
     publishDir "$params.output_dir", mode: 'copy'
 
     input:
-        file(dfam_meth) from dfam_methylation
+        //file(dfam_meth) from dfam_methylation
         file(feature_meth) from feature_methylation.collect()
         file(cpg_meth) from cpg_island_meth
         file(epd_meth) from epd_promoter_meth
@@ -330,7 +404,7 @@ process combine_methylation {
     '''
     echo 'File	Locus	Frac Methylated' > combined_methylation.tsv
     #adds a column (tab separated) containing the name of the file being processed (repeated on each line)
-    for f in !{dfam_meth} !{feature_meth} !{cpg_meth} !{epd_meth} ; do
+    for f in !{feature_meth} !{cpg_meth} !{epd_meth} ; do
         filebase=$(basename "${f}" _methylation.tsv)
         lines=$(wc -l <(grep -ve '^\\s*$' -e '^#' "$f") | cut -f 1 -d ' ')
         paste <( yes ${filebase} | head -n $lines ) <(grep -ve '^\\s*$' -e '^#' "$f") >> combined_methylation.tsv
@@ -339,10 +413,11 @@ process combine_methylation {
 }
 process combine_counts {
     publishDir "$params.output_dir", mode: 'copy'
-    validExitStatus 0,141
+    //sigpipe errors are expeceted with tail and head commands
+    errorStrategy { task.exitStatus=141 ? 'ignore' : 'terminate' }
 
     input:
-        file(dfam_counts) from dfam_feature_counts
+        //file(dfam_counts) from dfam_feature_counts
         file(feature_counts) from feature_counts.collect()
         file(cpg_counts) from cpg_island_counts
         file(epd_counts) from epd_promoter_counts
@@ -356,10 +431,11 @@ process combine_counts {
     grep -hve '^\\s*$' -e '^#' !{cpg_counts} | head -n 1 >> combined_feature_counts.tsv
 
     #adds a column (tab separated) containing the name of the file being processed (repeated on each line)
-    for f in !{dfam_counts} !{feature_counts} !{cpg_counts} !{epd_counts}; do
+    for f in !{feature_counts} !{cpg_counts} !{epd_counts}; do
         filebase=$(basename "${f}" _counts.tsv)
         lines=$(wc -l <(grep -ve '^\\s*$' -e '^#' "$f") | cut -f 1 -d ' ')
         paste <( yes ${filebase} | head -n $lines ) <(grep -ve '^\\s*$' -e '^#' "$f") | tail -n +2 >> combined_feature_counts.tsv
     done    
     '''  
 }
+
