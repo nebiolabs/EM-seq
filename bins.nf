@@ -2,6 +2,7 @@ Channel.fromPath(params.inputdir + "*.methylKit.gz").into{methylkit_files; for_b
 ref = params.reference_fasta
 annotation = params.annotation
 ref_len = params.reference_lengths
+output_dir = params.output_dir
 
 process make_bed {
     cpus 5
@@ -27,7 +28,7 @@ process make_bed {
 process make_bigwig {
     cpus 1
     conda "bioconda::ucsc-bedgraphtobigwig"
-    publishDir "/mnt/home/mcampbell/20200317_new_emseq_figure", mode: "copy"
+    publishDir "${params.output_dir}", mode: "copy"
     errorStrategy 'finish'
 
     input:
@@ -46,7 +47,7 @@ process make_bigwig {
 
 process binned_figure {
     cpus 1
-    publishDir "/mnt/home/mcampbell/20200317_new_emseq_figure", mode: "copy"
+    publishDir "${params.output_dir}", mode: "copy"
     errorStrategy 'finish'
 
     input:
