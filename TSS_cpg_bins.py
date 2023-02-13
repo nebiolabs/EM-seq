@@ -199,13 +199,11 @@ def calculate_meth_bin(tss_dict, cpg_bin_dict):
 
 	methylation_bins = [0 for x in range(400)]
 	for chrom in tss_dict:
-# 	for chrom in ["chr13"]:
 		print(chrom)
 		for pos in tss_dict[chrom]:
 			meth_slice = cpg_bin_dict[chrom][pos[0][0]:pos[0][1]]
 			my_bin = 0
 			for x in range(0,len(meth_slice), 10):
-# 				if sum(meth_slice[x:x+10]) != 0:
 				if "1" in meth_slice[x:x+10]:
 					if pos[1] == "+":
 						methylation_bins[my_bin] += 1
@@ -221,8 +219,7 @@ def calculate_both_bins(tss_dict, bin_dict, cpg_bin_dict):
 	print("Calculating the bins...")
 	all_bins = [0] * 400
 	methylation_bins = [0] * 400
-	# for chrom in tss_dict:
-	for chrom in ["chr13"]:
+	for chrom in tss_dict:
 		print(chrom)
 		for pos in tss_dict[chrom]:
 			my_slice = bin_dict[chrom][pos[0][0]:pos[0][1]]
