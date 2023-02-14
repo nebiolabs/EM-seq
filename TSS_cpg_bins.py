@@ -178,12 +178,9 @@ def parse_methylkit(methylkit, cpg_bin_dict):
 			line  = line.split("\t")
 			pos = int(line[2]) - 1
 			chrom = line[1]
-			# cpg_bin_dict[chrom][pos] = 1
-			if chrom == "chr13":
-				cpg_bin_dict[chrom][pos] = 1
+			cpg_bin_dict[chrom][pos] = 1
 	
-	# for chrom in cpg_bin_dict:
-	for chrom in ["chr13"]:
+	for chrom in cpg_bin_dict:
 		temp = "".join(map(str, cpg_bin_dict[chrom]))
 		cpg_bin_dict[chrom] = temp
 		
@@ -204,6 +201,7 @@ def calculate_meth_bin(tss_dict, cpg_bin_dict):
 			meth_slice = cpg_bin_dict[chrom][pos[0][0]:pos[0][1]]
 			my_bin = 0
 			for x in range(0,len(meth_slice), 10):
+# 				if sum(meth_slice[x:x+10]) != 0:
 				if "1" in meth_slice[x:x+10]:
 					if pos[1] == "+":
 						methylation_bins[my_bin] += 1
