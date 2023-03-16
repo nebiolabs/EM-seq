@@ -151,7 +151,7 @@ process mergeAndMarkDuplicates {
 
         shell:
         '''
-        MethylDackel extract --methylKit --OT 0,0,0,95 --OB 0,0,5,0 -@ !{task.cpus} --CHH --CHG -o !{library} !{genome} !{md_file}
+        MethylDackel extract --methylKit --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} --CHH --CHG -o !{library} !{genome} !{md_file}
         pigz -p !{task.cpus} *.methylKit
         '''
 
