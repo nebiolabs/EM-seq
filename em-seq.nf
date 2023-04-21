@@ -11,7 +11,14 @@ println "Processing " + flowcell + "... => " + outputPath
 
 fastq_glob = params.fastq_glob ?: '*.{1,2}.fastq*'
 Channel.fromFilePairs(fastq_glob)
-    .map{ lib,read -> [flowcell: flowcell, library:lib, insert_read1:read[0], insert_read2:read[1], barcode:'N', lane:'all', tile:'all' ]}.set{fq_set_channel}
+    .map{ lib, read -> [flowcell: flowcell, 
+                       library:lib,
+                       insert_read1:read[0], 
+                       insert_read2:read[1], 
+                       barcode:'N', 
+                       lane:'all', 
+                       tile:'all' ]
+    }.set{fq_set_channel}
     
 process mapping {
     cpus fastq_mode == 'tile-fastq' ? 4 : 16
