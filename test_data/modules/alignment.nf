@@ -1,18 +1,21 @@
 
 
-process bwameth_align {
+process formatInput_trim_bwamethAlign {
     label 'cpus_8'
     tag { [flowcell, library] }
     conda "bwameth seqtk sambamba fastp mark-nonconverted-reads"
     publishDir 'output/bwameth_align'
 
+
     input:
         tuple val(flowcell), 
               val(library),
-              path(read1),
-              path(read2),
+              //path(input_file),
+              val(input_file),
               val(lane),
               val(tile) 
+
+    // `input_file` = *1.fastq or *.bam (not 2.fastq)
 
     output:
         path "*.aln.bam", emit: aligned_bams
@@ -21,19 +24,38 @@ process bwameth_align {
 
     shell:
     '''
-    fastq_barcode=$(zcat -f !{read1} | head -n 1 | sed -r 's/.*://')
-    rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
-    bwa_mem_log_filename="!{library}_${fastq_barcode}!{flowcell}_!{lane}_!{tile}.log.bwamem"
-    bam_filename="!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.aln.bam"
-    inst_name=$(zcat -f !{read1} | head -n 1 | cut -f 1 -d ':' | sed 's/^@//')
-    
-    trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
+    set -eo pipefail
 
-    echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
+    if $(grep -q "2.fastq" !{input_file}); 
+    then 
+        echo "nothing wrong with this process. Skipping read2.fastq... "
+        exit 0
+    fi
 
-    echo "${rg_id} ${inst_name} ${bam_filename} ${bwa_mem_log_filename}"
+    shared_operations() {
+        rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
+        bwa_mem_log_filename="!{library}_${fastq_barcode}!{flowcell}_!{lane}_!{tile}.log.bwamem"
+        bam_filename="!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.aln.bam"
+        inst_name=$(echo $fastq_barcode | sed 's/^@//')   
+        trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
+        echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
+    }
 
-    seqtk mergepe <(zcat -f !{read1}) <(zcat -f !{read2}) \
+    if $( echo !{input_file} | grep -q "bam$")
+    then
+        fastq_barcode=$(samtools view !{input_file} | head -n1 | cut -d ":" -f1);
+        shared_operations;
+        bam2fastq_or_fqmerge="samtools fastq -@ !{task.cpus}"
+    else  
+        read1=!{input_file}
+        read2=$(echo !{input_file} | sed 's/1.fastq/2.fastq/')
+        fastq_barcode=$(zcat -f !{input_file} | head -n 1 | cut -d ":" -f1)
+        shared_operations;
+        bam2fastq_or_fqmerge="seqtk mergepe <(zcat -f ${read1}) <(zcat -f ${read2})"
+    fi
+
+
+    ${bam2fastq_or_fqmerge} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | bwameth.py -p -t !{task.cpus} --read-group ${rg_id} --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py 2> "!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
