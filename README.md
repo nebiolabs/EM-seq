@@ -9,3 +9,10 @@ A GRCh38 reference genome containing spike-in methylation controls is available 
 or via https: https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bbs_controls.fa
 
 See https://www.biorxiv.org/content/10.1101/2019.12.20.884692v2 for method details and use of these tools.
+
+
+
+## Use example:
+1. Download the genome (e.g. `wget https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bbs_controls.fa`)
+2. If conda is not installed, please follow [THESE](https://bioconda.github.io/) instructions.
+3. run the nextflow script `nextflow run em-seq.nf --fastq_glob "*{1,2}.fastq" --genome "grch38_core+bs_controls.fa" --flowcell "HCVHLDMXX" --cpus 8`
