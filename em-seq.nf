@@ -165,7 +165,7 @@ process mergeAndMarkDuplicates {
     }
 
     process select_human_reads {
-        cpus 8
+        cpus 8 
         tag {library}
         conda "sambamba=0.7.1 bedtools=2.29.2"
 
@@ -178,7 +178,7 @@ process mergeAndMarkDuplicates {
 
         shell:
         '''
-        sambamba view -t 8 -l 0 -f bam !{md_file} chr1 chr2 chr3 chr4 chr5 chr6 \
+        sambamba view -t !task.cpus -l 0 -f bam !{md_file} chr1 chr2 chr3 chr4 chr5 chr6 \
                                                   chr7 chr8 chr9 chr10 chr11 chr12 \
                                                   chr13 chr14 chr15 chr16 chr17 chr18 \
                                                   chr19 chr20 chr21 chr22 chrX chrY \
