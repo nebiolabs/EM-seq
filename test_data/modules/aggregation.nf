@@ -1,9 +1,7 @@
-
-path_to_ngs_agg = '/Users/aerijman/Documents/new_ngs/newer/ngs-aggregate_results'
+path_to_ngs_agg = "/Users/aerijman/Documents/new_ngs/newer/ngs-aggregate_results"
 
 process aggregate_emseq {
     cpus 1
-
     conda "samtools=1.9"
 
     input:
@@ -18,7 +16,8 @@ process aggregate_emseq {
                 path(bam), 
                 path(bai), 
                 path(nonconverted), 
-                path(mbias), 
+                path(mbias) 
+    
     shell:
     '''
     bc1=$(echo !{barcode}- | cut -f 1 -d "-")

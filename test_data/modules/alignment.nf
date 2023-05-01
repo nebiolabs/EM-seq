@@ -4,7 +4,7 @@ tmp_dir = params.tmp_dir
 process formatInput_trim_bwamethAlign {
     label 'cpus_8'
     tag { [flowcell, library] }
-    conda "bwameth seqtk sambamba fastp mark-nonconverted-reads samtools"
+    conda "bioconda::bwameth bioconda::seqtk bioconda::sambamba bioconda::fastp bioconda::mark-nonconverted-reads bioconda::samtools"
     publishDir "${library}/bwameth_align"
 
 
@@ -101,7 +101,6 @@ process mergeAndMarkDuplicates {
     | samblaster 2> !{library}.log.samblaster \
     | sambamba view -t 2 -l 0 -S -f bam /dev/stdin \
     | sambamba sort --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m 20GB -o !{library}.md.bam /dev/stdin
-
     '''
 }
 

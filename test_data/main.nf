@@ -60,6 +60,10 @@ Channel
         extract = methylDackel_extract( markDup.md_bams )
         mbias   = methylDackel_mbias( markDup.md_bams )
 
+	
+	markDup.md_bams.view()
+	
+/*
         // collect information for the aggregation. 
         Channel
             .of( params.email, 
@@ -70,8 +74,8 @@ Channel
                  params.lane, 
                  'genome_name_here',   
                  params.genome,  
-                 path(markDup.mardDup.md_bams[1]), 
-                 path(markDup.mardDup.md_bams[2]), 
+                 path(markDup.md_bams[1]), 
+                 path(markDup.md_bams[2]), 
                  path(bwaMeth.nonconverted_counts), 
                  path(mbias.mbias_output_tsv)
                 )
@@ -79,6 +83,7 @@ Channel
             .set{ aggregation_input_Channel }
 
         aggregate_emseq( aggregate_emseqaggregation_input_Channel )
+*/
 }
 
 
