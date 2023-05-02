@@ -4,7 +4,7 @@ tmp_dir = params.tmp_dir
 process formatInput_trim_bwamethAlign {
     label 'cpus_8'
     tag { [flowcell, library] }
-    conda "bioconda::bwameth bioconda::seqtk bioconda::sambamba bioconda::fastp bioconda::mark-nonconverted-reads bioconda::samtools"
+    conda "bwameth seqtk sambamba fastp mark-nonconverted-reads samtools"
     publishDir "${library}/bwameth_align"
 
 
@@ -27,7 +27,7 @@ process formatInput_trim_bwamethAlign {
 #    set -eo pipefail
 
     shared_operations() {
-        rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
+        rg_id="@RG\\tID:${fastqa_barcode}\\tSM:!{library}"
         bwa_mem_log_filename="!{library}_${fastq_barcode}!{flowcell}_!{lane}_!{tile}.log.bwamem"
         bam_filename="!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.aln.bam"
         inst_name=$(echo $fastq_barcode | sed 's/^@//')   
@@ -53,7 +53,7 @@ process formatInput_trim_bwamethAlign {
 
     ${bam2fastq_or_fqmerge} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
-    | bwameth.py -p -t !{task.cpus} --read-group ${rg_id} --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
+    | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py 2> "!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
     | sambamba view -t 2 -S -f bam -o ${bam_filename} /dev/stdin 2> sambamba.stderr;
     '''
