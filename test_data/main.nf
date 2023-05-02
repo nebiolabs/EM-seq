@@ -61,7 +61,7 @@ Channel
         mbias   = methylDackel_mbias( markDup.md_bams )
 
 	
-	markDup.md_bams.view()
+	    markDup.md_bams.view()
 	
 /*
         // collect information for the aggregation. 

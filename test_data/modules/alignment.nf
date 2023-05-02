@@ -39,8 +39,8 @@ process formatInput_trim_bwamethAlign {
 #    then
         fastq_barcode=$(samtools view !{input_file} | head -n1 | cut -d ":" -f1);
         shared_operations;
-        bam2fastq_or_fqmerge="samtools fastq -@ !{task.cpus} !{input_file}"
-
+        bam2fastq_or_fqmerge="samtools fastq -n -@ !{task.cpus} !{input_file}"
+        # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
 #    else  
 #        read1=!{input_file}
