@@ -27,7 +27,7 @@ process formatInput_trim_bwamethAlign {
 #    set -eo pipefail
 
     shared_operations() {
-        rg_id="@RG\\tID:${fastqa_barcode}\\tSM:!{library}"
+        rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
         bwa_mem_log_filename="!{library}_${fastq_barcode}!{flowcell}_!{lane}_!{tile}.log.bwamem"
         bam_filename="!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.aln.bam"
         inst_name=$(echo $fastq_barcode | sed 's/^@//')   
