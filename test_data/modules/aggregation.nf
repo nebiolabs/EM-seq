@@ -1,5 +1,6 @@
 path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results_dev/current/"
 //"/Users/aerijman/Documents/new_ngs/newer/ngs-aggregate_results"
+library = params.library
 
 process aggregate_emseq {
     cpus 1
