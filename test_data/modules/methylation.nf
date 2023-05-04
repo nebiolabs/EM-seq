@@ -9,17 +9,17 @@ process methylDackel_mbias {
         publishDir "${library}/methylDackelExtracts/mbias"
 
         input:
-            tuple val(library), path(md_file), path(md_bai) 
+            tuple val(library), path(md_file), path(md_bai), val(barcodes)
             // from md_files_for_mbias.groupTuple()
 
         output:
             path('*.svg'), emit: mbias_output_svg
             path('*.tsv'), emit: mbias_output_tsv
-            tuple val(library), path('*.tsv'), emit: mbias_for_aggregate
+            tuple val(library), path('*.tsv'), path(md_file), path(md_bai), val(barcodes), emit: mbias_for_aggregate
 
         shell:
         '''
-        echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > !{library}_combined_mbias.tsv
+        echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > !{library}_!{barcodes}_combined_mbias.tsv
         chrs=(`samtools view -H !{md_file} | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
 
         for chr in ${chrs[*]}; do
@@ -42,7 +42,7 @@ process methylDackel_mbias {
                     tail -n +2 | awk '{print $1"-"$2"-"$3"\t"$0}' | sort -k 1b,1
                 ) \
                 | sed "s/^/${chr}\t${context}\t/" \
-                >> !{library}_combined_mbias.tsv
+                >> !{library}_!{barcodes}_combined_mbias.tsv
             done
         done
         # makes the svg files for trimming checks
@@ -64,7 +64,7 @@ process methylDackel_extract {
         conda "methyldackel=0.4.0 pigz=2.4"
 
         input:
-            tuple val(library), path(md_file), path(md_bai) // from md_files_for_extract.groupTuple()
+            tuple val(library), path(md_file), path(md_bai), val(barcodes) // from md_files_for_extract.groupTuple()
 
         output:
             tuple val(library), file('*.methylKit.gz'), emit: extract_output //into extract_output

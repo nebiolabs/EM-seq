@@ -6,8 +6,7 @@ process aggregate_emseq {
     conda "samtools=1.9"
 
     input:
-         tuple val(library), path(bam), path(bai)
-               path(mbias)
+         tuple val(library), path(mbias), path(bam), path(bai), val(barcodes)
 
     // barcode should be split by "-" as bc1-bc2 
 
@@ -15,8 +14,9 @@ process aggregate_emseq {
     '''
     genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
     # ADD THIS bc=!{barcodes} AND THEN bc1= split $bc on "_" and take $1
-    bc1=$(echo !{params.barcode}- | cut -f 1 -d "-")
-    bc2=$(echo !{params.barcode}- | cut -f 2 -d "-")
+
+    bc1=$(echo !{barcodes}- | cut -f 1 -d "-")
+    bc2=$(echo !{barcodes}- | cut -f 2 -d "-")
     if [[ "${bc2}" == "" ]]; then
         bc2_arg=""
     else
@@ -26,7 +26,7 @@ process aggregate_emseq {
     export RBENV_VERSION=$(cat !{path_to_ngs_agg}/.ruby-version)
     DATABASE_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
     --bam !{bam} \
-    --bai *.md.bai \
+    --bai !{bai} \
     --name "!{params.library}" \
     --barcode1 ${bc1} ${bc2_arg} \
     --lane !{params.lane} \

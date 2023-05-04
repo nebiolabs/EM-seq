@@ -21,7 +21,7 @@ process formatInput_trim_bwamethAlign {
         path "*.aln.bam", emit: aligned_bams
        // path "*.nonconverted.tsv", emit: nonconverted_counts
         path "*_fastp.json", emit: fastp_log_files
-        tuple val(library), path("*.aln.bam"), emit: tuple_lib_bam
+        tuple val(library), path("*.aln.bam"), env(barcodes), emit: tuple_lib_bam
         env(barcodes), emit: barcodes
 
     /* 2 caveats in the following shell script:
@@ -34,7 +34,6 @@ process formatInput_trim_bwamethAlign {
     '''
 #    set -eo pipefail
 
-    # barcodes=$(samtools view !{input_file} | head -n 10000 | sed 's/.*BC:Z:\\([ACTGN-]*\\).*/\1/' | awk '{tot++; arr[$1]++}END{for (i in arr) { print i"\t"arr[i]/tot*100} }' | sort -k2nr | head -n1 | awk '{print $1}')
     barcodes=$(samtools view !{input_file} | head -n 10000 | grep -o BC:Z:[ACTGN-]* | awk '{tot++; arr[$1]++}END{for (i in arr) { print i"\t"arr[i]/tot*100} }' | sort -k2nr | head -n1 | awk '{print substr($1,6,length($1))}')
 
     shared_operations() {
@@ -81,26 +80,6 @@ process formatInput_trim_bwamethAlign {
 }
 
 
-process bam2fastq {
-    conda 'samtools'
-    label 'cpus_2'
-    tag 'converting unaligned bam onto fastq'
-    publishDir "${library}/bam2fastq"
-
-    input:
-        path bam_file
-
-    output:
-        tuple stdout, path('fq1'), path('fq2')
-
-    shell:
-    '''
-    samtools fastq !{bam_file} -1 fq1 -2 fq2
-    echo "!{bam_file}" | awk -F"/" '{print $NF}' | sed 's/.bam//' | tr -d '\\n'   
-    '''
-}
-
-
 process mergeAndMarkDuplicates {
     label 'cpus_8'
     errorStrategy 'retry'
@@ -109,10 +88,10 @@ process mergeAndMarkDuplicates {
     conda "samtools=1.9 samblaster=0.1.24 sambamba=0.7.0"
 
     input:
-        tuple val(library), file(libraryBam) // from aligned_files.groupTuple()
+        tuple val(library), file(libraryBam), val(barcodes) // from aligned_files.groupTuple()
 
     output:
-        tuple val(library), path('*.md.bam'), path('*.md.bam.bai'), emit: md_bams
+        tuple val(library), path('*.md.bam'), path('*.md.bam.bai'), val(barcodes), emit: md_bams
         path('*.samblaster'), emit: samblaster_logs
 
     shell:
@@ -121,7 +100,7 @@ process mergeAndMarkDuplicates {
     | samtools view -h /dev/stdin \
     | samblaster 2> !{library}.log.samblaster \
     | sambamba view -t 2 -l 0 -S -f bam /dev/stdin \
-    | sambamba sort --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m 20GB -o !{library}.md.bam /dev/stdin
+    | sambamba sort --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m 20GB -o !{library}_!{barcodes}.md.bam /dev/stdin
     '''
 }
 

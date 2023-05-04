@@ -1,7 +1,7 @@
 nextflow.enable.dsl=2
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
-include { formatInput_trim_bwamethAlign; bam2fastq; mergeAndMarkDuplicates } from './modules/alignment'
+include { formatInput_trim_bwamethAlign; mergeAndMarkDuplicates } from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract} from './modules/methylation'
 include { aggregate_emseq } from './modules/aggregation.nf'
 
@@ -57,14 +57,11 @@ Channel
  workflow {
     main:
         bwaMeth = formatInput_trim_bwamethAlign( input_alignment )
-
-        bwaMeth.barcodes.view()
-
         markDup = mergeAndMarkDuplicates( bwaMeth.tuple_lib_bam )
         extract = methylDackel_extract( markDup.md_bams )
         mbias   = methylDackel_mbias( markDup.md_bams )
 
-       aggregate_emseq( markDup.md_bams, mbias.mbias_output_tsv ) 
+       aggregate_emseq( mbias.mbias_output_tsv ) 
 
 
 }
