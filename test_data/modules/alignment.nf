@@ -1,6 +1,7 @@
 library = params.library
 tmp_dir = params.tmp_dir
 
+
 process formatInput_trim_bwamethAlign {
     label 'cpus_8'
     tag { [flowcell, library] }
@@ -18,18 +19,28 @@ process formatInput_trim_bwamethAlign {
 
     output:
         path "*.aln.bam", emit: aligned_bams
-        path "*.nonconverted.tsv", emit: nonconverted_counts
+       // path "*.nonconverted.tsv", emit: nonconverted_counts
         path "*_fastp.json", emit: fastp_log_files
         tuple val(library), path("*.aln.bam"), emit: tuple_lib_bam
+        env(barcodes), emit: barcodes
 
+    /* 2 caveats in the following shell script:
+    1. Could not include  sed 's/.*BC:Z:\([ACTGN-]*\).*@/\1/' (@ symbol to avoid stop commenting this) 
+       hence grep -o replaces it.
+    2. bam2fastq_or_fqmerge="samtools fastq -nT BC -@ !{task.cpus} !{input_file}" generates
+       a successfull fastq with barcodes in header. HOWEVER, bwameth doesn't know how to parse it.
+    */ 
     shell:
     '''
 #    set -eo pipefail
 
+    # barcodes=$(samtools view !{input_file} | head -n 10000 | sed 's/.*BC:Z:\\([ACTGN-]*\\).*/\1/' | awk '{tot++; arr[$1]++}END{for (i in arr) { print i"\t"arr[i]/tot*100} }' | sort -k2nr | head -n1 | awk '{print $1}')
+    barcodes=$(samtools view !{input_file} | head -n 10000 | grep -o BC:Z:[ACTGN-]* | awk '{tot++; arr[$1]++}END{for (i in arr) { print i"\t"arr[i]/tot*100} }' | sort -k2nr | head -n1 | awk '{print substr($1,6,length($1))}')
+
     shared_operations() {
         rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
         bwa_mem_log_filename="!{library}_${fastq_barcode}!{flowcell}_!{lane}_!{tile}.log.bwamem"
-        bam_filename="!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.aln.bam"
+        bam_filename="!{library}_${fastq_barcode}_${barcodes}_!{flowcell}_!{lane}_!{tile}.aln.bam"
         inst_name=$(echo $fastq_barcode | sed 's/^@//')   
         trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
         echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
@@ -54,9 +65,19 @@ process formatInput_trim_bwamethAlign {
     ${bam2fastq_or_fqmerge} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
-    | mark-nonconverted-reads.py 2> "!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
     | sambamba view -t 2 -S -f bam -o ${bam_filename} /dev/stdin 2> sambamba.stderr;
     '''
+
+// THERE IS A ISSUE WITH pysam.calignmentfile.AlignedSegment, where `reference_name` is not recognized`. Unfortunately, 
+// in newer versions, there is no such pysam.calignmentfile.AlignedSegment but pysam.AlignedSegment. I will look into this later.
+//    ${bam2fastq_or_fqmerge} \
+//    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
+//    | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
+//    | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
+//    | sambamba view -t 2 -S -f bam -o ${bam_filename} /dev/stdin 2> sambamba.stderr;
+
+
+
 }
 
 

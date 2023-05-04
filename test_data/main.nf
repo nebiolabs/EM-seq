@@ -9,9 +9,9 @@ include { aggregate_emseq } from './modules/aggregation.nf'
 /* ------------------------ *
  * INCLUDE IN CONFIG FILE!! *
  * ------------------------ */
-default_dest_path = '/mnt/galaxy/tmp/users'
-params.tmp_dir    =  'tmp' // params['other_paths'].tmp_dir
-path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
+params.default_dest_path = '/mnt/galaxy/tmp/users'
+params.tmp_dir           =  'tmp' // params['other_paths'].tmp_dir
+params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 
 
 /* --------------- *
@@ -26,6 +26,7 @@ params.lane        = 'all'
 params.tile        = 'all'
 params.project     = 'test_project'
 params.sample      = 'test_sample'
+params.barcode     = ''  
 
 outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 
@@ -56,34 +57,16 @@ Channel
  workflow {
     main:
         bwaMeth = formatInput_trim_bwamethAlign( input_alignment )
+
+        bwaMeth.barcodes.view()
+
         markDup = mergeAndMarkDuplicates( bwaMeth.tuple_lib_bam )
         extract = methylDackel_extract( markDup.md_bams )
         mbias   = methylDackel_mbias( markDup.md_bams )
 
-	
-	    markDup.md_bams.view()
-	
-/*
-        // collect information for the aggregation. 
-        Channel
-            .of( params.email, 
-                 params.library, 
-                 params.project, 
-                 params.sample, 
-                 params.barcode, 
-                 params.lane, 
-                 'genome_name_here',   
-                 params.genome,  
-                 path(markDup.md_bams[1]), 
-                 path(markDup.md_bams[2]), 
-                 path(bwaMeth.nonconverted_counts), 
-                 path(mbias.mbias_output_tsv)
-                )
-            .toList()
-            .set{ aggregation_input_Channel }
+       aggregate_emseq( markDup.md_bams, mbias.mbias_output_tsv ) 
 
-        aggregate_emseq( aggregate_emseqaggregation_input_Channel )
-*/
+
 }
 
 
