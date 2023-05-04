@@ -61,9 +61,7 @@ Channel
         extract = methylDackel_extract( markDup.md_bams )
         mbias   = methylDackel_mbias( markDup.md_bams )
 
-       aggregate_emseq( mbias.mbias_output_tsv ) 
-
-
+       aggregate_emseq( mbias.mbias_for_aggregate )
 }
 
 

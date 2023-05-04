@@ -4,6 +4,7 @@ path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results_dev/current/"
 process aggregate_emseq {
     cpus 1
     conda "samtools=1.9"
+    publishDir "${library}/ngs-agg"
 
     input:
          tuple val(library), path(mbias), path(bam), path(bai), val(barcodes)
@@ -34,7 +35,7 @@ process aggregate_emseq {
     --project "!{params.project}" \
     --sample "!{params.sample}" \
     --genome "${genome_name}" \
-    --combined_mbias_records !{mbias} \
+    --combined_mbias_records !{mbias}
     '''
     //--workflow "Automated EM-seq!{dest_modifier}"
 }
