@@ -10,8 +10,10 @@ process aggregate_emseq {
     input:
          tuple val(library), path(mbias), path(bam), path(bai), val(barcodes)
 
-    // barcode should be split by "-" as bc1-bc2 
+    output:
+        path('ngs_agg.*')
 
+    // barcode should be split by "-" as bc1-bc2 
     shell:
     '''
     genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
@@ -36,7 +38,7 @@ process aggregate_emseq {
     --project "!{params.project}" \
     --sample "!{params.sample}" \
     --genome "${genome_name}" \
-    --combined_mbias_records !{mbias}
+    --combined_mbias_records !{mbias} 2> ngs_agg.err 1> ngs_agg.out 
     '''
     //--workflow "Automated EM-seq!{dest_modifier}"
 }
