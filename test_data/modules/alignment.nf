@@ -64,18 +64,9 @@ process formatInput_trim_bwamethAlign {
     ${bam2fastq_or_fqmerge} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
+    | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{params.library}_${fastq_barcode}_!{params.flowcell}_!{params.lane}_!{params.tile}.nonconverted.tsv" \
     | sambamba view -t 2 -S -f bam -o ${bam_filename} /dev/stdin 2> sambamba.stderr;
     '''
-
-// THERE IS A ISSUE WITH pysam.calignmentfile.AlignedSegment, where `reference_name` is not recognized`. Unfortunately, 
-// in newer versions, there is no such pysam.calignmentfile.AlignedSegment but pysam.AlignedSegment. I will look into this later.
-//    ${bam2fastq_or_fqmerge} \
-//    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
-//    | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
-//    | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${fastq_barcode}_!{flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
-//    | sambamba view -t 2 -S -f bam -o ${bam_filename} /dev/stdin 2> sambamba.stderr;
-
-
 
 }
 
@@ -112,3 +103,8 @@ process mergeAndMarkDuplicates {
 //                    md_files_for_goleft; md_files_for_picard_gc; md_files_for_samflagstats; 
 //                    md_files_for_aggregate; md_files_for_human_reads;
 //                 }
+
+
+
+
+
