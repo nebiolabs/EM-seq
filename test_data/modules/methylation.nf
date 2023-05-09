@@ -10,7 +10,6 @@ process methylDackel_mbias {
 
         input:
             tuple val(library), path(md_file), path(md_bai), val(barcodes)
-            // from md_files_for_mbias.groupTuple()
 
         output:
             path('*.svg'), emit: mbias_output_svg
@@ -64,10 +63,10 @@ process methylDackel_extract {
         conda "methyldackel=0.4.0 pigz=2.4"
 
         input:
-            tuple val(library), path(md_file), path(md_bai), val(barcodes) // from md_files_for_extract.groupTuple()
+            tuple val(library), path(md_file), path(md_bai), val(barcodes) 
 
         output:
-            tuple val(library), file('*.methylKit.gz'), emit: extract_output //into extract_output
+            tuple val(library), file('*.methylKit.gz'), emit: extract_output 
 
         shell:
         '''

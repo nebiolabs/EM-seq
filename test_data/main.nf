@@ -21,12 +21,12 @@ params.email       = 'testing@emseq.neb.com'
 params.flowcell    = 'N'
 params.genome      = 'undefined'
 params.input_glob  =  '*.{1,2}.fastq*'
-params.library     = 'undefined'
 params.lane        = 'all'
 params.tile        = 'all'
 params.project     = 'test_project'
 params.sample      = 'test_sample'
-params.barcode     = ''  
+params.barcode     = ''
+params.develop_mode  = false // When set to true, workflow will not exit early. 
 
 outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 
@@ -38,7 +38,8 @@ println "Cmd line: $workflow.commandLine"
 // This channel will search bam OR fastq. Since we do the matching in bash
 // (because if it's bam, we don't want to write to disk but make the fastq
 // files on the fly), we exclude the read2. We will include it inside the 
-// bash script during alignment.
+// bash script during alignment. So glob for fastq SHOULD ONLY INCLUDE read1
+// and NOT read2. E.g. *[\._-]1.fastq
 
 // modify glob later to 2 channels. Bam and Fastq and concat them!
 Channel
@@ -47,7 +48,6 @@ Channel
     .ifEmpty {error "${params.input_glob} could not find any required file."}
     .map{ filename -> 
        [flowcell: params.flowcell, 
-        library: params.library,
         input_file: filename,
         lane: params.lane,
         tile: params.tile,

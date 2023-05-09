@@ -2,16 +2,29 @@ library = params.library
 tmp_dir = params.tmp_dir
 
 
+process library_id {
+    input:
+        path(params.files)
+
+    output:
+        tuple val(library) 
+
+    shell:
+    bname = 
+    '''
+    '''
+}
+
+
 process formatInput_trim_bwamethAlign {
     label 'cpus_8'
-    tag { [flowcell, library] }
+    tag { flowcell }
     conda "bwameth seqtk sambamba fastp mark-nonconverted-reads samtools"
     publishDir "${library}/bwameth_align"
 
 
     input:
         tuple val(flowcell), 
-              val(library),
               path(input_file),
               val(lane),
               val(tile),
@@ -19,10 +32,9 @@ process formatInput_trim_bwamethAlign {
 
     output:
         path "*.aln.bam", emit: aligned_bams
-       // path "*.nonconverted.tsv", emit: nonconverted_counts
+        path "*.nonconverted.tsv", emit: nonconverted_counts
         path "*_fastp.json", emit: fastp_log_files
-        tuple val(library), path("*.aln.bam"), env(barcodes), emit: tuple_lib_bam
-        env(barcodes), emit: barcodes
+        tuple env(library), path("*.aln.bam"), env(barcodes), emit: tuple_lib_bam
 
     /* 2 caveats in the following shell script:
     1. Could not include  sed 's/.*BC:Z:\([ACTGN-]*\).*@/\1/' (@ symbol to avoid stop commenting this) 
@@ -31,10 +43,14 @@ process formatInput_trim_bwamethAlign {
        a successfull fastq with barcodes in header. HOWEVER, bwameth doesn't know how to parse it.
     */ 
     shell:
+
+    library = input_file.basename.replaceFirst(/.fastq|.bam/,"")
+
     '''
-#    set -eo pipefail
+    set -eo pipefail
 
     barcodes=$(samtools view !{input_file} | head -n 10000 | grep -o BC:Z:[ACTGN-]* | awk '{tot++; arr[$1]++}END{for (i in arr) { print i"\t"arr[i]/tot*100} }' | sort -k2nr | head -n1 | awk '{print substr($1,6,length($1))}')
+    library=!{input_file}_
 
     shared_operations() {
         rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
@@ -45,20 +61,21 @@ process formatInput_trim_bwamethAlign {
         echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     }
 
-#    if $( echo !{input_file} | grep -q "bam$")
-#    then
+    if $( echo !{input_file} | grep -q ".bam$")
+    then
         fastq_barcode=$(samtools view !{input_file} | head -n1 | cut -d ":" -f1);
         shared_operations;
         bam2fastq_or_fqmerge="samtools fastq -n -@ !{task.cpus} !{input_file}"
         # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
-#    else  
-#        read1=!{input_file}
-#        read2=$(ls -l ${read1} | awk '{print $NF}' | 's/1.fastq/2.fastq/')
-#        fastq_barcode=$(zcat -f ${read1} | head -n 1 | cut -d ":" -f1)
-#        shared_operations;
-#        bam2fastq_or_fqmerge="seqtk mergepe <(zcat -f ${read1}) <(zcat -f ${read2})"
-#    fi
+    else  
+        read1=!{input_file}
+        read2=$(ls -l ${read1} | awk '{print $NF}' | 's/1.fastq/2.fastq/')
+        [ ${#read2} -eq 0 ] && exit('fastq files HAVE TO END WITH 1.fastq and 2.fastq')
+        fastq_barcode=$(zcat -f ${read1} | head -n 1 | cut -d ":" -f1)
+        shared_operations;
+        bam2fastq_or_fqmerge="seqtk mergepe <(zcat -f ${read1}) <(zcat -f ${read2})"
+    fi
 
 
     ${bam2fastq_or_fqmerge} \
@@ -79,7 +96,7 @@ process mergeAndMarkDuplicates {
     conda "samtools=1.9 samblaster=0.1.24 sambamba=0.7.0"
 
     input:
-        tuple val(library), file(libraryBam), val(barcodes) // from aligned_files.groupTuple()
+        tuple val(library), file(libraryBam), val(barcodes) 
 
     output:
         tuple val(library), path('*.md.bam'), path('*.md.bam.bai'), val(barcodes), emit: md_bams
@@ -94,16 +111,6 @@ process mergeAndMarkDuplicates {
     | sambamba sort --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m 20GB -o !{library}_!{barcodes}.md.bam /dev/stdin
     '''
 }
-
-
-    // we need to send the same file into multiple channels for downstream 
-    // analysis whether they came from aligned bams or fastqs
-//    md_bams.into {  md_files_for_mbias; md_files_for_extract; md_files_for_fastqc; 
-//                    md_files_for_samstats; md_files_for_picard; 
-//                    md_files_for_goleft; md_files_for_picard_gc; md_files_for_samflagstats; 
-//                    md_files_for_aggregate; md_files_for_human_reads;
-//                 }
-
 
 
 
