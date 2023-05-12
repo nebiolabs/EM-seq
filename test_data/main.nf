@@ -1,7 +1,7 @@
 nextflow.enable.dsl=2
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
-include { formatInput_trim_bwamethAlign; mergeAndMarkDuplicates } from './modules/alignment'
+include { alignReads; mergeAndMarkDuplicates } from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract} from './modules/methylation'
 include { aggregate_emseq } from './modules/aggregation.nf'
 
@@ -44,24 +44,29 @@ println "Cmd line: $workflow.commandLine"
 // modify glob later to 2 channels. Bam and Fastq and concat them!
 Channel
     .fromPath(params.input_glob)
-    .filter{ it.name =~ /(\.bam|1\.fastq)$/ }  
+    .filter{ it.name =~ /(\.bam|1\.fastq)$/ }
     .ifEmpty {error "${params.input_glob} could not find any required file."}
     .map{ filename -> 
-       [flowcell: params.flowcell, 
+       [flowcell: params.flowcell,
         input_file: filename,
         lane: params.lane,
         tile: params.tile,
         genome: params.genome ]}
-    .set{input_alignment}
+    .set{ inputChannel }
+
 
  workflow {
     main:
-        bwaMeth = formatInput_trim_bwamethAlign( input_alignment )
-        markDup = mergeAndMarkDuplicates( bwaMeth.tuple_lib_bam )
-        extract = methylDackel_extract( markDup.md_bams )
-        mbias   = methylDackel_mbias( markDup.md_bams )
+        // bwaMeth = formatInput_trim_bwamethAlign( input_alignment )
+        // markDup = mergeAndMarkDuplicates( bwaMeth.tuple_lib_bam )
+        // extract = methylDackel_extract( markDup.md_bams )
+        // mbias   = methylDackel_mbias( markDup.md_bams )
 
-       aggregate_emseq( mbias.mbias_for_aggregate )
+        alignedReads = alignReads( inputChannel )
+        //extract      = methylDackel_extract( alignedReads.bam_files )
+        //mbias        = methylDackel_mbias( alignedReads.bam_files )
+
+        //aggregate_emseq( mbias.mbias_for_aggregate )
 }
 
 
