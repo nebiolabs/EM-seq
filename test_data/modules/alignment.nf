@@ -1,9 +1,8 @@
-tmp_dir = params.tmp_dir
 
 process alignReads {
     label 'cpus_8'
     tag { flowcell }
-    conda "python=3.10 bwameth seqtk sambamba fastp mark-nonconverted-reads samtools samblaster"
+    conda "python=3.10 bwameth seqtk sambamba fastp mark-nonconverted-reads samtools"
     publishDir "${library}/bwameth_align"
 
 
@@ -16,9 +15,9 @@ process alignReads {
 
     output:
         path "*.aln.bam", emit: aligned_bams
-        path "*.nonconverted.tsv", emit: nonconverted_counts
+        tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         path "*_fastp.json", emit: fastp_log_files
-        tuple env(library), path("*.aln.bam"), path("*aln.bam.bai"), env(barcodes), emit: bam_files
+        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
 
     /* 2 caveats in the following shell script:
     1. Could not include  sed 's/.*BC:Z:\([ACTGN-]*\).*@/\1/' (@ symbol to avoid stop commenting this) 
@@ -48,8 +47,7 @@ process alignReads {
     then
         fastq_barcode=$(samtools view !{input_file} | head -n1 | cut -d ":" -f1);
         shared_operations;
-        #bam2fastq_or_fqmerge="samtools fastq -n -@ !{task.cpus} !{input_file}"
-        bam2fastq_or_fqmerge="samtools fastq -@ !{task.cpus} !{input_file} | paste - - - - | sort | uniq | tr \"\\t\" \"\\n\" | sed 's/\\(@.*\\)\\/./\\1/'"
+        bam2fastq_or_fqmerge="samtools fastq -n -@ !{task.cpus} !{input_file}"
         # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
     else  
@@ -63,16 +61,12 @@ process alignReads {
         bam2fastq_or_fqmerge="seqtk mergepe <(zcat -f ${read1}) <(zcat -f ${read2})"
     fi
 
-
-    ${bam2fastq_or_fqmerge} \
+    ${bam2fastq_or_fqmerge} | paste - - - - | sort | uniq | tr "\t" "\n" \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${fastq_barcode}_!{params.flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
-    | samtools sort -m20G -@4 | samtools view -h \
-    | samblaster 2> !{library}.log.samblaster | samtools view -bh !{library}_${barcodes}_!{flowcell}.aln.bam && \
-    samtools index -@4 -o !{library}_${barcodes}_!{flowcell}.aln.bam
-
-    #| sambamba sort -m !{task.memory} -t 2 --tmpdir=!{params.tmp_dir} /dev/stdin \
+    | samtools view -hb /dev/stdin \
+    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m 20GB -o ${bam_filename} /dev/stdin
     '''
 }
 
@@ -84,23 +78,21 @@ process mergeAndMarkDuplicates {
     errorStrategy 'retry'
     tag { library }
     publishDir "${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
-    conda "samtools=1.9 samblaster=0.1.24 sambamba=0.7.0"
+    conda "picard"
 
     input:
-        tuple val(library), file(libraryBam), val(barcodes) 
+        tuple val(library), path(bam), path(bai), val(barcodes) 
 
     output:
-        tuple val(library), path('*.md.bam'), path('*.md.bam.bai'), val(barcodes), emit: md_bams
-        path('*.samblaster'), emit: samblaster_logs
+        tuple val(library), path('*.md.bam'), path('*.md.bai'), val(barcodes), emit: md_bams
+        path('*.markdups_log'), emit: log_files
+        //tuple val(library), path()
 
     shell:
     '''
-    optical_distance=$(echo !{barcodes} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
-    #samtools cat  -b <( find . -name '*.aln.bam' ) \
-    | samtools view -h /dev/stdin \
-    | samblaster 2> !{library}.log.samblaster \
-    | sambamba view -t 2 -l 0 -S -f bam /dev/stdin \
-    | sambamba sort --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m 20GB -o !{library}_!{barcodes}.md.bam /dev/stdin
+    fastq_barcode=$(samtools view !{bam} | head -n1 | cut -d ":" -f1);
+    optical_distance=$(echo ${fastq_barcode} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
+    picard -Xmx20g MarkDuplicates TAGGING_POLICY=All OPTICAL_DUPLICATE_PIXEL_DISTANCE=${optical_distance} TMP_DIR=!{params.tmp_dir} CREATE_INDEX=true MAX_RECORDS_IN_RAM=5000000 BARCODE_TAG="RX" ASSUME_SORT_ORDER=coordinate VALIDATION_STRINGENCY=SILENT I=!{bam} O=!{library}_!{barcodes}.md.bam M=!{library}.markdups_log
     '''
 }
 

@@ -1,6 +1,5 @@
 path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results_dev/current/"
 //"/Users/aerijman/Documents/new_ngs/newer/ngs-aggregate_results"
-library = params.library
 
 process aggregate_emseq {
     cpus 1
@@ -8,7 +7,8 @@ process aggregate_emseq {
     publishDir "${library}/ngs-agg"
 
     input:
-         tuple val(library), path(mbias), path(bam), path(bai), val(barcodes)
+         tuple val(library), path(mbias), path(bam), path(bai), val(barcodes) // mbias_for_aggregate
+
 
     output:
         path('ngs_agg.*')
@@ -40,6 +40,7 @@ process aggregate_emseq {
     --genome "${genome_name}" \
     --combined_mbias_records !{mbias} 2> ngs_agg.err 1> ngs_agg.out 
     '''
+    // --gc "!{gc_metrics}" \
     //--workflow "Automated EM-seq!{dest_modifier}"
 }
     

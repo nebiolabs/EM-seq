@@ -3,8 +3,8 @@
 process methylDackel_mbias {
         label 'cpus_8'
         errorStrategy 'retry'
-        tag {library}
-        conda "methyldackel=0.4.0 samtools=1.9"
+        tag "${library}"
+        conda "methyldackel samtools"
         publishDir "${library}/methylDackelExtracts/mbias"
 
         input:
@@ -56,7 +56,7 @@ process methylDackel_mbias {
 
 process methylDackel_extract {
         label 'cpus_8'
-        tag library
+        tag "${library}"
         publishDir "${library}/methylDackelExtracts", mode: 'copy'
         conda "methyldackel=0.4.0 pigz=2.4"
 

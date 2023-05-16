@@ -1,10 +1,5 @@
 nextflow.enable.dsl=2
 
-// include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
-include { alignReads; mergeAndMarkDuplicates } from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract} from './modules/methylation'
-include { aggregate_emseq } from './modules/aggregation.nf'
-
 
 /* ------------------------ *
  * INCLUDE IN CONFIG FILE!! *
@@ -12,7 +7,6 @@ include { aggregate_emseq } from './modules/aggregation.nf'
 params.default_dest_path = '/mnt/galaxy/tmp/users'
 params.tmp_dir           =  'tmp' // params['other_paths'].tmp_dir
 params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
-
 
 /* --------------- *
  * INPUT ARGUMENTS *
@@ -27,8 +21,13 @@ params.project     = 'test_project'
 params.sample      = 'test_sample'
 params.barcode     = ''
 params.develop_mode  = false // When set to true, workflow will not exit early. 
-
 outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
+
+// include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
+include { alignReads; mergeAndMarkDuplicates } from './modules/alignment'
+include { methylDackel_mbias; methylDackel_extract } from './modules/methylation'
+include { picard_gc_bias } from './modules/compute_statistics.nf'
+include { aggregate_emseq } from './modules/aggregation.nf'
 
 
 println "Processing " + params.flowcell + "... => " + outputDir
@@ -57,16 +56,22 @@ Channel
 
  workflow {
     main:
-        // bwaMeth = formatInput_trim_bwamethAlign( input_alignment )
-        // markDup = mergeAndMarkDuplicates( bwaMeth.tuple_lib_bam )
-        // extract = methylDackel_extract( markDup.md_bams )
-        // mbias   = methylDackel_mbias( markDup.md_bams )
-
         alignedReads = alignReads( inputChannel )
-        //extract      = methylDackel_extract( alignedReads.bam_files )
-        //mbias        = methylDackel_mbias( alignedReads.bam_files )
+        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+        extract      = methylDackel_extract( markDup.md_bams )
+        mbias        = methylDackel_mbias( markDup.md_bams )
 
-        //aggregate_emseq( mbias.mbias_for_aggregate )
+        gc_bias      = picard_gc_bias( markDup.md_bams )
+
+        // Channel for aggregation
+        alignedReads.bam_files
+        .join(extract.extract_output)
+        .join(markDup.md_bams)
+        .set{ test_for_aggregation}
+
+        test_for_aggregation.view()
+
+        // aggregate_emseq( mbias.mbias_for_aggregate )
 }
 
 
