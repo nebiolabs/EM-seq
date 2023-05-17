@@ -24,10 +24,10 @@ params.develop_mode  = false // When set to true, workflow will not exit early.
 outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
-include { alignReads; mergeAndMarkDuplicates } from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract } from './modules/methylation'
-include { picard_gc_bias } from './modules/compute_statistics.nf'
-include { aggregate_emseq } from './modules/aggregation.nf'
+include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
+include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
+include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian } from './modules/compute_statistics.nf'
+include { aggregate_emseq }                                                                             from './modules/aggregation.nf'
 
 
 println "Processing " + params.flowcell + "... => " + outputDir
@@ -61,12 +61,23 @@ Channel
         extract      = methylDackel_extract( markDup.md_bams )
         mbias        = methylDackel_mbias( markDup.md_bams )
 
-        gc_bias      = picard_gc_bias( markDup.md_bams )
+        gcbias       = gc_bias( markDup.md_bams )
+        idxstats     = idx_stats( markDup.md_bams )
+        flagstats    = flag_stats( markDup.md_bams )
+        fastqc       = fast_qc( markDup.md_bams )
+        insertsize   = insert_size_metrics( markDup.md_bams )
+        metrics      = picard_metrics( markDup.bams )
+        mismatches   = tasmanian ( markDup.bams )
 
         // Channel for aggregation
         alignedReads.bam_files
-        .join(extract.extract_output)
-        .join(markDup.md_bams)
+        .join( markDup.md_bams )
+        .join( gcbias.for_agg )
+        .join( idxstats.for_agg )
+        .join( flagstats.for_agg )
+        .join( fastqc.for_agg )
+        .join( insertsize.for_agg )
+
         .set{ test_for_aggregation}
 
         test_for_aggregation.view()

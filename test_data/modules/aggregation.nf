@@ -17,34 +17,39 @@ process aggregate_emseq {
     shell:
     '''
     genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
-    # ADD THIS bc=!{barcodes} AND THEN bc1= split $bc on "_" and take $1
 
-    bc1=$(echo !{barcodes}- | cut -f 1 -d "-")
-    bc2=$(echo !{barcodes}- | cut -f 2 -d "-")
-    if [[ "${bc2}" == "" ]]; then
-        bc2_arg=""
-    else
-        bc2_arg="--barcode2 ${bc2}"
-    fi
+    # bc = barcode1 + barcode2 if exists.
+    bc=$(echo !{barcodes} | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
+    
     # unzip *fastqc.zip
     export RBENV_VERSION=$(cat !{path_to_ngs_agg}/.ruby-version)
     DATABASE_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
     --bam !{bam} \
     --bai !{bai} \
-    --name "!{params.library}" \
-    --barcode1 ${bc1} ${bc2_arg} \
+    --name !{library} \
+    --barcode1 ${bc}
     --lane !{params.lane} \
     --contact_email !{params.email} \
-    --project "!{params.project}" \
-    --sample "!{params.sample}" \
-    --genome "${genome_name}" \
-    --combined_mbias_records !{mbias} 2> ngs_agg.err 1> ngs_agg.out 
+    --project !{params.project} \
+    --sample !{params.sample} \
+    --genome !{params.genome} \
+    --gc "!{gc_metrics}" \
+    --idx_stats !{idxstat} \
+    --flagstat !{flagstat} \
+    --nonconverted_read_counts "!{nonconverted_counts_tsv}" \ # check that model takes this format right as I am not running sum_nonconverted...
+    --combined_mbias_records !{mbias} \
+    --fastqc !{fastqc_txt} \    # *_fastqc/fastqc_data.txt \
+    --insert !{insertsize_metrics}" \ #
+    --tasmanian !{tasmanian} \
+    --aln !{alignment_summary_metrics_txt} \
+    --metadatafq_file !{metadata_fastq} \
+    --workflow "Automated EM-seq!{dest_modifier}" 2> ngs_agg.err 1> ngs_agg.out
     '''
-    // --gc "!{gc_metrics}" \
+
     //--workflow "Automated EM-seq!{dest_modifier}"
 }
     
-
+d
 
 
 //tuple val(email), 
