@@ -3,7 +3,7 @@ process alignReads {
     label 'cpus_8'
     tag { flowcell }
     conda "python=3.10 bwameth seqtk sambamba fastp mark-nonconverted-reads samtools"
-    publishDir "${library}/bwameth_align"
+    publishDir "${params.flowcell}/${library}/bwameth_align"
 
 
     input:
@@ -17,7 +17,7 @@ process alignReads {
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         path "*_fastp.json", emit: fastp_log_files
-        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
+        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files 
 
     /* 2 caveats in the following shell script:
     1. Could not include  sed 's/.*BC:Z:\([ACTGN-]*\).*@/\1/' (@ symbol to avoid stop commenting this) 
@@ -77,7 +77,7 @@ process mergeAndMarkDuplicates {
     label 'cpus_8'
     errorStrategy 'retry'
     tag { library }
-    publishDir "${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
+    publishDir "${params.flowcell}/${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
     conda "picard"
 
     input:

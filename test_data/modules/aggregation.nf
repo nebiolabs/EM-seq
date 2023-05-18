@@ -4,7 +4,7 @@ path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results_dev/current/"
 process aggregate_emseq {
     cpus 1
     conda "samtools=1.9"
-    publishDir "${library}/ngs-agg"
+    publishDir "${params.flowcell}/${library}/ngs-agg"
 
     input:
          tuple val(library), path(bam), path(bai), val(barcodes),
