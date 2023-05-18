@@ -25,8 +25,8 @@ outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "e
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
-include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics.nf'
-include { aggregate_emseq }                                                                             from './modules/aggregation.nf'
+include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
+include { aggregate_emseq }                                                                             from './modules/aggregation'
 
 
 println "Processing " + params.flowcell + "... => " + outputDir
