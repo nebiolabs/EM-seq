@@ -54,6 +54,5 @@ process aggregate_emseq {
     --aln !{alignment_summary_metrics_txt} \
     --workflow "Automated EM-seq" 2> ngs_agg.err 1> ngs_agg.out
     '''
-// check that nonconvertion model takes this format right as I am not running sum_nonconverted...
 // --metadatafq_file !{metadata_fastq} \
 }
