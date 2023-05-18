@@ -19,7 +19,7 @@ process gc_bias {
 
 process idx_stats {
     label 'cpus_8'
-    tag { flowcell }
+    tag { library }
     conda "samtools"
     publishDir "${library}/stats/idxstats"
 
@@ -27,9 +27,9 @@ process idx_stats {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path(idxstats), emit: for_agg
+        tuple val(library), path("*idxstat"), emit: for_agg
 
-    shell
+    shell:
     '''
     samtools idxstats !{bam} > !{library}.idxstat
     '''
@@ -37,7 +37,7 @@ process idx_stats {
 
 process flag_stats {
     label 'cpus_8'
-    tag { flowcell }
+    tag { library }
     conda "samtools"
     publishDir "${library}/stats/idxstats"
 
@@ -45,9 +45,9 @@ process flag_stats {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path(flagstat), emit: for_agg
+        tuple val(library), path("*flagstat"), emit: for_agg
 
-    shell
+    shell:
     '''
     samtools flagstat -@!{task.cpus} !{bam} > !{library}.flagstat
     '''
@@ -55,15 +55,15 @@ process flag_stats {
 
 process fast_qc {
     cpus 1
-    tag { flowcell }
-    conda "picard"
+    tag { library }
+    conda "fastqc"
     publishDir "${library}/stats/fastqc"
 
     input:
-        tuple val(library), path(bam), path(bai)
+        tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path('*_fastqc.zip'), emit: for_agg 
+        tuple val(library), path('*_fastqc.zip'), emit: for_agg
 
     shell:
     '''
@@ -73,30 +73,30 @@ process fast_qc {
 
 process insert_size_metrics {
     cpus 1
-    tag { flowcell }
+    tag { library }
     conda "picard"
     publishDir "${library}/stats/insert_size"
 
     input:
-        tuple val(library), path(bam), path(bai)
+        tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
         tuple val(library), path('*_metrics'), emit: for_agg
 
     shell:
     '''
-    picard -Xmx16g CollectInsertSizeMetrics VALIDATION_STRINGENCY=SILENT  I=!{bam} O=${library}.insertsize_metrics MINIMUM_PCT=0 HISTOGRAM_FILE=/dev/null
+    picard -Xmx16g CollectInsertSizeMetrics VALIDATION_STRINGENCY=SILENT  I=!{bam} O=!{library}.insertsize_metrics MINIMUM_PCT=0 HISTOGRAM_FILE=/dev/null
     '''
 }
 
 process picard_metrics {
     cpus 1
-    tag { flowcell }
+    tag { library }
     conda "picard"
     publishDir "${library}/stats/picard_alignment_metrics"
 
     input:
-        tuple val(library), path(bam), path(bai)
+        tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
         tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
@@ -109,12 +109,12 @@ process picard_metrics {
 
 process tasmanian {
     label 'cpus_8'
-    tag { flowcell }
+    tag { library }
     publishDir "${library}/stats/tasmanian"
     conda "samtools tasmanian-mismatch"
 
     input:
-        tuple val(library), path(bam), path(bai)
+        tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
         tuple val(library), path('*.csv'), emit: for_agg

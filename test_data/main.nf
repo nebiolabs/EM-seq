@@ -1,6 +1,5 @@
 nextflow.enable.dsl=2
 
-
 /* ------------------------ *
  * INCLUDE IN CONFIG FILE!! *
  * ------------------------ */
@@ -26,7 +25,7 @@ outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "e
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
-include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian } from './modules/compute_statistics.nf'
+include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics.nf'
 include { aggregate_emseq }                                                                             from './modules/aggregation.nf'
 
 
@@ -56,55 +55,34 @@ Channel
 
  workflow {
     main:
+        // process files 
         alignedReads = alignReads( inputChannel )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
         extract      = methylDackel_extract( markDup.md_bams )
         mbias        = methylDackel_mbias( markDup.md_bams )
 
+        // collect statistics
         gcbias       = gc_bias( markDup.md_bams )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
         fastqc       = fast_qc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams )
-        metrics      = picard_metrics( markDup.bams )
-        mismatches   = tasmanian ( markDup.bams )
+        metrics      = picard_metrics( markDup.md_bams )
+        mismatches   = tasmanian ( markDup.md_bams )
 
-        // Channel for aggregation
-        alignedReads.bam_files
-        .join( markDup.md_bams )
+        // Channel for aggregation 
+        markDup.md_bams
+        .join( alignedReads.nonconverted_counts )
         .join( gcbias.for_agg )
         .join( idxstats.for_agg )
         .join( flagstats.for_agg )
         .join( fastqc.for_agg )
         .join( insertsize.for_agg )
-
-        .set{ test_for_aggregation}
-
-        test_for_aggregation.view()
-
-        // aggregate_emseq( mbias.mbias_for_aggregate )
+        .join( mismatches.for_agg )
+        .join( mbias.for_agg)
+        .join( metrics.for_agg)
+        .set{ aggregation_Channel }
+        
+        // aggregate_Channel.view()
+         aggregate_emseq( aggregation_Channel ) 
 }
-
-
-
-//.of( params.email, 
-//params.library, 
-//params.project, 
-//params.sample, 
-//params.barcode, 
-//params.lane, 
-//'genome_name_here', // val(genome_name),  
-//params.genome, // val(genome_fasta), 
-//path(markDup.mardDup.md_bams[1]), 
-//path(markDup.mardDup.md_bams[2]), 
-///* path(fastqc), 
-//path(flagstats), 
-//path(idxstats), 
-//path(noncontrol_gc), */
-//path(bwaMeth.nonconverted_counts), 
-//// path(noncontrol_stats),  ???
-//path(mbias.mbias_output_tsv)
-
-
-// lines 93/94 in https://github.com/nebiolabs/seq-shepherd/blob/d255cef0c0f7dc0d2568908808967019180f3f9f/post_run_scripts/em-seq.nf ?
-// How is cpus requesting more than 4 cpus working?
