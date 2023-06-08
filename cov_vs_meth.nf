@@ -7,6 +7,9 @@ params.genome = '/mnt/galaxy/data/genome/grcm39+meth_controls/bwameth_index/grcm
 params.ucsc_cpg_islands_gtf = '/mnt/home/langhorst/nebnext_projects/em-seq/mouse/grcm39_cpg_islands.gtf.gz'
 
 params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz'
+// methylkit file in percents format:
+    //chrBase chr     base    strand  coverage        freqC   freqT	
+    //CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
 params.high_quality_mk_file = ''
 
 params.bam_files_glob = '*.md.{bam,bam.bai}'
@@ -69,9 +72,10 @@ process methylkit_to_bed {
   
   //chrBase chr     base    strand  coverage        freqC   freqT	
   //CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
+  //format for next step: CM000994.3      3050094    3050095 8   0.00    100.00
   shell:
   '''
-    zcat -f !{mk_file} | awk -v FS='\\t' -v OFS='\\t' '{ print $2,$3-1,$3,$5 }'| gzip > hq_methylkit.bed.gz
+    zcat -f !{mk_file} | awk -v FS='\\t' -v OFS='\\t' '{ print $2,$3-1,$3,$5, $6, $7 }'| gzip > hq_methylkit.bed.gz
   '''
 
 }
@@ -114,12 +118,14 @@ process epd_methylation {
         file 'epd_promoter_methylation.tsv' into epd_promoter_meth
 
     shell:
+    // coverage > 0
+    // %C / 100 (methylation proportion), average over sites within the feature
     '''
     bedtools intersect -nonamecheck \
       -wa -wb -loj \
       -a !{gtf} -b <(bgzip -d < !{bed} ) \
-      | awk -v FS='\\t' -v OFS='\\t' '$14>0 {print $10,$11,$12,$1":"$4-1"-"$5,($15*1.0)/$14 }' \
-      | bedtools groupby -g 4 -o mean -c 5 \
+      | awk -v FS='\\t' -v OFS='\\t' '$13>0 {print $10,$11,$12,$1":"$4-1"-"$5,($14/100)}' \
+      | sort -k4,4 | bedtools groupby -g 4 -o mean -c 5 \
       > epd_promoter_methylation.tsv 
     '''
 }
@@ -180,8 +186,8 @@ process cpg_island_methylation {
     bedtools intersect -nonamecheck \
     -wa -wb -loj \
     -a !{gtf} -b <(bgzip -d < !{bed} ) \
-    | awk -v FS='\\t' -v OFS='\\t' '$14>0 {print $10,$11,$12,$1":"$4-1"-"$5,($15*1.0)/$14 }' \
-    | bedtools groupby -g 4 -o mean -c 5 \
+    | awk -v FS='\\t' -v OFS='\\t' '$13>0 {print $10,$11,$12,$1":"$4-1"-"$5,($14/100) }' \
+    | sort -k4,4 | bedtools groupby -g 4 -o mean -c 5 \
     > cpg_island_methylation.tsv 
     '''
 }
@@ -231,7 +237,7 @@ process refseq_feature_gffs {
         val feature from refseq_feature_types_for_gff
 
     output:
-        tuple feature, file('*.gff') into feature_gff_for_meth
+        tuple feature, file("${feature}.gff") into feature_gff_for_meth
         tuple feature, file('*_flat.saf') into feature_saf_for_counts
 
     shell:
@@ -283,12 +289,16 @@ process refseq_feature_methylation {
         file '*_methylation.tsv' into feature_methylation
         
     shell:
+    // gff 9 columns
+    // e.g. CM000994.3      cmsearch        exon    3172239 3172348 .       +       .       ID=exon-XR_004936710.1-1;Parent=rna-XR_004936710.1;gene_id=115487594;Dbxref=GeneID:115487594,RFAM:RF00026,Genbank:XR_004936710.1,MGI:MGI:5455983;gbkey=ncRNA;gene=Gm26206;inference=COORDINATES: profile:INFERNAL:1.1.1;product=U6 spliceosomal RNA;transcript_id=XR_004936710.1
+    // hq_methylkit: chr, base-1, base, cov, %C, %T
+    // chr, start, end, chr:base-base, methylation proportion -> groupby column 4
     '''
     bedtools intersect -nonamecheck \
     -wa -wb -loj \
     -a !{feature_gff} -b <(bgzip -d < !{bed} ) \
-    | awk -v FS='\\t' -v OFS='\\t' '$14>0 {print $10,$11,$12,$1":"$4-1"-"$5,($15*1.0)/$14 }' \
-    | bedtools groupby -g 4 -o mean -c 5 \
+    | awk -v FS='\\t' -v OFS='\\t' '$13>0 {print $10,$11,$12,$1":"$4-1"-"$5,($14/100) }' \
+    | sort -k4,4 | bedtools groupby -g 4 -o mean -c 5 \
     > !{feature}_methylation.tsv 
     '''
 }
@@ -296,8 +306,7 @@ process refseq_feature_methylation {
 
 feature_saf_for_counts
     .combine(bams_for_refseq.map{ [it[1][0],it[1][1]] } ) //combination of every saf with every bam/bai pair)
-    .groupTuple(by: [0,1])
-    .set{feature_bams_for_refseq}
+    .groupTuple(by: [0,1]).set{feature_bams_for_refseq}
 
 process refseq_feature_counts {
 
