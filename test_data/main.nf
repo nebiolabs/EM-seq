@@ -59,8 +59,9 @@ Channel
         // process files 
         alignedReads = alignReads( inputChannel )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams )
-        mbias        = methylDackel_mbias( markDup.md_bams )
+        mapq_fltrd   = filter_mapq(markDup.md_bams) 
+        extract      = methylDackel_extract( mapq_fltrd.mapq_filtered_bams )
+        mbias        = methylDackel_mbias( mapq_fltrd.mapq_filtered_bams )
 
         // collect statistics
         gcbias       = gc_bias( markDup.md_bams )
