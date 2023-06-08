@@ -96,6 +96,25 @@ process mergeAndMarkDuplicates {
     '''
 }
 
+process filter_mapq {
+    label 'cpus_8'
+    tag { library }
+    publishDir "${params.flowcell}/${library}/mapq_filtered_bams", more: 'copy', pattern: '*.{md.mapq_filtered.bam}*'
+    conda "bioconda::samtools"
 
+    input: 
+        tuple val(library), path(bam), path(bai), val(barcodes)
+
+    output:
+        tuple val(library), path('*md.mapq_filtered.bam'), path('*md.mapq_filtered.bam'), val(barcodes), emit: mapq_filtered_bams
+
+    // bam file should be *md.bam
+    shell:
+    '''
+        bam_new=$(echo !{bam} | sed 's/md.bam/md.mapq_filtered.bam')
+        samtools view -q !{params.min_mapq} !{bam} -bo ${bam_new}
+        samtools index ${bam_new}
+    '''
+}
 
 

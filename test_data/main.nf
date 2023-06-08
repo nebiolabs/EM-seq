@@ -21,6 +21,7 @@ params.sample      = 'test_sample'
 params.barcode     = ''
 params.develop_mode  = false // When set to true, workflow will not exit early. 
 outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
+params.min_mapq = 20 // for methylation assessment.
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
@@ -65,8 +66,8 @@ Channel
         gcbias       = gc_bias( markDup.md_bams )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fast_qc( markDup.md_bams )
-        insertsize   = insert_size_metrics( markDup.md_bams )
+        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
+        insertsize   = insert_size_metrics( markDup.md_bams ) 
         metrics      = picard_metrics( markDup.md_bams )
         mismatches   = tasmanian ( markDup.md_bams )
 

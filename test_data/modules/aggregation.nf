@@ -31,7 +31,7 @@ process aggregate_emseq {
 
     unzip *fastqc.zip
 
-    tail -n +2 !{nonconverted_counts_tsv} | awk -v l=!{library} '{print l"\t"$0}' > !{library}.nonconverted_counts.for_agg.tsv
+    cat !{nonconverted_counts_tsv} | awk -v l=!{library} '{print l"\t"$0}' > !{library}.nonconverted_counts.for_agg.tsv
     
     export RBENV_VERSION=$(cat !{path_to_ngs_agg}/.ruby-version)
     DATABASE_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
