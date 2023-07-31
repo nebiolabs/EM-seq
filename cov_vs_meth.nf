@@ -434,6 +434,8 @@ process combine_counts {
 
     shell:
     '''
+    set +o pipefail
+    
     #constructs the header
     echo -n 'File\t' > combined_feature_counts.tsv
     grep -hve '^\\s*$' -e '^#' !{cpg_counts} | head -n 1 >> combined_feature_counts.tsv
