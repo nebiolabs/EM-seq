@@ -17,7 +17,7 @@ params.bam_files_glob = '*.md.{bam,bam.bai}'
 params.tmp_dir = '/state/partition1/sge_tmp/'
 params.output_dir = 'output'
 params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt'
-params.epd_promoter_bed_url = 'ftp://ccg.epfl.ch/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
+params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
 params.mm10_mm39_chain_url = 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
 //params.dfam_out_file = 'grch38_dfam405_repeat_mask.fa.out'
 
@@ -150,7 +150,6 @@ process epd_promoter_counts{
         -o epd_promoter_counts.tsv *.bam
     '''
 }
-
 
 process clean_cpg_islands_gtf {
     conda "gawk gzip"
@@ -303,7 +302,6 @@ process refseq_feature_methylation {
     '''
 }
 
-
 feature_saf_for_counts
     .combine(bams_for_refseq.map{ [it[1][0],it[1][1]] } ) //combination of every saf with every bam/bai pair)
     .groupTuple(by: [0,1]).set{feature_bams_for_refseq}
@@ -420,6 +418,7 @@ process combine_methylation {
     done    
     '''  
 }
+
 process combine_counts {
     publishDir "$params.output_dir", mode: 'copy'
     //sigpipe errors are expeceted with tail and head commands
