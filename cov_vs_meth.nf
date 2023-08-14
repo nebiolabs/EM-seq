@@ -283,7 +283,7 @@ process combine_feature_methylation {
     for f in !{methylation_files} ; do
         filebase=$(basename "${f}" _methylation.tsv)
         lines=$(wc -l <(grep -ve '^\\s*$' -e '^#' "$f") | cut -f 1 -d ' ')
-        paste <( yes ${filebase} | head -n $lines ) <(grep -ve '^\\s*$' -e '^#' "$f") >> !{sample_id}_!{context}_combined_methylation.tsv
+        paste <( yes ${filebase} | head -n $lines ) <(grep -ve '^\\s*$' -e '^#' "$f") >> !{sample_id}_combined_methylation.tsv
     done    
     '''  
 }
@@ -347,7 +347,7 @@ process feature_violin {
         header = 0,
         names = ['Feature','Locus','Meth']
         )
-        df['Name'] = os.path.basename(file_path).split(".methylKit")[0].replace(r'/_CHG|_CHH|_CG|.md/','')
+        df['Name'] = os.path.basename(file_path).split(".methylKit")[0].replace(r'/_CHG|_CHH|_CpG|.md/','')
         data_frames.append(df)
 
     big_df = pd.concat(data_frames).sort_values(by=['Feature','Name'])
