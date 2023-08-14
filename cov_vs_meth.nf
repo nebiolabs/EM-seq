@@ -11,6 +11,7 @@ params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_
     //chrBase chr     base    strand  coverage        freqC   freqT	
     //CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
 params.high_quality_mk_file = ''
+params.mk_files = '/mnt/mouse_hmc/E14_input_series/individual_reps/*.methylKit.gz'
 
 params.bam_files_glob = '*.md.{bam,bam.bai}'
 
@@ -21,7 +22,8 @@ params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/M_musculus/003/
 params.mm10_mm39_chain_url = 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
 //params.dfam_out_file = 'grch38_dfam405_repeat_mask.fa.out'
 
-Channel.fromPath(params.high_quality_meth_bed, checkIfExists: true).first().set { hq_methylkit }
+Channel.fromPath(params.high_quality_meth_bed).first().set { hq_methylkit }
+Channel.fromPath(params.mk_files).map{ it -> tuple(it.baseName, it.baseName.split(".methylKit")[0].split("_")[-1], it)}.filter{it[1] == "CpG"}.set {methylkits}
 Channel.fromFilePairs(params.bam_files_glob, checkIfExists: true).into{ bams_for_epd; bams_for_cpgs; bams_for_refseq; bams_for_dfam }
 Channel.fromPath(params.ucsc_cpg_islands_gtf, checkIfExists: true).first().set { ucsc_cpg_islands_gtf }
 Channel.value(params.ncbi_assembly_report_url).set { ncbi_assembly_report_url }
@@ -106,30 +108,6 @@ process clean_epd_gtf {
    '''	
 }
 
-process epd_methylation {
-    conda "bedtools=2.29.2 htslib=1.9"
-    publishDir "$params.output_dir", mode: 'copy'
-
-    input:
-        file(gtf) from epd_promoters_gtf
-        file(bed) from hq_methylkit_bed
-
-    output:
-        file 'epd_promoter_methylation.tsv' into epd_promoter_meth
-
-    shell:
-    // coverage > 0
-    // %C / 100 (methylation proportion), average over sites within the feature
-    '''
-    bedtools intersect -nonamecheck \
-      -wa -wb -loj \
-      -a !{gtf} -b <(bgzip -d < !{bed} ) \
-      | awk -v FS='\\t' -v OFS='\\t' '$13>0 {print $10,$11,$12,$1":"$4-1"-"$5,($14/100)}' \
-      | sort -k4,4 | bedtools groupby -g 4 -o mean -c 5 \
-      > epd_promoter_methylation.tsv 
-    '''
-}
-
 process epd_promoter_counts{
     conda "subread=2.0.0"
     cpus 16
@@ -169,28 +147,6 @@ process clean_cpg_islands_gtf {
     '''
 }
 
-process cpg_island_methylation {
-    conda "bedtools=2.29.2 htslib=1.9"
-    publishDir "$params.output_dir", mode: 'copy'
-
-    input:
-        file gtf from cpg_islands_gtf
-        file bed from hq_methylkit_bed
-
-    output:
-        file 'cpg_island_methylation.tsv' into cpg_island_meth
-
-    shell:
-    '''
-    bedtools intersect -nonamecheck \
-    -wa -wb -loj \
-    -a !{gtf} -b <(bgzip -d < !{bed} ) \
-    | awk -v FS='\\t' -v OFS='\\t' '$13>0 {print $10,$11,$12,$1":"$4-1"-"$5,($14/100) }' \
-    | sort -k4,4 | bedtools groupby -g 4 -o mean -c 5 \
-    > cpg_island_methylation.tsv 
-    '''
-}
-
 process cpg_island_counts{
     conda "subread=2.0.0"
     cpus 16
@@ -211,7 +167,6 @@ process cpg_island_counts{
         -o cpg_island_counts.tsv *.bam
     '''
 }
-
 
 process refseq_feature_download {
    conda "curl"
@@ -274,32 +229,63 @@ process refseq_feature_gffs {
     '''
 }
 
+// We now look at methylation for all methylkit files not just the high quality one
+// If you want to use just the "high quality" one for coverage vs methylation analysis you can
+feature_gff_for_meth
+    .concat(cpg_islands_gtf.map{ it -> tuple( "cpg_islands", it)})
+    .concat(epd_promoters_gtf.map { it -> tuple( "epd_promoters", it)})
+    .combine(methylkits)
+    .set{feature_methylation_ch}
 
-process refseq_feature_methylation {
+process feature_methylation {
     tag {feature}
     conda "bedtools=2.29.2 htslib=1.9"
-    publishDir "$params.output_dir", mode: 'copy'
+    publishDir "$params.output_dir/features/$sample_id/$context", mode: 'copy'
 
     input:
-        file bed from hq_methylkit_bed
-        tuple feature, file(feature_gff) from feature_gff_for_meth 
+        tuple val(feature), val(feature_gff), val(sample_id), val(context), path(methylkit) from feature_methylation_ch
 
     output:
-        file '*_methylation.tsv' into feature_methylation
+        tuple val(sample_id), val(context), path('*_methylation.tsv') into feature_methylation_out
         
     shell:
-    // gff 9 columns
-    // e.g. CM000994.3      cmsearch        exon    3172239 3172348 .       +       .       ID=exon-XR_004936710.1-1;Parent=rna-XR_004936710.1;gene_id=115487594;Dbxref=GeneID:115487594,RFAM:RF00026,Genbank:XR_004936710.1,MGI:MGI:5455983;gbkey=ncRNA;gene=Gm26206;inference=COORDINATES: profile:INFERNAL:1.1.1;product=U6 spliceosomal RNA;transcript_id=XR_004936710.1
-    // hq_methylkit: chr, base-1, base, cov, %C, %T
-    // chr, start, end, chr:base-base, methylation proportion -> groupby column 4
+    // gff 9 columns:  CM000994.3      cmsearch        exon    3172239 3172348 .       +       .       ID=exon-X...
+    // input:
+    // chrBase chr     base    strand  coverage        freqC   freqT
+    //CM000994.3.3050095      CM000994.3      3050095 F       4         0.00  100.00
+    // "bed" (with additional columns): chr, base0, base1, methylation fraction, coverage
+    // coverage >= 5
+    // chr, start, end, chr:base0-base1, methylation proportion -> groupby column 4, mean of column 5
     '''
     bedtools intersect -nonamecheck \
     -wa -wb -loj \
-    -a !{feature_gff} -b <(bgzip -d < !{bed} ) \
-    | awk -v FS='\\t' -v OFS='\\t' '$13>0 {print $10,$11,$12,$1":"$4-1"-"$5,($14/100) }' \
+    -a !{feature_gff} -b <(zcat !{methylkit} | awk -v FS='\\t' -v OFS='\\t' 'NR>1 {print $2, $3-1, $3, $6/100, $5}') \
+    | awk -v FS='\\t' -v OFS='\\t' '$14>=5 {print $10,$11,$12,$1":"$4-1"-"$5, $13}' \
     | sort -k4,4 | bedtools groupby -g 4 -o mean -c 5 \
-    > !{feature}_methylation.tsv 
+    > !{feature}_methylation.tsv
     '''
+}
+
+process combine_feature_methylation {
+    publishDir "$params.output_dir/features/$sample_id/$context", mode: 'copy'
+
+    input:
+        tuple val(sample_id), val(context), path(methylation_files) from feature_methylation_out.groupTuple(by: [0,1])
+
+    output:
+        path('*combined_methylation.tsv') into combined_methylation_out
+
+    shell:
+    // makes one combined methylation file for all feature types per library/context
+    '''
+    echo 'Feature	Locus	Meth' > !{sample_id}_!{context}_combined_methylation.tsv
+    #adds a column (tab separated) containing the name of the file being processed (repeated on each line)
+    for f in !{methylation_files} ; do
+        filebase=$(basename "${f}" _methylation.tsv)
+        lines=$(wc -l <(grep -ve '^\\s*$' -e '^#' "$f") | cut -f 1 -d ' ')
+        paste <( yes ${filebase} | head -n $lines ) <(grep -ve '^\\s*$' -e '^#' "$f") >> !{sample_id}_!{context}_combined_methylation.tsv
+    done    
+    '''  
 }
 
 feature_saf_for_counts
@@ -329,6 +315,76 @@ process refseq_feature_counts {
     -o !{feature}_counts.tsv *.bam 
     '''
 }
+
+process feature_violin {
+    cpus 1
+    memory '32 GB'
+    conda "scipy pandas matplotlib seaborn"
+    publishDir "$params.output_dir/features/violin", mode: 'copy'
+
+    input:
+    path(methylation) from combined_methylation_out.collect()
+
+    output:
+    tuple path("*.png"), path("*.tsv")
+    
+    script:
+    """
+    #!/usr/bin/env python
+
+    import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import glob
+    import numpy as np
+
+    data_frames = []
+    for file_path in glob.glob("*combined_methylation.tsv"):
+        df = pd.read_csv(
+        file_path,
+        delimiter = "\t",
+        header = 0,
+        names = ['Feature','Locus','Meth']
+        )
+        df['Name'] = os.path.basename(file_path).split(".methylKit")[0].replace(r'/_CHG|_CHH|_CG|.md/','')
+        data_frames.append(df)
+
+    big_df = pd.concat(data_frames).sort_values(by=['Feature','Name'])
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(16,6))
+
+    plt.subplot(1, 1, 1)
+    v = sns.violinplot(
+        y=big_df["Meth"],
+        x=big_df["Feature"],
+        hue=big_df['Name'],
+        palette = dict(zip(big_df['Name'].unique(), sns.color_palette(n_colors=len(big_df['Name'].unique())))),
+        orient="v",
+        bw='scott',
+        cut=0,
+        legend=False,
+        linewidth=0.25,
+        scale='width'
+    )
+    
+    ax.set_ylabel("Mean methylation level", fontsize=14)
+    ax.tick_params(axis='y', which='major', labelsize=12)
+    ax.tick_params(axis='x',labelrotation=45, labelsize=10)
+    ax.set_xlabel('')
+    plt.tight_layout()
+    plt.savefig(
+    "feature_methylation_violinplot.png",
+    dpi=300
+    )
+
+    means = big_df.groupby(['Feature','Name'],sort=False)['Meth'].mean()
+    counts = big_df.groupby(['Feature','Name'],sort=False)['Meth'].count()
+    means.to_csv('combined_methylation_feature_means.tsv', sep = '\t')
+    counts.to_csv('combined_methylation_feature_counts.tsv', sep = '\t')
+    """
+}
+
 /*
 process dfam_out_to_gtf {
     conda "ucsc-bedtogenepred ucsc-genepredtogtf"
@@ -395,29 +451,6 @@ process dfam_feature_counts {
     '''
 }
 */
-
-process combine_methylation {
-    publishDir "$params.output_dir", mode: 'copy'
-
-    input:
-        //file(dfam_meth) from dfam_methylation
-        file(feature_meth) from feature_methylation.collect()
-        file(cpg_meth) from cpg_island_meth
-        file(epd_meth) from epd_promoter_meth
-    output:
-        file('combined_methylation.tsv') into combined_meth
-
-    shell:
-    '''
-    echo 'File	Locus	Frac Methylated' > combined_methylation.tsv
-    #adds a column (tab separated) containing the name of the file being processed (repeated on each line)
-    for f in !{feature_meth} !{cpg_meth} !{epd_meth} ; do
-        filebase=$(basename "${f}" _methylation.tsv)
-        lines=$(wc -l <(grep -ve '^\\s*$' -e '^#' "$f") | cut -f 1 -d ' ')
-        paste <( yes ${filebase} | head -n $lines ) <(grep -ve '^\\s*$' -e '^#' "$f") >> combined_methylation.tsv
-    done    
-    '''  
-}
 
 process combine_counts {
     publishDir "$params.output_dir", mode: 'copy'
