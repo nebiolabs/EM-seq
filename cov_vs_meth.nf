@@ -326,7 +326,7 @@ process feature_violin {
     path(methylation) from combined_methylation_out.collect()
 
     output:
-    tuple path("*.png"), path("*.tsv")
+    tuple path("*.png"), path("*.svg"), path("*.tsv")
     
     script:
     """
@@ -347,7 +347,7 @@ process feature_violin {
         header = 0,
         names = ['Feature','Locus','Meth']
         )
-        df['Name'] = os.path.basename(file_path).split(".methylKit")[0].replace(r'/_CHG|_CHH|_CpG|.md/','')
+        df['Name'] = os.path.basename(file_path).split(".methylKit")[0].replace('_CpG','')
         data_frames.append(df)
 
     big_df = pd.concat(data_frames).sort_values(by=['Feature','Name'])
@@ -359,7 +359,7 @@ process feature_violin {
         y=big_df["Meth"],
         x=big_df["Feature"],
         hue=big_df['Name'],
-        palette = dict(zip(big_df['Name'].unique(), sns.color_palette(n_colors=len(big_df['Name'].unique())))),
+        palette = dict(zip(big_df['Name'].unique(), sns.color_palette("OrRd", n_colors=len(big_df['Name'].unique())))),
         orient="v",
         bw='scott',
         cut=0,
@@ -376,6 +376,10 @@ process feature_violin {
     plt.savefig(
     "feature_methylation_violinplot.png",
     dpi=300
+    )
+    plt.savefig(
+    "feature_methylation_violinplot.svg",
+    format="svg"
     )
 
     means = big_df.groupby(['Feature','Name'],sort=False)['Meth'].mean()
