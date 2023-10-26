@@ -5,6 +5,7 @@
 flowcell = params.flowcell
 genome = params.genome
 params.tmp_dir = '/tmp'
+params.keep_dupes = true
 outputPath = params.outdir = 'output'
 fastq_mode = params.fastq_mode = 'run_fastqs'
 println "Processing " + flowcell + "... => " + outputPath
@@ -151,7 +152,7 @@ process mergeAndMarkDuplicates {
 
         shell:
         '''
-        MethylDackel extract --methylKit --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} --CHH --CHG -o !{library} !{genome} !{md_file}
+        MethylDackel extract --methylKit !{params.keep_dupes ? '--keepDupes' : ''} --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} --CHH --CHG -o !{library} !{genome} !{md_file}
         pigz -p !{task.cpus} *.methylKit
         '''
 
@@ -296,7 +297,15 @@ process mergeAndMarkDuplicates {
 
         shell:
         '''
-        picard -Xmx4g CollectGcBiasMetrics IS_BISULFITE_SEQUENCED=true VALIDATION_STRINGENCY=LENIENT I=!{md_file} O=!{md_file}.gc_metrics S=!{md_file}.gc_summary_metrics CHART=!{md_file}.gc.pdf R=!{genome}
+        picard -Xmx4g CollectGcBiasMetrics \
+            --IS_BISULFITE_SEQUENCED true \
+            --VALIDATION_STRINGENCY LENIENT \
+            -I !{md_file} \
+            -O !{md_file}.gc_metrics \
+            -S !{md_file}.gc_summary_metrics \
+            -R !{genome} \
+            --CHART !{md_file}.gc.pdf \
+            --ALSO_IGNORE_DUPLICATES'
         '''
     }
 
