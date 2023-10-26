@@ -1,28 +1,49 @@
 #!/usr/bin/env nextflow
- 
-params.genome = '/mnt/galaxy/data/genome/grcm39+meth_controls/bwameth_index/grcm39+meth_controls/grcm39+meth_controls.fa'
 
-//CPG Islands from  UCSC table browser 
-//  	Database: mm39    Primary Table: cpgIslandExt    Row Count: 15,9665   Data downloaded: 2023-01-08
-params.ucsc_cpg_islands_gtf = '/mnt/home/langhorst/nebnext_projects/em-seq/mouse/grcm39_cpg_islands.gtf.gz'
-
-params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz'
 // methylkit file in percents format:
-    //chrBase chr     base    strand  coverage        freqC   freqT	
-    //CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
-params.high_quality_mk_file = ''
-params.mk_files = '/mnt/mouse_hmc/E14_input_series/individual_reps/*.methylKit.gz'
-
+//chrBase chr     base    strand  coverage        freqC   freqT	
+//CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
+params.mk_files = '*.methylKit.gz'
 params.bam_files_glob = '*.md.{bam,bam.bai}'
+params.tmp_dir = '/tmp/'
+params.output_dir = 'cov_vs_meth.output'
+local_ref_files_path = '/mnt/home/langhorst/nebnext_projects/em-seq/em-seq_ref_files'
+params.count_dup_reads = false
+if (params.count_dup_reads) {
+    feature_count_dup_option = ''
+} else {
+    feature_count_dup_option = '--ignoreDup'
+}
+params.mouse = false
+if (params.mouse) {
+    params.genome = local_ref_files_path + '/grcm39+meth_controls.fa'
+    //CPG Islands from  UCSC table browser 
+    //  	Database: mm39    Primary Table: cpgIslandExt    Row Count: 15,9665   Data downloaded: 2023-01-08
+    params.ucsc_cpg_islands_gtf = local_ref_files_path + '/grcm39_cpg_islands.gtf.gz'
+    cpg_chr_lookup = '$10,$5' //switch from chr to genbank naming
+    params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz'
+    params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt'
+    refseq_chr_lookup = '$7,$5' //switch from NC -> genbank naming
+    params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
+    params.old_new_chain_url = 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
+}
 
-params.tmp_dir = '/state/partition1/sge_tmp/'
-params.output_dir = 'output'
-params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt'
-params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
-params.mm10_mm39_chain_url = 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
-//params.dfam_out_file = 'grch38_dfam405_repeat_mask.fa.out'
+params.human_t2t2 = false    
+if (params.human_t2t2) {
+    params.genome = local_ref_files_path + '/T2T_chm13v2.0+bs_controls.fa'
+    //CPG Islands from  UCSC table browser 
+    //Database: hub_3671779_hs1    Primary Table: hub_3671779_cpgIslandExt Data last updated: 2022-02-06
+    //Item Count: 30,616
+    params.ucsc_cpg_islands_gtf = local_ref_files_path + '/t2t2_ucsc_cpg_islands.gtf.gz'
+    cpg_chr_lookup = '$10,$10' //just use column 10 for T2T
+    params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz'
+    params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_assembly_report.txt'
+    refseq_chr_lookup = '$7,$10' //switch from NC -> chr1 naming
+    params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/human/006/Hs_EPDnew_006_hg38.bed'
+    params.old_new_chain_url = 'https://hgdownload.soe.ucsc.edu/goldenPath/hs1/liftOver/hg38-chm13v2.over.chain.gz'
+    //params.dfam_out_file = 'grch38_dfam405_repeat_mask.fa.out' //TODO: add dfam support
+}
 
-Channel.fromPath(params.high_quality_meth_bed).first().set { hq_methylkit }
 Channel.fromPath(params.mk_files).map{ it -> tuple(it.baseName, it.baseName.split(".methylKit")[0].split("_")[-1], it)}.filter{it[1] == "CpG"}.set {methylkits}
 Channel.fromFilePairs(params.bam_files_glob, checkIfExists: true).into{ bams_for_epd; bams_for_cpgs; bams_for_refseq; bams_for_dfam }
 Channel.fromPath(params.ucsc_cpg_islands_gtf, checkIfExists: true).first().set { ucsc_cpg_islands_gtf }
@@ -30,7 +51,7 @@ Channel.value(params.ncbi_assembly_report_url).set { ncbi_assembly_report_url }
 //Channel.value(file(params.dfam_out_file)).set { dfam_out }
 Channel.value(params.refseq_gff_url).set { refseq_gff_url }
 Channel.value(params.epd_promoter_bed_url).set { epd_promoter_bed_url }
-Channel.value(params.mm10_mm39_chain_url).set { mm10_mm39_chain_url }
+Channel.value(params.old_new_chain_url).set { old_new_chain_url }
   
 // 'mobile_genetic_element' not present in mouse col 3
 Channel.from(['transcriptional_cis_regulatory_region', 'enhancer','promoter',
@@ -41,7 +62,7 @@ process fetch_chain_file {
   conda "curl"
 
   input: 
-    val url from mm10_mm39_chain_url
+    val url from old_new_chain_url
   output: 
     file('*.chain.gz') into chain_file
 
@@ -64,23 +85,23 @@ process fetch_refseq_assembly_report {
    ''' 
 }
 
-process methylkit_to_bed {
-  conda "gawk gzip" 
+// process methylkit_to_bed {
+//   conda "gawk gzip" 
   
-  input: 
-    val mk_file from hq_methylkit
-  output:
-    file('*.bed.gz') into hq_methylkit_bed
+//   input: 
+//     val mk_file from hq_methylkit
+//   output:
+//     file('*.bed.gz') into hq_methylkit_bed
   
-  //chrBase chr     base    strand  coverage        freqC   freqT	
-  //CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
-  //format for next step: CM000994.3      3050094    3050095 8   0.00    100.00
-  shell:
-  '''
-    zcat -f !{mk_file} | awk -v FS='\\t' -v OFS='\\t' '{ print $2,$3-1,$3,$5, $6, $7 }'| gzip > hq_methylkit.bed.gz
-  '''
+//   //chrBase chr     base    strand  coverage        freqC   freqT	
+//   //CM000994.3.3050095      CM000994.3      3050095 F       8         0.00  100.00
+//   //format for next step: CM000994.3      3050094    3050095 8   0.00    100.00
+//   shell:
+//   '''
+//     zcat -f !{mk_file} | awk -v FS='\\t' -v OFS='\\t' '{ print $2,$3-1,$3,$5, $6, $7 }'| gzip > hq_methylkit.bed.gz
+//   '''
 
-}
+// }
 
 process clean_epd_gtf {
    conda "curl ucsc-bedtogenepred ucsc-genepredtogtf crossmap"
@@ -95,16 +116,17 @@ process clean_epd_gtf {
 
    shell:
    '''
+     
      curl -fsSL "!{url}" \
        | tr ' ' '\t' \
        | bedToGenePred /dev/stdin /dev/stdout \
        | genePredToGtf file /dev/stdin /dev/stdout \
-       > epd_promoters_mm10.gtf && \
-       CrossMap.py gff !{chain_file} epd_promoters_mm10.gtf epd_promoters_mm39.gtf
+       > epd_promoters_oldref.gtf && \
+       CrossMap.py gff !{chain_file} epd_promoters_oldref.gtf epd_promoters_newref.gtf
        
      awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
        <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print $10,$5}' | tr -d '\\r')  \
-       <(zcat -f epd_promoters_mm39.gtf | grep -v '^#') > epd_promoters.gtf
+       <(zcat -f epd_promoters_newref.gtf | grep -v '^#') > epd_promoters.gtf
    '''	
 }
 
@@ -121,7 +143,7 @@ process epd_promoter_counts{
 
     shell:
     '''
-    featureCounts --primary --ignoreDup -Q 10 -M -f -o -O --fraction -p -P -B -C \
+    featureCounts --primary !{feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
         -a !{gtf} \
         --tmpDir !{params.tmp_dir} \
         -T !{task.cpus} \
@@ -140,7 +162,7 @@ process clean_cpg_islands_gtf {
     shell:
     '''
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
-      <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print $10,$5}' | tr -d '\\r')  \
+      <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print !{cpg_chr_lookup}}' | tr -d '\\r')  \
       <(zcat -f !{ucsc_cpg_gtf} | grep -v '^#') \
     |  awk -v FS='\t' -v OFS='\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
     > cpg_islands.uniqname.gtf
@@ -149,6 +171,7 @@ process clean_cpg_islands_gtf {
 
 process cpg_island_counts{
     conda "subread=2.0.0"
+    publishDir "$params.output_dir", mode: 'copy'
     cpus 16
 
     input:
@@ -160,7 +183,7 @@ process cpg_island_counts{
 
     shell:
     '''
-    featureCounts --primary --ignoreDup -Q 10 -M -f -o -O --fraction -p -P -B -C \
+    featureCounts --primary !{feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
         -a !{gtf} \
         --tmpDir !{params.tmp_dir} \
         -T !{task.cpus} \
@@ -197,7 +220,7 @@ process refseq_feature_gffs {
     shell:
     '''
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
-     <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print $7,$5}' | tr -d '\\r')  \
+     <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print !{refseq_chr_lookup}}' | tr -d '\\r')  \
      <(zcat -f !{gff} | grep -v '^#') \
     | grep "GeneID:" \
     | grep -P -v "_alt\\t" \
@@ -306,7 +329,7 @@ process refseq_feature_counts {
 
     shell:
     '''
-    featureCounts --primary --ignoreDup -Q 10 -M -f -O --fraction -p -P -B -C \
+    featureCounts --primary !{feature_count_dup_option} -Q 10 -M -f -O --fraction -p -P -B -C \
     -a !{feature_saf} -F SAF\
     -t !{feature} \
     -g 'ID' \
@@ -445,7 +468,7 @@ process dfam_feature_counts {
 
     shell:
     '''
-        featureCounts --primary --ignoreDup -Q 10 -M -f -o -O --fraction -p -P -B -C \
+        featureCounts --primary !{feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
         -a !{gtf} \
         -t transcript \
         -g 'transcript_id' \
