@@ -88,7 +88,7 @@ process mergeAndMarkDuplicates {
         cpus 8
         errorStrategy 'retry'
         tag {library}
-        conda "methyldackel=0.4.0 samtools=1.9"
+        conda "methyldackel=0.6.1 pigz=2.6 samtools=1.18"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_mbias.groupTuple()
@@ -141,7 +141,7 @@ process mergeAndMarkDuplicates {
         cpus 8
         tag {library}
         publishDir "${outputPath}", mode: 'copy'
-        conda "methyldackel=0.4.0 pigz=2.4"
+        conda "methyldackel=0.6.1 pigz=2.6 samtools=1.18"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_extract.groupTuple()
@@ -376,7 +376,7 @@ process mergeAndMarkDuplicates {
     process multiqc {
         cpus 1
         publishDir "${outputPath}", mode: 'copy'
-        conda "multiqc=1.7"
+        conda "multiqc=1.16"
 
         input:
             file('*') from fastqc_results.flatten().toList()
@@ -462,7 +462,7 @@ process mergeAndMarkDuplicates {
 
     process combine_mbias_svg {
         publishDir "${outputPath}", mode: 'copy', pattern: 'combined*'
-        conda 'cairosvg=2.4.2 ghostscript=9.22'
+        conda 'cairosvg=2.7.1 ghostscript=10.02.0'
 
         input:
             file(svg) from mbias_output_svg.groupTuple()
