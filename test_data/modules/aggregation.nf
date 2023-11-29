@@ -1,4 +1,4 @@
-path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results_dev/current/"
+path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/current/"
 //"/Users/aerijman/Documents/new_ngs/newer/ngs-aggregate_results"
 
 process aggregate_emseq {
@@ -53,7 +53,8 @@ process aggregate_emseq {
     --insert !{insertsize_metrics} \
     --tasmanian !{tasmanian} \
     --aln !{alignment_summary_metrics_txt} \
-    --workflow "Automated EM-seq" 2> ngs_agg.err 1> ngs_agg.out
+    --workflow !{params.workflow} 2> ngs_agg.err 1> ngs_agg.out
     '''
+    // add number of chimeras!
 // --metadatafq_file !{metadata_fastq} \
 }

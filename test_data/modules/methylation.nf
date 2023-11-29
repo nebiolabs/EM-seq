@@ -68,8 +68,7 @@ process methylDackel_extract {
 
         shell:
         '''
-        MethylDackel extract --methylKit --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} --CHH --CHG -o !{library}.!{barcodes} !{params.genome} !{md_bam}
-        pigz -p !{task.cpus} *.methylKit
+        MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} --CHH --CHG -o !{library}.!{barcodes} !{params.genome} !{md_bam} 
+        pigz -p !{task.cpus} *.methylKit 
         '''
-
     }

@@ -39,7 +39,7 @@ process flag_stats {
     label 'cpus_8'
     tag { library }
     conda "samtools"
-    publishDir "${params.flowcell}/${library}/stats/idxstats"
+    publishDir "${params.flowcell}/${library}/stats/flagstats"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -74,7 +74,7 @@ process fast_qc {
 process insert_size_metrics {
     cpus 1
     tag { library }
-    conda "picard"
+    conda "picard samtools"
     publishDir "${params.flowcell}/${library}/stats/insert_size"
 
     input:
@@ -85,7 +85,37 @@ process insert_size_metrics {
 
     shell:
     '''
-    picard -Xmx16g CollectInsertSizeMetrics VALIDATION_STRINGENCY=SILENT  I=!{bam} O=!{library}.insertsize_metrics MINIMUM_PCT=0 HISTOGRAM_FILE=/dev/null
+    # Above params.min_mapq value (default=20)
+    echo "insert_size   2bparsedByRailsModel" > !{library}_insertsize_metrics
+
+    mkfifo good_mapq
+    mkfifo bad_mapq
+    samtools view -hq20 -U bad_mapq !{bam} > good_mapq &
+
+    picard -Xmx16g CollectInsertSizeMetrics --VALIDATION_STRINGENCY SILENT -I good_mapq -O temp.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    picard -Xmx16g CollectInsertSizeMetrics --VALIDATION_STRINGENCY SILENT -I bad_mapq -O temp2.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+
+    while [[ ! -f "temp.out.txt" || ! -f "temp2.out.txt" ]]; do sleep 2; done
+
+    rm -f good_mapq bad_mapq
+
+    cat temp.out.txt | awk -v mapq=">=!{params.min_mapq}" '
+        BEGIN{n="_"; cols=""}
+        {
+            if (length($0)==0) {} 
+            else if (n!="_"){
+                for (i=0; i<4-NF;i++) {cols=cols"\t0"};
+                print $0""cols"\\t"mapq; cols=""} 
+            else {print $0}; 
+            if ($1~/^insert_size/) {n=mapq;} 
+        }' > !{library}_insertsize_metrics
+        
+    # Below params.min_mapq value 
+    cat temp2.out.txt | awk -v mapq="<!{params.min_mapq}" 'BEGIN{n="_";cols=""}{ if (length($0)==0) {} else if (n!="_"){
+        for (i=0; i<4-NF;i++) {cols=cols"\t0"}; print $0""cols"\\t"mapq; cols=""}; if ($1~/^insert_size/) {n=mapq;}}' \
+    >> !{library}_insertsize_metrics
+
+    # We could have 2 (fr) or 3 columns (fr AND rf) columns. BTW, we need 4 columns for the model to accept this data. We fill the rest with zeros 
     '''
 }
 

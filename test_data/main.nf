@@ -19,9 +19,12 @@ params.tile        = 'all'
 params.project     = 'test_project'
 params.sample      = 'test_sample'
 params.barcode     = ''
+params.workflow    = 'Automated EM-seq'
 params.develop_mode  = false // When set to true, workflow will not exit early. 
 outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 params.min_mapq = 20 // for methylation assessment.
+params.max_input_reads = -1 // default is not downsampling 
+params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
@@ -59,9 +62,8 @@ Channel
         // process files 
         alignedReads = alignReads( inputChannel )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        mapq_fltrd   = filter_mapq(markDup.md_bams) 
-        extract      = methylDackel_extract( mapq_fltrd.mapq_filtered_bams )
-        mbias        = methylDackel_mbias( mapq_fltrd.mapq_filtered_bams )
+        extract      = methylDackel_extract( markDup.md_bams )
+        mbias        = methylDackel_mbias( markDup.md_bams )
 
         // collect statistics
         gcbias       = gc_bias( markDup.md_bams )
