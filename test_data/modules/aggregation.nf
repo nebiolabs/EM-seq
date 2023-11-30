@@ -24,6 +24,9 @@ process aggregate_emseq {
     // barcode should be split by "-" as bc1-bc2 
     shell:
     '''
+
+    # Workaround that has to be deleted later: make workflow different for each library.
+
     genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
 
     # bc = barcode1 + barcode2 if exists.
@@ -53,7 +56,7 @@ process aggregate_emseq {
     --insert !{insertsize_metrics} \
     --tasmanian !{tasmanian} \
     --aln !{alignment_summary_metrics_txt} \
-    --workflow !{params.workflow} 2> ngs_agg.err 1> ngs_agg.out
+    --workflow !{params.workflow}_!{library} 2> ngs_agg.err 1> ngs_agg.out
     '''
     // add number of chimeras!
 // --metadatafq_file !{metadata_fastq} \
