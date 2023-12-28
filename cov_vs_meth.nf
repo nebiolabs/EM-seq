@@ -342,7 +342,7 @@ process refseq_feature_counts {
 process feature_violin {
     cpus 1
     memory '32 GB'
-    conda "scipy pandas matplotlib seaborn"
+    conda "python=3.11 scipy pandas matplotlib seaborn"
     publishDir "$params.output_dir/features/violin", mode: 'copy'
 
     input:
