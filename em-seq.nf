@@ -141,7 +141,7 @@ process mergeAndMarkDuplicates {
         cpus 8
         tag {library}
         publishDir "${outputPath}", mode: 'copy'
-        conda "methyldackel=0.4.0 pigz=2.4"
+        conda "methyldackel=0.4.0 pigz=2.8"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_extract.groupTuple()
@@ -243,6 +243,7 @@ process mergeAndMarkDuplicates {
     process samtools_flagstats {
         cpus 2
         errorStrategy 'retry'
+        publishDir "${outputPath}", mode: 'copy'
         tag { library }
         conda "samtools=1.9"
 
@@ -376,7 +377,7 @@ process mergeAndMarkDuplicates {
     process multiqc {
         cpus 1
         publishDir "${outputPath}", mode: 'copy'
-        conda "multiqc=1.7"
+        conda "multiqc=1.17"
 
         input:
             file('*') from fastqc_results.flatten().toList()
