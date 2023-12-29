@@ -8,4 +8,13 @@ There are 3 [nextflow](https://www.nextflow.io/) scripts:
 A GRCh38 reference genome containing spike-in methylation controls is available via an amazon s3 bucket: s3://neb-em-seq-sra/grch38_core+bs_controls.fa 
 or via https: https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bbs_controls.fa
 
+To use the Nextflow v1 scripts in this repository you need an older version of nextflow. 
+```
+NXF_VER=22.10.4 nextflow run em-seq.nf --genome em-seq_ref_files/T2T_chm13v2.0+bs_controls.fa --flowcell AAC27FDF --fastq_glob '*_R{1,2}.fastq*' -resume
+```
+We hope to upgrade to the v2 syntax in the future.
+
+You may also be interested in the [nf-core methylseq project](https://nf-co.re/methylseq/2.5.0)
+
+
 See https://www.biorxiv.org/content/10.1101/2019.12.20.884692v2 for method details and use of these tools.
