@@ -34,6 +34,9 @@ if (params.human_t2t2) {
     //CPG Islands from  UCSC table browser 
     //Database: hub_3671779_hs1    Primary Table: hub_3671779_cpgIslandExt Data last updated: 2022-02-06
     //Item Count: 30,616
+    //could not find a stable link to this annotation...  get a gtf formatted file this file interactively from 
+    // https://genome.ucsc.edu/cgi-bin/hgTables?https://genome.ucsc.edu/cgi-bin/hgTables?hgsid=1849378212_nz80NzvGAMarzhkhsaEcT896jhoM&clade=mammal&org=Human&db=hs1&hgta_group=regulation&hgta_track=hub_3671779_clinVar20220313&hgta_table=0&hgta_regionType=genome
+
     params.ucsc_cpg_islands_gtf = local_ref_files_path + '/t2t2_ucsc_cpg_islands.gtf.gz'
     cpg_chr_lookup = '$10,$10' //just use column 10 for T2T
     params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz'
