@@ -444,7 +444,7 @@ process mergeAndMarkDuplicates {
         publishDir "${outputPath}", mode: 'copy', pattern: 'combined*'
 
         input:
-            file(tsv) from mbias_output_tsv
+            file(tsv) from mbias_output_tsv.collect()
 
         output:
             file "combined-mbias.tsv"
@@ -465,7 +465,7 @@ process mergeAndMarkDuplicates {
         conda 'cairosvg=2.4.2 ghostscript=9.22'
 
         input:
-            file(svg) from mbias_output_svg.groupTuple()
+            file(svg) from mbias_output_svg.collect()
 
         output:
             file "combined-mbias.pdf"
