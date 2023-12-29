@@ -1,20 +1,18 @@
 // this consumes fastq files, adapter trims, then aligns reads to the specified reference using bwa-meth
-// mode can be set to tile_fastqs or run_fastqs depending on whether the system should map each tile's reads in distinct jobs then combine (tile_fastqs)
-// or all reads for a library in a single job (run_fastqs)
+// it then marks duplicates and calculates various metrics
 
-flowcell = params.flowcell
-genome = params.genome
-params.tmp_dir = '/tmp'
-outputPath = params.outdir = 'output'
-fastq_mode = params.fastq_mode = 'run_fastqs'
+flowcell = params.flowcell // this is the flowcell name, used for naming output files e.g. JWDRF
+genome = params.genome // this is the reference genome, used for alignment - it should already be indexed by bwa-meth
+params.tmp_dir = '/tmp' // this is the temporary directory for intermediate files
+outputPath = params.outdir = 'output' // this is the output directory for all files
 println "Processing " + flowcell + "... => " + outputPath
 
-fastq_glob = params.fastq_glob ?: '*.{1,2}.fastq*'
+fastq_glob = params.fastq_glob ?: '*.{1,2}.fastq*' // this is the glob pattern to match pairs of fastq files - the default is for picard demultipexed files, for standard illumina naming use '*_R{1,2}*.fastq*'
 Channel.fromFilePairs(fastq_glob)
     .map{ lib,read -> [flowcell: flowcell, library:lib, insert_read1:read[0], insert_read2:read[1], barcode:'N', lane:'all', tile:'all' ]}.set{fq_set_channel}
     
 process mapping {
-    cpus fastq_mode == 'tile-fastq' ? 4 : 16
+    cpus 16
     errorStrategy 'retry'
     tag { [flowcell, fq_set.library] }
     conda "bwameth=0.2.2 seqtk=1.3 sambamba=0.7.0 fastp=0.20.1 mark-nonconverted-reads=1.1"
@@ -396,7 +394,6 @@ process mergeAndMarkDuplicates {
 
         shell:
         '''
-        for file in $(cat input.* | sed -e 's/\\[//g' | sed -e 's/, \\|\\]/\\n/g'); do ln -s ${file} ./; done
         cat <<CONFIG > multiqc_config.yaml 
     title: Bwameth Alignment Summary - !{flowcell}
     extra_fn_clean_exts:
