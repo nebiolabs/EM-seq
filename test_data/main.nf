@@ -10,6 +10,7 @@ params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 /* --------------- *
  * INPUT ARGUMENTS *
  * --------------- */
+params.read_length = 76
 params.email       = 'testing@emseq.neb.com'
 params.flowcell    = 'N'
 params.genome      = 'undefined'

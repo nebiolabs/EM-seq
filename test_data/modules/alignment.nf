@@ -46,8 +46,9 @@ process alignReads {
         trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
         echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     }
-
+    
     downsampling=$([[ !{params.max_input_reads} != -1 ]] && echo  " | seqtk sample -s!{params.downsample_seed} /dev/stdin !{params.max_input_reads}" || echo "")
+    # add reformat.sh from bbmap
 
     if $( echo !{input_file} | grep -q ".bam$")
     then
@@ -70,6 +71,7 @@ process alignReads {
 
     eval ${bam2fastq_or_fqmerge} ${downsampling} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
+    | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,!{params.read_length})} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${fastq_barcode}_!{params.flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
     | samtools view -hb /dev/stdin \
