@@ -71,7 +71,7 @@ def convert_to_binary(fasta_dict):
 	cpg_bin_dict = {}
 	for chrom in fasta_dict:
 		print(chrom)
-		seq = "".join(fasta_dict[chrom])
+		seq = "".join(fasta_dict[chrom]).upper()
 		bin_dict[chrom] = [0] * len(seq)
 		cpg_bin_dict[chrom] = [0] * len(seq)
 		cgs = [cg.start() for cg in re.finditer("CG", seq)]
