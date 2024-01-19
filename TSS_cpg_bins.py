@@ -293,6 +293,8 @@ def run_script():
 	
 	if args.binary_fasta:
 		bin_dict = parse_fasta(args.binary_fasta)
+		for chrom in bin_dict:
+			bin_dict[chrom] = bin_dict[chrom][0]
 		if args.binary_methylkit:
 			cpg_bin_dict = parse_fasta(args.binary_methylkit)
 		else:
