@@ -62,18 +62,18 @@ Channel
     main:
         // process files 
         alignedReads = alignReads( inputChannel )
-        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams )
-        mbias        = methylDackel_mbias( markDup.md_bams )
-
-        // collect statistics
-        gcbias       = gc_bias( markDup.md_bams )
-        idxstats     = idx_stats( markDup.md_bams )
-        flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
-        insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams )
-        mismatches   = tasmanian ( markDup.md_bams )
+//        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+//        extract      = methylDackel_extract( markDup.md_bams )
+//        mbias        = methylDackel_mbias( markDup.md_bams )
+//
+//        // collect statistics
+//        gcbias       = gc_bias( markDup.md_bams )
+//        idxstats     = idx_stats( markDup.md_bams )
+//        flagstats    = flag_stats( markDup.md_bams )
+//        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
+//        insertsize   = insert_size_metrics( markDup.md_bams ) 
+//        metrics      = picard_metrics( markDup.md_bams )
+//        mismatches   = tasmanian ( markDup.md_bams )
 
 
         // Channel for aggregation 
