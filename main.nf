@@ -28,7 +28,7 @@ params.max_input_reads = -1 // default is not downsampling
 params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
-include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
+//include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 //include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 //include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
 //include { aggregate_emseq }                                                                             from './modules/aggregation'
@@ -60,8 +60,9 @@ Channel
 
  workflow {
     main:
+    inputChannel.view()
         // process files 
-        alignedReads = alignReads( inputChannel )
+//        alignedReads = alignReads( inputChannel )
 //        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
 //        extract      = methylDackel_extract( markDup.md_bams )
 //        mbias        = methylDackel_mbias( markDup.md_bams )
