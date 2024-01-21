@@ -13,7 +13,7 @@ process methylDackel_mbias {
         output:
             path('*.svg'), emit: mbias_output_svg
             path('*.tsv'), emit: mbias_output_tsv
-            tuple val(library), path('*.tsv'), emit: for_agg
+            tuple val(params.email), val(library), path('*.tsv'), emit: for_agg
 
         shell:
         '''

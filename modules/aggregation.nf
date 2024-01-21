@@ -7,8 +7,8 @@ process aggregate_emseq {
     publishDir "${params.flowcell}/${library}/ngs-agg"
 
     input:
-         tuple val(library), path(bam), path(bai), val(barcodes),
-               path(nonconverted_counts_tsv),
+         tuple val(email), val(library), val(barcodes), path(metadata_fastq), path(nonconverted_counts_tsv)
+               path(bam), path(bai), 
                path(gc_metrics),
                path(idxstat),
                path(flagstat),
@@ -56,8 +56,8 @@ process aggregate_emseq {
     --insert !{insertsize_metrics} \
     --tasmanian !{tasmanian} \
     --aln !{alignment_summary_metrics_txt} \
+    --metadatafq_file !{metadata_fastq} \
     --workflow !{params.workflow}_!{library} 2> ngs_agg.err 1> ngs_agg.out
     '''
     // add number of chimeras!
-// --metadatafq_file !{metadata_fastq} \
 }

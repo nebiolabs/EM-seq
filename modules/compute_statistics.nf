@@ -9,7 +9,7 @@ process gc_bias {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path('*gc_metrics'), emit: for_agg
+        tuple val(params.email), val(library), path('*gc_metrics'), emit: for_agg
 
     shell:
     '''
@@ -27,7 +27,7 @@ process idx_stats {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path("*idxstat"), emit: for_agg
+        tuple val(params.email), val(library), path("*idxstat"), emit: for_agg
 
     shell:
     '''
@@ -45,7 +45,7 @@ process flag_stats {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path("*flagstat"), emit: for_agg
+        tuple val(params.email), val(library), path("*flagstat"), emit: for_agg
 
     shell:
     '''
@@ -63,7 +63,7 @@ process fast_qc {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path('*_fastqc.zip'), emit: for_agg
+        tuple val(params.email), val(library), path('*_fastqc.zip'), emit: for_agg
 
     shell:
     '''
@@ -81,7 +81,7 @@ process insert_size_metrics {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path('*_metrics'), emit: for_agg
+        tuple val(params.email), val(library), path('*_metrics'), emit: for_agg
 
     shell:
     '''
@@ -129,7 +129,7 @@ process picard_metrics {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
+        tuple val(params.email), val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
 
     shell:
     '''
@@ -147,7 +147,7 @@ process tasmanian {
         tuple val(library), path(bam), path(bai), val(barcodes)
 
     output:
-        tuple val(library), path('*.csv'), emit: for_agg
+        tuple val(params.email), val(library), path('*.csv'), emit: for_agg
 
     shell:
     '''
