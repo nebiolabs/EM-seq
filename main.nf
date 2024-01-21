@@ -77,17 +77,17 @@ Channel
 
 
         // Channel for aggregation 
-        markDup.md_bams
-        .join( alignedReads.nonconverted_counts )
-        .join( gcbias.for_agg )
-        .join( idxstats.for_agg )
-        .join( flagstats.for_agg )
-        .join( fastqc.for_agg )
-        .join( insertsize.for_agg )
-        .join( mismatches.for_agg )
-        .join( mbias.for_agg)
-        .join( metrics.for_agg)
-        .set{ aggregation_Channel }
+//        markDup.md_bams
+//        .join( alignedReads.nonconverted_counts )
+//        .join( gcbias.for_agg )
+//        .join( idxstats.for_agg )
+//        .join( flagstats.for_agg )
+//        .join( fastqc.for_agg )
+//        .join( insertsize.for_agg )
+//        .join( mismatches.for_agg )
+//        .join( mbias.for_agg)
+//        .join( metrics.for_agg)
+//        .set{ aggregation_Channel }
 
 
         // Channel for aggregation
@@ -102,21 +102,6 @@ Channel
         .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
         .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
         .set{ aggregation_Channel }
-
-
-        if (params.bam_mode != "bam") {
-        joined_aggregates = email_lib_project_sample_barcode_lane.join(md_files_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(fastqc_results_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(flagstats_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(idxstats_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(noncontrol_gc_stats_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(nonconverted_counts_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(noncontrol_stats_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(mbias_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(tasmanian_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(picard_metrics_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            .join(metadata_fastq_for_aggregate.groupTuple(by: [0,1]), by: [0,1])
-                            // .view()
 
 
         // aggregate_Channel.view()
