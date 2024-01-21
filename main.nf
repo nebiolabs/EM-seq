@@ -28,10 +28,10 @@ params.max_input_reads = -1 // default is not downsampling
 params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
-//include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
-//include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
-//include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
-//include { aggregate_emseq }                                                                             from './modules/aggregation'
+include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
+include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
+include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
+include { aggregate_emseq }                                                                             from './modules/aggregation'
 
 
 println "Processing " + params.flowcell + "... => " + outputDir
@@ -60,21 +60,20 @@ Channel
 
  workflow {
     main:
-    inputChannel.view()
         // process files 
-//        alignedReads = alignReads( inputChannel )
-//        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-//        extract      = methylDackel_extract( markDup.md_bams )
-//        mbias        = methylDackel_mbias( markDup.md_bams )
+        alignedReads = alignReads( inputChannel )
+        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+        extract      = methylDackel_extract( markDup.md_bams )
+        mbias        = methylDackel_mbias( markDup.md_bams )
 
-//        // collect statistics
-//        gcbias       = gc_bias( markDup.md_bams )
-//        idxstats     = idx_stats( markDup.md_bams )
-//        flagstats    = flag_stats( markDup.md_bams )
-//        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
-//        insertsize   = insert_size_metrics( markDup.md_bams ) 
-//        metrics      = picard_metrics( markDup.md_bams )
-//        mismatches   = tasmanian ( markDup.md_bams )
+        // collect statistics
+        gcbias       = gc_bias( markDup.md_bams )
+        idxstats     = idx_stats( markDup.md_bams )
+        flagstats    = flag_stats( markDup.md_bams )
+        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
+        insertsize   = insert_size_metrics( markDup.md_bams ) 
+        metrics      = picard_metrics( markDup.md_bams )
+        mismatches   = tasmanian ( markDup.md_bams )
 
 
         // Channel for aggregation 
