@@ -29,9 +29,9 @@ params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
-include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
-include { aggregate_emseq }                                                                             from './modules/aggregation'
+//include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
+//include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
+//include { aggregate_emseq }                                                                             from './modules/aggregation'
 
 
 println "Processing " + params.flowcell + "... => " + outputDir
@@ -65,7 +65,7 @@ Channel
 //        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
 //        extract      = methylDackel_extract( markDup.md_bams )
 //        mbias        = methylDackel_mbias( markDup.md_bams )
-//
+
 //        // collect statistics
 //        gcbias       = gc_bias( markDup.md_bams )
 //        idxstats     = idx_stats( markDup.md_bams )
@@ -106,4 +106,5 @@ Channel
 //
 //        // aggregate_Channel.view()
 //         aggregate_emseq( aggregation_Channel ) 
+
 }
