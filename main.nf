@@ -77,34 +77,34 @@ Channel
 
 
         // Channel for aggregation 
-//        markDup.md_bams
-//        .join( alignedReads.nonconverted_counts )
-//        .join( gcbias.for_agg )
-//        .join( idxstats.for_agg )
-//        .join( flagstats.for_agg )
-//        .join( fastqc.for_agg )
-//        .join( insertsize.for_agg )
-//        .join( mismatches.for_agg )
-//        .join( mbias.for_agg)
-//        .join( metrics.for_agg)
-//        .set{ aggregation_Channel }
-
+/*        markDup.md_bams
+        .join( alignedReads.nonconverted_counts )
+        .join( gcbias.for_agg )
+        .join( idxstats.for_agg )
+        .join( flagstats.for_agg )
+        .join( fastqc.for_agg )
+        .join( insertsize.for_agg )
+        .join( mismatches.for_agg )
+        .join( mbias.for_agg)
+        .join( metrics.for_agg)
+        .set{ aggregation_Channel2 }.view()
+*/
 
         // Channel for aggregation
-        alignReads.for_agg.groupTuple(by: [0,1])
-        .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-        .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-        .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-        .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-        .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-        .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-        .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        .set{ aggregation_Channel }
+        alignedReads.for_agg.groupTuple(by: [0, 1])
+         .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+         .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+         .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+         .set{ aggregation_Channel }
 
 
-        // aggregate_Channel.view()
-         aggregate_emseq( aggregation_Channel ) 
-
+        // aggregation_Channel.view()
+        aggregate_emseq( aggregation_Channel ) 
+        
 }

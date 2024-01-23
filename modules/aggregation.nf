@@ -7,7 +7,7 @@ process aggregate_emseq {
     publishDir "${params.flowcell}/${library}/ngs-agg"
 
     input:
-         tuple val(email), val(library), val(barcodes), path(metadata_fastq), path(nonconverted_counts_tsv)
+         tuple val(email), val(library), val(barcodes), path(metadata_fastq), path(nonconverted_counts_tsv),
                path(bam), path(bai), 
                path(gc_metrics),
                path(idxstat),
@@ -30,7 +30,7 @@ process aggregate_emseq {
     genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
 
     # bc = barcode1 + barcode2 if exists.
-    bc=$(echo !{barcodes} | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
+    bc=$(echo !{barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
 
     unzip *fastqc.zip
 

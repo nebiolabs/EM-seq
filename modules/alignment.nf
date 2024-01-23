@@ -15,12 +15,12 @@ process alignReads {
               val(genome)
 
     output:
+        tuple val(params.email), val(library), env(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         path "*_fastp.json", emit: fastp_log_files
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
         env(bam_barcode), emit: seen_barcode
-        tuple val(params.email), val(library), val(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), emit: for_agg
 
     /* 2 caveats in the following shell script:
     1. Could not include  sed 's/.*BC:Z:\([ACTGN-]*\).*@/\1/' (@ symbol to avoid stop commenting this) 
@@ -71,7 +71,7 @@ process alignReads {
     fi
 
     eval ${bam2fastq_or_fqmerge} ${downsampling} \
-    | tee > (paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{lane}_!{tile}.fq.gz) \
+    | tee >(paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{lane}_!{tile}.fq.gz) \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,!{params.read_length})} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
@@ -79,7 +79,7 @@ process alignReads {
     | samtools view -hb /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
     bam_barcode=$(samtools view ${bam_filename} | head -n1 | cut -f3 -d ":")
-    zcat !{library}_*.fq.gz | gzip > !{library}.fq.gz  #for metadata_fastq_channel
+    # zcat !{library}_*.fq.gz | gzip > !{library}.fq.gz  #for metadata_fastq_channel
     '''
 }
 
