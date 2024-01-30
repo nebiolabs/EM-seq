@@ -8,14 +8,12 @@ process alignReads {
 
 
     input:
-        tuple val(flowcell), 
-              path(input_file),
-              val(lane),
-              val(tile),
-              val(genome)
+        tuple path(read1_or_bam),
+              path(read2),
+              val(barcodes)
 
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), emit: for_agg
+        tuple val(params.email), val(library), val(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         path "*_fastp.json", emit: fastp_log_files
@@ -37,11 +35,11 @@ process alignReads {
     '''
     # set -eo pipefail
 
-    barcodes=$(samtools view !{input_file} | head -n 10000 | grep -o BC:Z:[ACTGN-]* | awk '{tot++; arr[$1]++}END{for (i in arr) { print i"\t"arr[i]/tot*100} }' | sort -k2nr | head -n1 | awk '{print substr($1,6,length($1))}')
-    
+    # barcodes=$(samtools view !{input_file} | head -n 10000 | grep -o BC:Z:[ACTGN-]* | awk '{tot++; arr[$1]++}END{for (i in arr) { print i"\t"arr[i]/tot*100} }' | sort -k2nr | head -n1 | awk '{print substr($1,6,length($1))}')
+
     shared_operations() {
-        bwa_mem_log_filename="!{library}_${fastq_barcode}!{flowcell}_!{lane}_!{tile}.log.bwamem"
-        bam_filename="!{library}_${fastq_barcode}_${barcodes}_!{flowcell}_!{lane}_!{tile}.aln.bam"
+        bwa_mem_log_filename="!{library}_${fastq_barcode}!{params.flowcell}_!{params.lane}_!{params.tile}.log.bwamem"
+        bam_filename="!{library}_${fastq_barcode}_${barcodes}_!{params.flowcell}_!{params.lane}_!{params.tile}.aln.bam"
         rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
         inst_name=$(echo $fastq_barcode | sed 's/^@//')
         trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
@@ -71,11 +69,11 @@ process alignReads {
     fi
 
     eval ${bam2fastq_or_fqmerge} ${downsampling} \
-    | tee >(paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{lane}_!{tile}.fq.gz) \
+    | tee >(paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{params.lane}_!{params.tile}.fq.gz) \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,!{params.read_length})} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
-    | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${fastq_barcode}_!{params.flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
+    | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${fastq_barcode}_!{params.flowcell}_!{params.lane}_!{params.tile}.nonconverted.tsv" \
     | samtools view -hb /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
     bam_barcode=$(samtools view ${bam_filename} | head -n1 | cut -f3 -d ":")

@@ -6,6 +6,8 @@ nextflow.enable.dsl=2
 params.default_dest_path = '/mnt/galaxy/tmp/users'
 params.tmp_dir           =  'tmp' // params['other_paths'].tmp_dir
 params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
+params.input_files_type  = 'This needs to be specified as bam or fastq'
+params.input_file_delim  = ',' // the provided input file with filenames
 
 /* --------------- *
  * INPUT ARGUMENTS *
@@ -36,6 +38,34 @@ include { aggregate_emseq }                                                     
 
 println "Processing " + params.flowcell + "... => " + outputDir
 println "Cmd line: $workflow.commandLine"
+
+
+// Reading file names and barcodes from a file makes it compatible to
+// both internal and external use. At NEB we will need to pass the 
+// values from the sample sheet into the file that is used in this wf.
+// tile and lane should have been merged priot to executing this pipeline
+
+inputChannel = Channel
+    .fromPath(params.input_file)
+    .splitCsv(sep: params.input_file_delim)
+
+    // input_file content -> filename.bam, fake_file, barcode1-barcode2
+    // fake file is to match the input set cardinality to alignment, as there is no 
+    // conditional input in nextflow (https://groups.google.com/g/nextflow/c/_ygESaTlCXg/m/zBEmF1glJgAJ)
+    if (params.input_files_type == 'bam')
+        inputChannel = inputChannel.map { row -> tuple( file(row[0]), file('not_a_file'), row[1] )}
+
+    // input_file content -> read1.fastq, read2.fastq, barcode1-barcode2
+    else if (params.input_files_type == 'fastq' || params.input_files_type == 'fastq.gz')
+        inputChannel = InputChannel.map { row -> tuple( file(row[0]), file(row[1]), row[2] )}
+
+    // include lane, tile, flowcell and genome data into channel in first process. 
+    /*.map{  -> 
+       [flowcell: params.flowcell,
+        input_file: filename,
+        lane: params.lane,
+        tile: params.tile,
+        genome: params.genome ]} */
 
 
 // This channel will search bam OR fastq. Since we do the matching in bash
@@ -75,20 +105,6 @@ Channel
         metrics      = picard_metrics( markDup.md_bams )
         mismatches   = tasmanian ( markDup.md_bams )
 
-
-        // Channel for aggregation 
-/*        markDup.md_bams
-        .join( alignedReads.nonconverted_counts )
-        .join( gcbias.for_agg )
-        .join( idxstats.for_agg )
-        .join( flagstats.for_agg )
-        .join( fastqc.for_agg )
-        .join( insertsize.for_agg )
-        .join( mismatches.for_agg )
-        .join( mbias.for_agg)
-        .join( metrics.for_agg)
-        .set{ aggregation_Channel2 }.view()
-*/
 
         // Channel for aggregation
         alignedReads.for_agg.groupTuple(by: [0, 1])
