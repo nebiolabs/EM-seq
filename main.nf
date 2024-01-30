@@ -44,7 +44,6 @@ println "Cmd line: $workflow.commandLine"
 // both internal and external use. At NEB we will need to pass the 
 // values from the sample sheet into the file that is used in this wf.
 // tile and lane should have been merged priot to executing this pipeline
-
 inputChannel = Channel
     .fromPath(params.input_file)
     .splitCsv(sep: params.input_file_delim)
@@ -58,35 +57,6 @@ inputChannel = Channel
     // input_file content -> read1.fastq, read2.fastq, barcode1-barcode2
     else if (params.input_files_type == 'fastq' || params.input_files_type == 'fastq.gz')
         inputChannel = InputChannel.map { row -> tuple( file(row[0]), file(row[1]), row[2] )}
-
-    // include lane, tile, flowcell and genome data into channel in first process. 
-    /*.map{  -> 
-       [flowcell: params.flowcell,
-        input_file: filename,
-        lane: params.lane,
-        tile: params.tile,
-        genome: params.genome ]} */
-
-
-// This channel will search bam OR fastq. Since we do the matching in bash
-// (because if it's bam, we don't want to write to disk but make the fastq
-// files on the fly), we exclude the read2. We will include it inside the 
-// bash script during alignment. So glob for fastq SHOULD ONLY INCLUDE read1
-// and NOT read2. E.g. *[\._-]1.fastq
-
-// modify glob later to 2 channels. Bam and Fastq and concat them!
-Channel
-    .fromPath(params.input_glob)
-    .filter{ it.name =~ /(\.bam|1\.fastq)$/ }
-    .ifEmpty {error "${params.input_glob} could not find any required file."}
-    .map{ filename -> 
-       [flowcell: params.flowcell,
-        input_file: filename,
-        lane: params.lane,
-        tile: params.tile,
-        genome: params.genome ]}
-    .set{ inputChannel }
-
 
  workflow {
     main:
