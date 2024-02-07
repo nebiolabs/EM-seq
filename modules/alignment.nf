@@ -3,7 +3,7 @@ process alignReads {
     //label 'cpus_8'
     cpus 8
     tag { flowcell }
-    conda "python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
+    conda "python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4 mamba"
     publishDir "${params.flowcell}/${library}/bwameth_align"
 
 
