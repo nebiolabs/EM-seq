@@ -92,7 +92,7 @@ process mergeAndMarkDuplicates {
     errorStrategy 'retry'
     tag { library }
     publishDir "${params.flowcell}/${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
-    conda "picard samtools"
+    conda "bioconda::picard=3.1 bioconda::samtools=1.19"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes) 
