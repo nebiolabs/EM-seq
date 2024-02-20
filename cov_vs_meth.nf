@@ -125,7 +125,7 @@ process clean_epd_gtf {
        | bedToGenePred /dev/stdin /dev/stdout \
        | genePredToGtf file /dev/stdin /dev/stdout \
        > epd_promoters_oldref.gtf && \
-       CrossMap.py gff !{chain_file} epd_promoters_oldref.gtf epd_promoters_newref.gtf
+       CrossMap gff !{chain_file} epd_promoters_oldref.gtf epd_promoters_newref.gtf
        
      awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
        <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print $10,$5}' | tr -d '\\r')  \
