@@ -60,7 +60,7 @@ process alignReads {
 
     else  
         read1=!{input_file}
-        read2=$(ls -l ${read1} | awk '{print $NF}' | 's/1.fastq/2.fastq/')
+        read2=$(readlink ${read1} | awk '{print $NF}' | sed -E 's/1.fastq/2.fastq/')
         if [ ${#read2} -eq 0 ]; then 
             echo "fastq files HAVE TO END WITH 1.fastq and 2.fastq" && exit
         fi
