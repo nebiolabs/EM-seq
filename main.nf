@@ -1,33 +1,43 @@
 nextflow.enable.dsl=2
-
+include { inferReadLength } from './modules/input_processing'
 /* ------------------------ *
- * INCLUDE IN CONFIG FILE!! *
+ * INCLUDE IN CONFIG FILE!! * //TODO: why !! these are NEB internal parameters?
  * ------------------------ */
 params.default_dest_path = '/mnt/galaxy/tmp/users'
-params.tmp_dir           =  'tmp' // params['other_paths'].tmp_dir
+params.tmp_dir           =  '/tmp' // params['other_paths'].tmp_dir
 params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 
 /* --------------- *
  * INPUT ARGUMENTS *
  * --------------- */
-params.read_length = 76
-params.email       = 'testing@emseq.neb.com'
-params.flowcell    = 'N'
-params.genome      = 'undefined'
 params.input_glob  =  '*.{1,2}.fastq*'
+
+Channel.fromPath(params.input_glob, checkIfExists: true) // this just checks that the files exist, actual channel is set up later
+
+params.read_length = inferReadLength(params.input_glob)
+
+params.email = 'whoami'.execute().text.trim() + '@' + 'hostname -d'.execute().text.trim()
+println "Using email: ${params.email}"
+
+//TODO: try to infer the flowcell using the illumina read naming convention, prompt the user if not possible
+params.flowcell    = params.flowcell ?: channel.prompt("Please enter the flowcell: ")
+params.genome      = ''
+if (!file(params.genome).exists()) {
+    error "Genome path '${params.genome}' does not exist"
+}
 params.lane        = 'all'
 params.tile        = 'all'
 params.project     = 'test_project'
 params.sample      = 'test_sample'
-params.barcode     = ''
-params.workflow    = 'Automated EM-seq'
+params.barcode     = '' //TODO: infer from bam/fastq, cannot be a parameter to the whole workflow
+params.workflow    = 'EM-seq' //TODO: embed workflow version here
 params.develop_mode  = false // When set to true, workflow will not exit early. 
-outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
+outputDir = 'em-seq_output' //TODO: fix this params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 params.min_mapq = 20 // for methylation assessment.
-params.max_input_reads = -1 // default is not downsampling 
+params.max_input_reads = -1 // number of reads to use from each library default(-1) to skip downsampling
 params.downsample_seed = 42
 
-// include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
+// include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided' //TODO: what is this?
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
@@ -45,9 +55,9 @@ println "Cmd line: $workflow.commandLine"
 // and NOT read2. E.g. *[\._-]1.fastq
 
 // modify glob later to 2 channels. Bam and Fastq and concat them!
-Channel
+inputChannel = Channel
     .fromPath(params.input_glob)
-    .filter{ it.name =~ /(\.bam|1\.fastq)$/ }
+    .filter{ it.name =~ /(\.bam|\.1\.fastq(?:\.gz)?)$/ }
     .ifEmpty {error "${params.input_glob} could not find any required file."}
     .map{ filename -> 
        [flowcell: params.flowcell,
@@ -55,7 +65,6 @@ Channel
         lane: params.lane,
         tile: params.tile,
         genome: params.genome ]}
-    .set{ inputChannel }
 
 
  workflow {
