@@ -54,8 +54,7 @@ process alignReads {
     then
         fastq_barcode=$(samtools view -F 2304 !{input_file} | head -n1 | cut -d ":" -f1);
         shared_operations;
-        # samtools collate -@!{task.cpus} !{input_file} !{input_file}.collate
-        bam2fastq_or_fqmerge=" samtools collate -@!{task.cpus} !{input_file} -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
+        bam2fastq_or_fqmerge=" samtools collate -@ 2 !{input_file} -O | samtools fastq -n -@ 2 /dev/stdin"
         # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
     else  
