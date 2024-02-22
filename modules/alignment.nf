@@ -1,7 +1,6 @@
 
 process alignReads {
-    //label 'cpus_8'
-    cpus 8
+    cpus 16
     tag { flowcell }
     conda "python=3.10 bwameth seqtk sambamba fastp mark-nonconverted-reads samtools"
     publishDir "${params.flowcell}/${library}/bwameth_align"
