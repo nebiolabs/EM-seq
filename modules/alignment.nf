@@ -87,7 +87,7 @@ process mergeAndMarkDuplicates {
     cpus 8
     errorStrategy 'retry'
     tag { library }
-    publishDir "${params.flowcell}/${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
+    publishDir params.outputDir, mode: 'copy', pattern: '*.md.ba*'
     conda "picard samtools"
 
     input:

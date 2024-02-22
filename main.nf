@@ -31,9 +31,8 @@ params.project     = 'test_project'
 params.sample      = 'test_sample'
 params.barcode     = '' //TODO: infer from bam/fastq, cannot be a parameter to the whole workflow
 params.workflow    = 'EM-seq' //TODO: embed workflow version here
-params.develop_mode  = false // When set to true, workflow will not exit early. 
-outputDir = 'em-seq_output' //TODO: fix this params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
-params.min_mapq = 20 // for methylation assessment.
+params.outputDir   = 'em-seq_output'
+params.min_mapq    = 20 // for methylation assessment.
 params.max_input_reads = -1 // number of reads to use from each library default(-1) to skip downsampling
 params.downsample_seed = 42
 
