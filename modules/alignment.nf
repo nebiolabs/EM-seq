@@ -83,12 +83,11 @@ process alignReads {
 // We don't have to use picard and hence we don't neeed optical distance.
 // Also, to write the least we need to the disk, I piped samblaster in the previous step.
 process mergeAndMarkDuplicates {
-    label 'cpus_8'
     cpus 8
     errorStrategy 'retry'
     tag { library }
     publishDir params.outputDir, mode: 'copy', pattern: '*.md.ba*'
-    conda "picard samtools"
+    conda "bioconda::picard-slim=3.1.1 bioconda::samtools=1.19.2" //TODO: make this more explicit with picard-slim and samtools at same versions as elsewhere
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes) 
@@ -111,10 +110,9 @@ process find_soft_clips {
      * see alignment_metrics.rb or the picard tool for more information. Perhaps, older
      * versions of the picard tool will contain this information. 
      */ 
-    label 'cpus_8'
     tag { library }
     publishDir "${params.flowcell}/${library}/softclips", more: 'copy', pattern: '*.{cigar_stats.tsv}*'
-    conda "bioconda::samtools"
+    conda "bioconda::samtools=1.19.2"
 
     input: 
         tuple val(library), path(bam), path(bai), val(barcodes)

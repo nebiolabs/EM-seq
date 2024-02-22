@@ -2,6 +2,7 @@
 process gc_bias {
     cpus 1
     tag { library }
+    conda "bioconda::picard-slim=3.1.1"
     publishDir params.outputDir, mode: 'copy'
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -11,14 +12,14 @@ process gc_bias {
 
     shell:
     '''
-    picard -Xmx4g CollectGcBiasMetrics IS_BISULFITE_SEQUENCED=true VALIDATION_STRINGENCY=SILENT I=!{bam} O=!{library}.gc_metrics S=!{library}.gc_summary_metrics CHART=!{library}.gc.pdf R=!{params.genome}
+    picard -Xmx4g CollectGcBiasMetrics --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
+        -I !{bam} -O !{library}.gc_metrics -S !{library}.gc_summary_metrics --CHART !{library}.gc.pdf -R !{params.genome}
     '''
 }
 
 process idx_stats {
-    label 'cpus_8'
     tag { library }
-    conda "samtools"
+    conda "bioconda::samtools=1.19.2"
     publishDir params.outputDir, mode: 'copy'
 
     input:
@@ -34,9 +35,8 @@ process idx_stats {
 }
 
 process flag_stats {
-    label 'cpus_8'
     tag { library }
-    conda "samtools"
+    conda "bioconda::samtools=1.19.2"
     publishDir params.outputDir, mode: 'copy'
 
     input:
@@ -51,10 +51,10 @@ process flag_stats {
     '''
 }
 
-process fast_qc {
+process fastqc {
     cpus 1
     tag { library }
-    conda "fastqc"
+    conda "bioconda::fastqc=0.12.1"
     publishDir params.outputDir, mode: 'copy'
 
     input:
@@ -72,7 +72,7 @@ process fast_qc {
 process insert_size_metrics {
     cpus 1
     tag { library }
-    conda "picard samtools"
+    conda "bioconda::picard-slim=3.1.1 bioconda::samtools=1.19.2"
     publishDir params.outputDir, mode: 'copy'
 
     input:
@@ -120,7 +120,7 @@ process insert_size_metrics {
 process picard_metrics {
     cpus 1
     tag { library }
-    conda "picard"
+    conda "bioconda::picard-slim=3.1.1 bioconda::samtools=1.19.2"
     publishDir params.outputDir, mode: 'copy'
 
     input:
@@ -136,10 +136,9 @@ process picard_metrics {
 }
 
 process tasmanian {
-    label 'cpus_8'
     tag { library }
     publishDir params.outputDir, mode: 'copy'
-    conda "samtools tasmanian-mismatch"
+    conda "bioconda::samtools=1.19.2 bioconda::tasmanian-mismatch=1.0.7"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)

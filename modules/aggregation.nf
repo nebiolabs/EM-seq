@@ -3,7 +3,7 @@ path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/current/"
 
 process aggregate_emseq {
     cpus 1
-    conda "samtools=1.9"
+    conda "bioconda::samtools=1.19.2"
 
 
     input:

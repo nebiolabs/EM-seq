@@ -1,10 +1,9 @@
 
 
 process methylDackel_mbias {
-        label 'cpus_8'
         errorStrategy 'retry'
         tag "${library}"
-        conda "methyldackel samtools"
+        conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.19.2 conda-forge::pigz=2.8"
         publishDir params.outputDir, mode: 'copy'
 
         input:
@@ -55,7 +54,6 @@ process methylDackel_mbias {
 
 
 process methylDackel_extract {
-        label 'cpus_8'
         tag "${library}"
         publishDir params.outputDir mode: 'copy'
         conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.19.2 conda-forge::pigz=2.8"
