@@ -15,10 +15,9 @@ process alignReads {
               val(genome)
 
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), emit: for_agg
+        tuple val(params.email), val(library), env(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
-        path "*_fastp.json", emit: fastp_log_files
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
         env(bam_barcode), emit: seen_barcode
 
