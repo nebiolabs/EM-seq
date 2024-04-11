@@ -13,7 +13,7 @@ process alignReads {
               path(input_file2),
               val(lane),
               val(tile),
-              val(genome)
+              val(genome),
               val(fileType)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
