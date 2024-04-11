@@ -82,7 +82,7 @@ process alignReads {
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    bam2fastq="| samtools collate -@!{task.cpus} !{input_file} -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
+    bam2fastq="| samtools collate -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
     eval ${downsampling} ${bam2fastq}  \
