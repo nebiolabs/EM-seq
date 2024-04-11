@@ -108,7 +108,7 @@ process fetch_refseq_assembly_report {
 // }
 
 process clean_epd_gtf {
-   conda "curl ucsc-bedtogenepred ucsc-genepredtogtf crossmap"
+   conda "curl ucsc-bedtogenepred ucsc-genepredtogtf crossmap=0.7.0"
 
    input: 
        val(url) from epd_promoter_bed_url
