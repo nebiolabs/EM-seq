@@ -32,7 +32,7 @@ process alignReads {
     */ 
     shell:
 
-    def library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
+    library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
     // def bamFile = (fileType == "bam") ? "${library}.bam" : null
     '''
     # set -eo pipefail   
