@@ -57,7 +57,7 @@ process alignReads {
     # | tr -c "[ACGTN]" "\t"
     }    
 
-    case ${fileType} in 
+    case !{fileType} in 
         "fastq_paired_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
