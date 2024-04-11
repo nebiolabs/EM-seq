@@ -9,11 +9,12 @@ process alignReads {
 
     input:
         tuple val(flowcell), 
-              path(input_file),
+              path(input_file1),
+              path(input_file2),
               val(lane),
               val(tile),
               val(genome)
-
+              val(fileType)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*fq.gz"), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
@@ -31,45 +32,60 @@ process alignReads {
     */ 
     shell:
 
-    library = input_file.baseName.replaceFirst(/.fastq|.bam/,"")
-
+    def library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
+    def bamFile = (fileType == "bam") ? "${library}.bam" : null
     '''
-    # set -eo pipefail
+    # set -eo pipefail   
 
-    barcodes=$(samtools view -H !{input_file} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
-    
-    shared_operations() {
-        bwa_mem_log_filename="!{library}_${fastq_barcode}!{flowcell}_!{lane}_!{tile}.log.bwamem"
-        bam_filename="!{library}_${fastq_barcode}_${barcodes}_!{flowcell}_!{lane}_!{tile}.aln.bam"
-        rg_id="@RG\\tID:${fastq_barcode}\\tSM:!{library}"
-        inst_name=$(echo $fastq_barcode | sed 's/^@//')
-        trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
-        echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
+    get_nreads_from_fastq() {
+        zcat -f $1 | wc -l \
+        | awk '{
+            frac=!{params.max_input_reads}/$1; 
+            if (frac>=1) {frac=0.999}; 
+            split(frac, numParts, "."); print numParts[2]
+            }'
     }
+
+    barcodes_from_fastq () {
+    zcat -f $1 \
+    | awk '{
+        if (NR%4==1) {
+            split($0, parts, ":"); 
+            arr[ parts[ length(parts) ] ]++
+        }} END { for (i in arr) {print arr[i]"\t"i} }' \
+    | sort -k1nr | head -n1 | cut -f2 
+    # | tr -c "[ACGTN]" "\t"
+    }    
+
+    case ${fileType} in 
+        "fastq_paired_end")
+            barcodes=($(barcodes_from_fastq !{input_file1}))
+            n_reads=$(get_nreads_from_fastq !{input_file1})
+            downsampling="samtools import -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -s!{params.downsample_seed}.${n_reads} "
+            ;;
+        "bam")
+            barcodes=$(samtools view -H !{input_file1} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
+            n_reads=$(samtools view -c !{input_file1} | awk '{frac=!{params.max_input_reads}/$1; if (frac>=1) {frac=0.999}; split(frac, parts, "."); print parts[2]}')
+            downsampling="samtools view -s!{params.downsample_seed}.${n_reads} "
+            ;;
+        "fastq_single_end")
+            barcodes=($(barcodes_from_fastq !{input_file1}))
+            n_reads=$(get_nreads_from_fastq !{input_file1})
+            downsampling="samtools import -s !{input_file1} -O bam -@!{task.cpus} | samtools view -s!{params.downsample_seed}.${n_reads} "
+            ;;
+    esac
+
+    bwa_mem_log_filename="!{library}_!{barcodes}_!{flowcell}_!{lane}_!{tile}.log.bwamem"
+    bam_filename="!{library}_${barcodes}_!{flowcell}_!{lane}_!{tile}.aln.bam"
+    rg_id="@RG\\tID:${barcodes}\\tSM:!{library}"
+    inst_name=$(echo $barcodes | sed 's/^@//')
+    trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
+    echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    downsampling=$([[ !{params.max_input_reads} != -1 ]] && echo  " | seqtk sample -s!{params.downsample_seed} /dev/stdin !{params.max_input_reads}" || echo "")
-    # add reformat.sh from bbmap
+    bam2fastq="| samtools collate -@!{task.cpus} !{input_file} -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
+    # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
-    if $( echo !{input_file} | grep -q ".bam$")
-    then
-        fastq_barcode=$(samtools view -F 2304 !{input_file} | head -n1 | cut -d ":" -f1);
-        shared_operations;
-        # samtools collate -@!{task.cpus} !{input_file} !{input_file}.collate
-        bam2fastq_or_fqmerge=" samtools collate -@!{task.cpus} !{input_file} -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
-        # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
-
-    else  
-        read1=!{input_file}
-        read2=$(ls -l ${read1} | awk '{print $NF}' | 's/1.fastq/2.fastq/')
-        if [ ${#read2} -eq 0 ]; then 
-            echo "fastq files HAVE TO END WITH 1.fastq and 2.fastq" && exit
-        fi
-        fastq_barcode=$(zcat -f ${read1} | head -n 1 | cut -d ":" -f1)
-        shared_operations;
-        bam2fastq_or_fqmerge="seqtk mergepe <(zcat -f ${read1}) <(zcat -f ${read2})"
-    fi
-
-    eval ${bam2fastq_or_fqmerge} ${downsampling} \
+    eval ${downsampling} ${bam2fastq}  \
     | tee >(paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{lane}_!{tile}.fq.gz) \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,!{params.read_length})} else print $0 }' \

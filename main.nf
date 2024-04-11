@@ -38,73 +38,75 @@ println "Processing " + params.flowcell + "... => " + outputDir
 println "Cmd line: $workflow.commandLine"
 
 
-// This channel will search bam OR fastq. Since we do the matching in bash
-// (because if it's bam, we don't want to write to disk but make the fastq
-// files on the fly), we exclude the read2. We will include it inside the 
-// bash script during alignment. So glob for fastq SHOULD ONLY INCLUDE read1
-// and NOT read2. E.g. *[\._-]1.fastq
+// detect bam or fastq (or fastq.gz)
+def detectFileType(file) {
+    file_str = file.toString()
+    if (file_str.endsWith('.bam')) {
+        return 'bam'
+    } else if (file_str.endsWith('_R1.fastq.gz') || file_str.endsWith('_1.fastq.gz') || file_str.endsWith('_R1.fastq') || file_str.endsWith('_1.fastq')) {
+        // read2 exists for paired-end FASTQ?
+        def read2File = file_str.replace('_R1.fastq', '_R2.fastq').replace('_1.fastq', '_2.fastq')
+        if (new File(read2File).exists()) {
+            return 'fastq_paired_end'
+        } else {
+            return 'fastq_single_end'
+        }
+    } else {
+        return 'unknown'
+    }
+}
 
-// modify glob later to 2 channels. Bam and Fastq and concat them!
 Channel
     .fromPath(params.input_glob)
-    .filter{ it.name =~ /(\.bam|1\.fastq)$/ }
-    .ifEmpty {error "${params.input_glob} could not find any required file."}
-    .map{ filename -> 
-       [flowcell: params.flowcell,
-        input_file: filename,
-        lane: params.lane,
-        tile: params.tile,
-        genome: params.genome ]}
-    .set{ inputChannel }
+    .map { input_file ->
+        def fileType = detectFileType(input_file)
+        def read1File = input_file
+        def read2File = '' // fake it to have the same number of elements in the tuple.
+        if (fileType == 'fastq_paired_end') {
+            read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.', '_2.')
+        }
+        def flowcell = params.flowcell
+        def lane = params.lane
+        def tile = params.tile
+        def genome = params.genome
+        return [flowcell, read1File, read2File, lane, tile, genome, fileType]
+    }.set{ inputChannel}
+
 
 
  workflow {
     main:
+        inputChannel.view()
         // process files 
-        alignedReads = alignReads( inputChannel )
-        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams )
-        mbias        = methylDackel_mbias( markDup.md_bams )
-
-        // collect statistics
-        gcbias       = gc_bias( markDup.md_bams )
-        idxstats     = idx_stats( markDup.md_bams )
-        flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
-        insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams )
-        mismatches   = tasmanian ( markDup.md_bams )
-
-
-        // Channel for aggregation 
-/*        markDup.md_bams
-        .join( alignedReads.nonconverted_counts )
-        .join( gcbias.for_agg )
-        .join( idxstats.for_agg )
-        .join( flagstats.for_agg )
-        .join( fastqc.for_agg )
-        .join( insertsize.for_agg )
-        .join( mismatches.for_agg )
-        .join( mbias.for_agg)
-        .join( metrics.for_agg)
-        .set{ aggregation_Channel2 }.view()
-*/
-
-        // Channel for aggregation
-        alignedReads.for_agg.groupTuple(by: [0, 1])
-         .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-         .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-         .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-         .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-         .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-         .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-         .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-         .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-         .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-         .set{ aggregation_Channel }
-
-
-        // aggregation_Channel.view()
-        aggregate_emseq( aggregation_Channel ) 
+//        alignedReads = alignReads( inputChannel )
+//        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+//        extract      = methylDackel_extract( markDup.md_bams )
+//        mbias        = methylDackel_mbias( markDup.md_bams )
+//
+//        // collect statistics
+//        gcbias       = gc_bias( markDup.md_bams )
+//        idxstats     = idx_stats( markDup.md_bams )
+//        flagstats    = flag_stats( markDup.md_bams )
+//        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
+//        insertsize   = insert_size_metrics( markDup.md_bams ) 
+//        // add Matt's pair_orientation.py from seq-shepherd.
+//        metrics      = picard_metrics( markDup.md_bams )
+//        mismatches   = tasmanian ( markDup.md_bams )
+//
+//        // Channel for aggregation
+//        alignedReads.for_agg.groupTuple(by: [0, 1])
+//         .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//         .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+//         .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+//         .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+//         .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+//         .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+//         .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+//         .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//         .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//         .set{ aggregation_Channel }
+//
+//        // aggregation_Channel.view()
+//        aggregate_emseq( aggregation_Channel ) 
         
 }
