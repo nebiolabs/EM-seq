@@ -61,7 +61,7 @@ Channel
     .map { input_file ->
         def fileType = detectFileType(input_file)
         def read1File = input_file
-        def read2File = input_file // fake it to have the same number of elements in the tuple.
+        def read2File = "doesnotexist" // fake it to have the same number of elements in the tuple.
         if (fileType == 'fastq_paired_end') {
             read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.', '_2.')
         }
