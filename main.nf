@@ -24,7 +24,7 @@ params.workflow    = 'Automated EM-seq'
 params.develop_mode  = false // When set to true, workflow will not exit early. 
 outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 params.min_mapq = 20 // for methylation assessment.
-params.max_input_reads = -1 // default is not downsampling 
+params.max_input_reads = 100000000 // default is not downsampling 
 params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
@@ -76,37 +76,37 @@ Channel
 
  workflow {
     main:
-        inputChannel.view()
+        //inputChannel.view()
         // process files 
-//        alignedReads = alignReads( inputChannel )
-//        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-//        extract      = methylDackel_extract( markDup.md_bams )
-//        mbias        = methylDackel_mbias( markDup.md_bams )
-//
-//        // collect statistics
-//        gcbias       = gc_bias( markDup.md_bams )
-//        idxstats     = idx_stats( markDup.md_bams )
-//        flagstats    = flag_stats( markDup.md_bams )
-//        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
-//        insertsize   = insert_size_metrics( markDup.md_bams ) 
-//        // add Matt's pair_orientation.py from seq-shepherd.
-//        metrics      = picard_metrics( markDup.md_bams )
-//        mismatches   = tasmanian ( markDup.md_bams )
-//
-//        // Channel for aggregation
-//        alignedReads.for_agg.groupTuple(by: [0, 1])
-//         .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//         .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-//         .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-//         .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-//         .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-//         .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-//         .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
-//         .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//         .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//         .set{ aggregation_Channel }
-//
-//        // aggregation_Channel.view()
-//        aggregate_emseq( aggregation_Channel ) 
+        alignedReads = alignReads( inputChannel )
+        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+        extract      = methylDackel_extract( markDup.md_bams )
+        mbias        = methylDackel_mbias( markDup.md_bams )
+
+        // collect statistics
+        gcbias       = gc_bias( markDup.md_bams )
+        idxstats     = idx_stats( markDup.md_bams )
+        flagstats    = flag_stats( markDup.md_bams )
+        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
+        insertsize   = insert_size_metrics( markDup.md_bams ) 
+        // add Matt's pair_orientation.py from seq-shepherd.
+        metrics      = picard_metrics( markDup.md_bams )
+        mismatches   = tasmanian ( markDup.md_bams )
+
+        // Channel for aggregation
+        alignedReads.for_agg.groupTuple(by: [0, 1])
+         .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+         .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
+         .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+         .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+         .set{ aggregation_Channel }
+
+        // aggregation_Channel.view()
+        aggregate_emseq( aggregation_Channel ) 
         
 }
