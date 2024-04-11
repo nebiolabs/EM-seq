@@ -141,7 +141,7 @@ process tasmanian {
     label 'cpus_8'
     tag { library }
     publishDir "${params.flowcell}/${library}/stats/tasmanian"
-    conda "samtools tasmanian-mismatch"
+    conda "bioconda::samtools bioconda::tasmanian-mismatch"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
