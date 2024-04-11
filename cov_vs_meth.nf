@@ -26,6 +26,7 @@ if (params.mouse) {
     refseq_chr_lookup = '$7,$5' //switch from NC -> genbank naming
     params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
     params.old_new_chain_url = 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
+    params.ucsc_repeatmasker_url = 'http://hgdownload.soe.ucsc.edu/goldenPath/mm39/database/rmsk.txt.gz'
 }
 
 params.human_t2t2 = false    
@@ -44,17 +45,17 @@ if (params.human_t2t2) {
     refseq_chr_lookup = '$7,$10' //switch from NC -> chr1 naming
     params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/human/006/Hs_EPDnew_006_hg38.bed'
     params.old_new_chain_url = 'https://hgdownload.soe.ucsc.edu/goldenPath/hs1/liftOver/hg38-chm13v2.over.chain.gz'
-    //params.dfam_out_file = 'grch38_dfam405_repeat_mask.fa.out' //TODO: add dfam support
+    params.ucsc_repeatmasker_url = 'https://hgdownload.soe.ucsc.edu/goldenPath/hs1/bigZips/hs1.repeatMasker.out.gz'
 }
 
 Channel.fromPath(params.mk_files).map{ it -> tuple(it.baseName, it.baseName.split(".methylKit")[0].split("_")[-1], it)}.filter{it[1] == "CpG"}.set {methylkits}
 Channel.fromFilePairs(params.bam_files_glob, checkIfExists: true).into{ bams_for_epd; bams_for_cpgs; bams_for_refseq; bams_for_dfam }
 Channel.fromPath(params.ucsc_cpg_islands_gtf, checkIfExists: true).first().set { ucsc_cpg_islands_gtf }
 Channel.value(params.ncbi_assembly_report_url).set { ncbi_assembly_report_url }
-//Channel.value(file(params.dfam_out_file)).set { dfam_out }
 Channel.value(params.refseq_gff_url).set { refseq_gff_url }
 Channel.value(params.epd_promoter_bed_url).set { epd_promoter_bed_url }
 Channel.value(params.old_new_chain_url).set { old_new_chain_url }
+Channel.value(params.ucsc_repeatmasker_url).set { ucsc_repeatmasker_url }
   
 // 'mobile_genetic_element' not present in mouse col 3
 Channel.from(['transcriptional_cis_regulatory_region', 'enhancer','promoter',
@@ -172,6 +173,65 @@ process clean_cpg_islands_gtf {
     '''
 }
 
+process repeatmasker_to_gff {
+    conda "curl ucsc-bedtogenepred ucsc-genepredtogtf"
+    input: 
+       val repeat_masker from ucsc_repeatmasker_url
+       file(assembly_report) from ncbi_assembly_report
+
+    output:
+       file '*out.gtf' into (repeatmasker_gtf, repeatmasker_gtf_for_counts)
+
+    shell:
+    if(params.human_t2t2) {
+        /* file format: 
+        SW  perc perc perc  query      position in query           matching       repeat              position in  repeat   score  div. del. ins.  sequence    begin     end    (left)    repeat         class/family         begin  end (left)   ID
+        311  32.7  3.2  3.9  chrM         2014    2169   (14400) +  LSU-rRNA_Hsa   rRNA                  3753 3907 (1128) 4663330 
+        
+        create a custom gff, since tools like genePredToGtf will create a transcript/exon/CDS line for each, and this doesn't really make sense for the repeat entries
+        e.g.:
+            chr1    RepeatMasker    SINE    10000    10100    255    +    .    GeneID:SINE-1-10000-10100;transcript_id=SINE-1-10000-10100
+        ** UCSC always starts off with 0-based (i.e. bed) for start coords
+        */
+        '''
+        curl -fsSL "!{repeat_masker}"" > repeatmasker.out.gz
+
+        zcat repeatmasker.out.gz | \
+        awk -v OFS='\\t' -v FS='\\t' '{print $5, $6, $7, $11, $1, 9}' | \
+        bedToGenePred /dev/stdin /dev/stdout | genePredToGtf file /dev/stdin /dev/stdout | \
+        awk -v FS='\\t' -v OFS='\\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
+        > repeatmasker.gtf
+
+        mv repeatmasker.gtf repeatmasker.out.gtf
+
+        '''
+    } else if(params.mouse) {
+        // supports mm39, and others, just not the human t2t currently uploaded
+        // 608     3667    67      0       10      chr1    3050293 3050775 -192103504      +       L1MdA_VI        LINE    L1      6094    6570    -6      1
+        '''
+        curl !{repeat_masker} > repeatmasker.out.gz
+
+        # create a custom gff, since tools like genePredToGtf will create a transcript/exon/CDS line for each, and this doesn't really make sense for the repeat entries
+        # e.g.:
+            # chr1    RepeatMasker    SINE    10000    10100    255    +    .    GeneID:SINE-1-10000-10100;transcript_id=SINE-1-10000-10100
+
+        zcat repeatmasker.out.gz | \
+        awk -v OFS='\\t' -v FS='\\t' '{print $6, $7, $8, $12, $2, $10}' | \
+        bedToGenePred /dev/stdin /dev/stdout | genePredToGtf file /dev/stdin /dev/stdout | \
+        awk -v FS='\\t' -v OFS='\\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
+        > repeatmasker.gtf
+
+        # move from chr format to genbank format
+        awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[$1]=$2; next} {$1=dict[$1]; print}' \
+        <(grep -v '^#' !{assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print !{cpg_chr_lookup}}' | tr -d '\\r') repeatmasker.gtf > repeatmasker.out.gtf
+        
+        '''
+    }
+    else
+        error "unsupported repeats annotation"
+
+}
+
 process cpg_island_counts{
     conda "subread=2.0.0"
     publishDir "$params.output_dir", mode: 'copy'
@@ -260,6 +320,7 @@ process refseq_feature_gffs {
 feature_gff_for_meth
     .concat(cpg_islands_gtf.map{ it -> tuple( "cpg_islands", it)})
     .concat(epd_promoters_gtf.map { it -> tuple( "epd_promoters", it)})
+    .concat(repeatmasker_gtf.map { it -> tuple("repeats", it)})
     .combine(methylkits)
     .set{feature_methylation_ch}
 
@@ -415,72 +476,33 @@ process feature_violin {
     """
 }
 
-/*
-process dfam_out_to_gtf {
-    conda "ucsc-bedtogenepred ucsc-genepredtogtf"
-    input: 
-       file rm_out from dfam_out
-    output:
-       file '*.gtf' into (dfam_gtf_for_meth, dfam_gtf_for_counts)
+repeatmasker_gtf_for_counts
+    .combine(bams_for_dfam.map{ [it[1][0],it[1][1]] } ) //combination of gff with every bam/bai pair)
+    .set{repeats_and_bams_for_featurecount}
 
-    shell:
-    '''
-       awk 'OFS="\t" {print($5,$6-1,$7,$11,$1,".")}' !{rm_out} \
-       | tail -n +4 \
-       | bedToGenePred /dev/stdin /dev/stdout \
-       | genePredToGtf file /dev/stdin /dev/stdout \
-       | awk -v FS='\t' -v OFS='\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
-       > dfam_repeats.gtf
-    '''
-}
-
-process dfam_feature_methylation {
-    conda "bedtools=2.29.2 htslib=1.9"
-    publishDir "$params.output_dir", mode: 'copy'
-
-    input:
-        file bed from hq_methylkit_bed
-        file(gtf) from dfam_gtf_for_meth
-
-    output:
-        file '*_methylation.tsv' into dfam_methylation
-        
-    shell:
-    '''
-    bedtools intersect -nonamecheck \
-    -wa -wb -loj \
-    -a !{gtf} -b <(bgzip -d < !{bed} ) \
-    | awk -v FS='\\t' -v OFS='\\t' '$14>0 {print $10,$11,$12,$1":"$4-1"-"$5,($15*1.0)/$14 }' \
-    | bedtools groupby -g 4 -o mean -c 5 \
-    > dfam_methylation.tsv 
-    '''
-}
-
-process dfam_feature_counts {
+process repeatmasker_feature_counts {
 
     conda "subread=2.0.0"
     publishDir "$params.output_dir", mode: 'copy'
     cpus 16
 
     input:
-        file(gtf) from dfam_gtf_for_counts
-        path('*') from bams_for_dfam.map{ [it[1][0],it[1][1]] }.flatten().toList()
+        tuple (path(gff), path('*'), path('*') ) from repeats_and_bams_for_featurecount
 
     output:
-        file '*_counts.tsv' into dfam_feature_counts
+        file '*_counts.tsv' into repeatmasker_feature_counts
 
     shell:
     '''
         featureCounts --primary !{feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
-        -a !{gtf} \
         -t transcript \
-        -g 'transcript_id' \
+        -a !{gff} \
         --tmpDir !{params.tmp_dir} \
         -T !{task.cpus} \
         -o dfam_counts.tsv *.bam 
     '''
 }
-*/
+
 
 process combine_counts {
     publishDir "$params.output_dir", mode: 'copy'
@@ -488,7 +510,7 @@ process combine_counts {
     errorStrategy { task.exitStatus=141 ? 'ignore' : 'terminate' }
 
     input:
-        //file(dfam_counts) from dfam_feature_counts
+        file(repeatmasker_feature_counts) from repeatmasker_feature_counts
         file(feature_counts) from feature_counts.collect()
         file(cpg_counts) from cpg_island_counts
         file(epd_counts) from epd_promoter_counts
@@ -504,7 +526,7 @@ process combine_counts {
     grep -hve '^\\s*$' -e '^#' !{cpg_counts} | head -n 1 >> combined_feature_counts.tsv
 
     #adds a column (tab separated) containing the name of the file being processed (repeated on each line)
-    for f in !{feature_counts} !{cpg_counts} !{epd_counts}; do
+    for f in !{feature_counts} !{cpg_counts} !{epd_counts} !{repeatmasker_feature_counts}; do
         filebase=$(basename "${f}" _counts.tsv)
         lines=$(wc -l <(grep -ve '^\\s*$' -e '^#' "$f") | cut -f 1 -d ' ')
         paste <( yes ${filebase} | head -n $lines ) <(grep -ve '^\\s*$' -e '^#' "$f") | tail -n +2 >> combined_feature_counts.tsv
