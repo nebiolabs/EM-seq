@@ -75,7 +75,7 @@ process alignReads {
             ;;
     esac
 
-    bwa_mem_log_filename="!{library}_!{barcodes}_!{flowcell}_!{lane}_!{tile}.log.bwamem"
+    bwa_mem_log_filename="!{library}_${barcodes}_!{flowcell}_!{lane}_!{tile}.log.bwamem"
     bam_filename="!{library}_${barcodes}_!{flowcell}_!{lane}_!{tile}.aln.bam"
     rg_id="@RG\\tID:${barcodes}\\tSM:!{library}"
     inst_name=$(echo $barcodes | sed 's/^@//')
