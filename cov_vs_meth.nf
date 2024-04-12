@@ -206,7 +206,7 @@ process repeatmasker_to_gtf {
 
         '''
     } else if(params.mouse) {
-        // supports mm39, and others, just not the human t2t currently uploaded
+        // supports mm39. The repeatmasker file from ucsc seems to be consistent in format (aside from the current  t2t), but the step here for renaming the chromosomes is specific to our mm39 formats.
         // 608     3667    67      0       10      chr1    3050293 3050775 -192103504      +       L1MdA_VI        LINE    L1      6094    6570    -6      1
         '''
         curl !{repeat_masker} > repeatmasker.out.gz
