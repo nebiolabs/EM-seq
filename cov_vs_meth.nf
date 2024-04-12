@@ -194,7 +194,7 @@ process repeatmasker_to_gtf {
         ** UCSC always starts off with 0-based (i.e. bed) for start coords
         */
         '''
-        curl -fsSL "!{repeat_masker}"" > repeatmasker.out.gz
+        curl -fsSL "!{repeat_masker}" > repeatmasker.out.gz
 
         zcat repeatmasker.out.gz | \
         awk -v OFS='\\t' -v FS='\\t' '{print $5, $6, $7, $11, $1, 9}' | \
@@ -209,7 +209,7 @@ process repeatmasker_to_gtf {
         // supports mm39. The repeatmasker file from ucsc seems to be consistent in format (aside from the current  t2t), but the step here for renaming the chromosomes is specific to our mm39 formats.
         // 608     3667    67      0       10      chr1    3050293 3050775 -192103504      +       L1MdA_VI        LINE    L1      6094    6570    -6      1
         '''
-        curl !{repeat_masker} > repeatmasker.out.gz
+        curl -fsSL "!{repeat_masker}" > repeatmasker.out.gz
 
         # create a custom gff, since tools like genePredToGtf will create a transcript/exon/CDS line for each, and this doesn't really make sense for the repeat entries
         # e.g.:
