@@ -173,7 +173,7 @@ process clean_cpg_islands_gtf {
     '''
 }
 
-process repeatmasker_to_gff {
+process repeatmasker_to_gtf {
     conda "curl ucsc-bedtogenepred ucsc-genepredtogtf"
     input: 
        val repeat_masker from ucsc_repeatmasker_url
