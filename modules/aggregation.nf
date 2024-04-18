@@ -57,7 +57,7 @@ process aggregate_emseq {
     --tasmanian !{tasmanian} \
     --aln !{alignment_summary_metrics_txt} \
     --metadatafq_file !{metadata_fastq} \
-    --fastp !{fastp} \  
+    --fastp !{fastp} \
     --workflow !{params.workflow}_!{library} 2> ngs_agg.err 1> ngs_agg.out
     '''
     // add number of chimeras!
