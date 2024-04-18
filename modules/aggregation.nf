@@ -7,7 +7,7 @@ process aggregate_emseq {
     publishDir "${params.flowcell}/${library}/ngs-agg"
 
     input:
-         tuple val(email), val(library), val(barcodes), path(metadata_fastq), path(nonconverted_counts_tsv), path(fastp), 
+         tuple val(email), val(library), val(barcodes), path(metadata_fastq), path(nonconverted_counts_tsv), path(fastp),
                path(bam), path(bai), 
                path(gc_metrics),
                path(idxstat),
@@ -37,7 +37,7 @@ process aggregate_emseq {
     cat !{nonconverted_counts_tsv} | awk -v l=!{library} '{print l"\t"$0}' > !{library}.nonconverted_counts.for_agg.tsv
     
     export RBENV_VERSION=$(cat !{path_to_ngs_agg}/.ruby-version)
-    DATABASE_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
+    RAILS_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
     --bam !{bam} \
     --bai !{bai} \
     --name !{library} \
@@ -57,7 +57,7 @@ process aggregate_emseq {
     --tasmanian !{tasmanian} \
     --aln !{alignment_summary_metrics_txt} \
     --metadatafq_file !{metadata_fastq} \
-    --fastp !{fastp} \
+    --fastp !{fastp} \  
     --workflow !{params.workflow}_!{library} 2> ngs_agg.err 1> ngs_agg.out
     '''
     // add number of chimeras!
