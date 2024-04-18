@@ -45,13 +45,14 @@ def detectFileType(file) {
         return 'bam'
     } else if (file_str.endsWith('_R1.fastq.gz') || file_str.endsWith('_1.fastq.gz') || file_str.endsWith('_R1.fastq') || file_str.endsWith('_1.fastq')) {
         // read2 exists for paired-end FASTQ?
-        def read2File = file_str.replace('_R1.fastq', '_R2.fastq').replace('_1.fastq', '_2.fastq')
+        def read2File = file_str.replace('_R1.fastq', '_R2.fastq').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2")
         if (new File(read2File).exists()) {
             return 'fastq_paired_end'
         } else {
             return 'fastq_single_end'
         }
     } else {
+        println "Unknown file type for $file_str. If fastq, check if _R1_ or .R1. patterns are used."
         return 'unknown'
     }
 }
