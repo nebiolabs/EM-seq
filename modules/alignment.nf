@@ -52,7 +52,7 @@ process alignReads {
         if (NR%4==1) {
             split($0, parts, ":"); 
             arr[ parts[ length(parts) ] ]++
-        }} END { for (i in arr) {print arr[i]"\t"i} }' \
+        }} END { for (i in arr) {print arr[i]"\\t"i} }' \
     | sort -k1nr | head -n1 | cut -f2 
     # | tr -c "[ACGTN]" "\t"
     }    
