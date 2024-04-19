@@ -54,7 +54,7 @@ process alignReads {
             arr[ parts[ length(parts) ] ]++
         }} END { for (i in arr) {print arr[i]"\\t"i} }' \
     | sort -k1nr | head -n1 | cut -f2 
-    # | tr -c "[ACGTN]" "\t"
+    # | tr -c "[ACGTN]" "\\t"
     }    
 
     case !{fileType} in 

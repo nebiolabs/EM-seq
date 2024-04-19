@@ -43,9 +43,9 @@ def detectFileType(file) {
     file_str = file.toString()
     if (file_str.endsWith('.bam')) {
         return 'bam'
-    } else if (file_str.endsWith('_R1.fastq.gz') || file_str.endsWith('_1.fastq.gz') || file_str.endsWith('_R1.fastq') || file_str.endsWith('_1.fastq')) {
+    } else if (file_str.endsWith('.fastq.gz') || file_str.endsWith('.fastq')) {
         // read2 exists for paired-end FASTQ?
-        def read2File = file_str.replace('_R1.fastq', '_R2.fastq').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2")
+        def read2File = file_str.replace('_R1.fastq', '_R2.fastq').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.")
         if (new File(read2File).exists()) {
             return 'fastq_paired_end'
         } else {
@@ -64,7 +64,7 @@ Channel
         def read1File = input_file
         def read2File = params.genome // fake it to have the same number of elements in the tuple.
         if (fileType == 'fastq_paired_end') {
-            read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.', '_2.')
+            read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
         }
         def flowcell = params.flowcell
         def lane = params.lane
