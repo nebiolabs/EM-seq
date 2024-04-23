@@ -30,7 +30,13 @@ process aggregate_emseq {
     genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
 
     # bc = barcode1 + barcode2 if exists.
-    bc=$(echo !{barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
+    if grep -q "+" !{barcodes}
+    then
+        bc=$(echo !{barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
+    else
+        bc=$(echo !{barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
+    fi
+
 
     unzip *fastqc.zip
 
