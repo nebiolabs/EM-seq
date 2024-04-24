@@ -30,7 +30,7 @@ process aggregate_emseq {
     genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
 
     # bc = barcode1 + barcode2 if exists.
-    if grep -q "+" !{barcodes}
+    if echo !{barcodes} | grep -q "+" 
     then
         bc=$(echo !{barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
     else
