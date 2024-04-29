@@ -67,7 +67,7 @@ process alignReads {
             if ! $(samtools view !{input_file1} | grep -q "@RG"); then
                 echo "Adding @RG to !{input_file1}"
                 Id=$(samtools view !{input_file1} | cut -d: -f1 | head -n1)
-                placeRg=$(samtools addreplacerg -r "ID:${Id}\tSM:!{library}" !{input_file1})
+                placeRg="samtools addreplacerg -r \"ID:${Id}\\tSM:!{library}\" !{input_file1})"
             else 
                 placeRg=""
             fi
