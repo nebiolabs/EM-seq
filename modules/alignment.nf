@@ -64,9 +64,17 @@ process alignReads {
             downsampling="samtools import -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -s!{params.downsample_seed}.${n_reads} "
             ;;
         "bam")
+            if ! $(samtools view !{input_file1} | grep -q "@RG"); then
+                echo "Adding @RG to !{input_file1}"
+                Id=$(samtools view !{input_file1} | cut -d: -f1 | head -n1)
+                placeRg=$(samtools addreplacerg -r "ID:${Id}\tSM:!{library}" !{input_file1})
+            else 
+                placeRg=""
+            fi
+
             barcodes=$(samtools view -H !{input_file1} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
             n_reads=$(samtools view -c !{input_file1} | awk '{frac=!{params.max_input_reads}/$1; if (frac>=1) {frac=0.999}; split(frac, parts, "."); print parts[2]}')
-            downsampling="samtools view !{input_file1} -s!{params.downsample_seed}.${n_reads} "
+            downsampling="${placeRg} | samtools view !{input_file1} -s!{params.downsample_seed}.${n_reads} "
             ;;
         "fastq_single_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
