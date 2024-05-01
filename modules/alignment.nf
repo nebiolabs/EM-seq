@@ -61,17 +61,17 @@ process alignReads {
         "fastq_paired_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
-            downsampling="samtools import -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -s!{params.downsample_seed}.${n_reads} "
+            downsampling="samtools import -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
             ;;
         "bam")
             barcodes=$(samtools view -H !{input_file1} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
             n_reads=$(samtools view -c !{input_file1} | awk '{frac=!{params.max_input_reads}/$1; if (frac>=1) {frac=0.999}; split(frac, parts, "."); print parts[2]}')
-            downsampling="samtools view !{input_file1} -s!{params.downsample_seed}.${n_reads} "
+            downsampling="samtools view -h !{input_file1} -s!{params.downsample_seed}.${n_reads} "
             ;;
         "fastq_single_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
-            downsampling="samtools import -s !{input_file1} -O bam -@!{task.cpus} | samtools view -s!{params.downsample_seed}.${n_reads} "
+            downsampling="samtools import -s !{input_file1} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
             ;;
     esac
 
