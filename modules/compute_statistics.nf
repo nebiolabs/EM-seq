@@ -92,8 +92,8 @@ process insert_size_metrics {
     mkfifo bad_mapq
     samtools view -hq20 -U bad_mapq !{bam} > good_mapq &
 
-    picard -Xmx16g CollectInsertSizeMetrics --VALIDATION_STRINGENCY SILENT -I good_mapq -O temp.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
-    picard -Xmx16g CollectInsertSizeMetrics --VALIDATION_STRINGENCY SILENT -I bad_mapq -O temp2.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I good_mapq -O temp.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I bad_mapq -O temp2.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
 
     while [[ ! -f "temp.out.txt" || ! -f "temp2.out.txt" ]]; do sleep 2; done
 
