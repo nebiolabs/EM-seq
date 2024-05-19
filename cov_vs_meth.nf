@@ -44,7 +44,7 @@ if (params.human_t2t2) {
     params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_assembly_report.txt'
     refseq_chr_lookup = '$7,$10' //switch from NC -> chr1 naming
     params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/human/006/Hs_EPDnew_006_hg38.bed'
-    params.old_new_chain_url = 'https://hgdownload.gi.ucsc.edu/hubs/GCA/009/914/755/GCA_009914755.4/liftOver/hg38-chm13v2.over.chain.gz'
+    params.old_new_chain_url = 'https://hgdownload.soe.ucsc.edu/gbdb/hg38/liftOver/hg38ToHs1.over.chain.gz'
     params.ucsc_repeatmasker_url = 'https://hgdownload.soe.ucsc.edu/goldenPath/hs1/bigZips/hs1.repeatMasker.out.gz'
 }
 
