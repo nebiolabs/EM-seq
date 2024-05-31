@@ -10,6 +10,9 @@ params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 /* --------------- *
  * INPUT ARGUMENTS *
  * --------------- */
+params.email       = 'me@example.com'
+params.flowcell    = '?'
+params.genome      = 'unknown'
 params.input_glob  =  '*.{1,2}.fastq*'
 
 Channel.fromPath(params.input_glob, checkIfExists: true) // this just checks that the files exist, actual channel is set up later
