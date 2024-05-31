@@ -1,14 +1,18 @@
+function print_contig_meth(chr, sumMeth, sumMethDups, total, totalDups, total_count, min_pos, max_pos) {
+    if (sumMeth["CH"]/total_count >= 0.00000001 ) { # ultra low frequency methylation sites are not reported
+        print chr, sumMeth["CG"]/total["CG"]*100, sumMethDups["CG"]/totalDups["CG"]*100, 
+                    sumMeth["CH"]/total["CH"]*100, sumMethDups["CH"]/totalDups["CH"]*100
+    }
+}
 BEGIN{
     OFS="\t"; total_count=0;
     print "chr", "CG %meth", "CG %meth(+dups)", "CH %meth", "CH %meth(+dups)"
 }
 {
+
     total_count+=$6+$7;
     if(chr != $1 && NR != 1){
-        if (sumMeth["CH"]/total_count >= 0.00000001 ) { # ultra low frequency methylation sites are not reported
-            print chr, sumMeth["CG"]/total["CG"]*100, sumMethDups["CG"]/totalDups["CG"]*100, 
-                       sumMeth["CH"]/total["CH"]*100, sumMethDups["CH"]/totalDups["CH"]*100
-        }
+        print_contig_meth(chr, sumMeth, sumMethDups, total, totalDups, total_count, min_pos, max_pos);
         sumMeth["CG"]=0; sumMethDups["CG"]=0; total["CG"]=0; totalDups["CG"]=0;
         sumMeth["CH"]=0; sumMethDups["CH"]=0; total["CH"]=0; totalDups["CH"]=0;
     }
@@ -18,8 +22,5 @@ BEGIN{
     }
 }
 END{
-    if (sumMeth["CH"]/total_count >= 0.00000001) { # ultra low frequency methylation sites are not reported
-        print chr, sumMeth["CG"]/total["CG"]*100, sumMethDups["CG"]/totalDups["CG"]*100, 
-                   sumMeth["CH"]/total["CH"]*100, sumMethDups["CH"]/totalDups["CH"]*100
-    }
+    print_contig_meth(chr, sumMeth, sumMethDups, total, totalDups, total_count, min_pos, max_pos);
 }
