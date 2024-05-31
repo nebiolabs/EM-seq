@@ -29,7 +29,7 @@ process alignReads {
     */ 
     shell:
 
-    library = input_file.baseName.replaceFirst(/.fastq|.bam/,"")
+    library = input_file.baseName.replaceFirst(/\.fastq|\.fastq.gz|\.bam/,"")
 
     '''
     # set -eo pipefail
