@@ -197,7 +197,8 @@ process repeatmasker_to_gtf {
         curl -fsSL "!{repeat_masker}" > repeatmasker.out.gz
 
         zcat repeatmasker.out.gz | \
-        awk -v OFS='\\t' -v FS='\\t' 'NR>1 {print $5, $6, $7, $11, $1, 9}' | \
+        tail -n +4  | sed -E 's/^\s+//g' | sed -E 's/\s+/\t/g' | \
+        awk -v OFS='\\t' -v FS='\\t' 'NR>1 {print $5, $6, $7, $11, $1, $9}' | \
         bedToGenePred /dev/stdin /dev/stdout | genePredToGtf file /dev/stdin /dev/stdout | \
         awk -v FS='\\t' -v OFS='\\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
         > repeatmasker.gtf
