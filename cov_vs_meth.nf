@@ -185,12 +185,13 @@ process repeatmasker_to_gtf {
     shell:
     if(params.human_t2t2) {
         /* file format: 
-        SW  perc perc perc  query      position in query           matching       repeat              position in  repeat   score  div. del. ins.  sequence    begin     end    (left)    repeat         class/family         begin  end (left)   ID
-        311  32.7  3.2  3.9  chrM         2014    2169   (14400) +  LSU-rRNA_Hsa   rRNA                  3753 3907 (1128) 4663330 
+        SW  perc perc perc  query      position in query           matching       repeat              position in  repeat
+        score  div. del. ins.  sequence    begin     end    (left)    repeat         class/family         begin  end (left)   ID
+
+        311  32.7  3.2  3.9  chrM         2014    2169   (14400) +  LSU-rRNA_Hsa   rRNA                  3753 3907 (1128) 4663330
         
-        create a custom gff, since tools like genePredToGtf will create a transcript/exon/CDS line for each, and this doesn't really make sense for the repeat entries
-        e.g.:
-            chr1    RepeatMasker    SINE    10000    10100    255    +    .    GeneID:SINE-1-10000-10100;transcript_id=SINE-1-10000-10100
+        genePredToGtf will create a transcript/exon/CDS line for each, and this doesn't really make sense for the repeat entries, so I filter for exon only, e.g.:
+        chrM    chrM:2654-2730  exon    2654    2730    .       +       .       gene_id "tRNA"; transcript_id "tRNA"; exon_number "1"; exon_id "tRNA.1";
         ** UCSC always starts off with 0-based (i.e. bed) for start coords
         */
         '''
@@ -199,8 +200,8 @@ process repeatmasker_to_gtf {
         zcat repeatmasker.out.gz | \
         tail -n +4  | sed -E 's/^\s+//g' | sed -E 's/\s+/\t/g' | \
         awk -v OFS='\\t' -v FS='\\t' '{print $5, $6, $7, $11, $1, $9}' | \
-        bedToGenePred /dev/stdin /dev/stdout | genePredToGtf file /dev/stdin /dev/stdout | \
-        awk -v FS='\\t' -v OFS='\\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
+        bedToGenePred /dev/stdin /dev/stdout | genePredToGtf file /dev/stdin /dev/stdout |\
+        awk -v FS='\\t' -v OFS='\\t' '$3=="exon" {print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
         > repeatmasker.gtf
 
         mv repeatmasker.gtf repeatmasker.out.gtf
@@ -219,7 +220,7 @@ process repeatmasker_to_gtf {
         zcat repeatmasker.out.gz | \
         awk -v OFS='\\t' -v FS='\\t' '{print $6, $7, $8, $12, $2, $10}' | \
         bedToGenePred /dev/stdin /dev/stdout | genePredToGtf file /dev/stdin /dev/stdout | \
-        awk -v FS='\\t' -v OFS='\\t' '{print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
+        awk -v FS='\\t' -v OFS='\\t' '$3=="exon" {print $1,$1":"$4"-"$5,$3,$4,$5,$6,$7,$8,$9}' \
         > repeatmasker.gtf
 
         # move from chr format to genbank format
