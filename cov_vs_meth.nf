@@ -213,10 +213,6 @@ process repeatmasker_to_gtf {
         '''
         curl -fsSL "!{repeat_masker}" > repeatmasker.out.gz
 
-        # create a custom gff, since tools like genePredToGtf will create a transcript/exon/CDS line for each, and this doesn't really make sense for the repeat entries
-        # e.g.:
-            # chr1    RepeatMasker    SINE    10000    10100    255    +    .    GeneID:SINE-1-10000-10100;transcript_id=SINE-1-10000-10100
-
         zcat repeatmasker.out.gz | \
         awk -v OFS='\\t' -v FS='\\t' '{print $6, $7, $8, $12, $2, $10}' | \
         bedToGenePred /dev/stdin /dev/stdout | genePredToGtf file /dev/stdin /dev/stdout | \
