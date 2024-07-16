@@ -476,6 +476,7 @@ process feature_violin {
 
 repeatmasker_gtf_for_counts
     .combine(bams_for_dfam.map{ [it[1][0],it[1][1]] } ) //combination of gff with every bam/bai pair)
+    .groupTuple(by: 0)
     .set{repeats_and_bams_for_featurecount}
 
 process repeatmasker_feature_counts {
@@ -493,11 +494,11 @@ process repeatmasker_feature_counts {
     shell:
     '''
         featureCounts --primary !{feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
-        -t transcript \
+        -t exon \
         -a !{gff} \
         --tmpDir !{params.tmp_dir} \
         -T !{task.cpus} \
-        -o dfam_counts.tsv *.bam 
+        -o repeatmasker_counts.tsv *.bam 
     '''
 }
 
