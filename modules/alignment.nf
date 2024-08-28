@@ -47,6 +47,9 @@ process alignReads {
     }
 
     barcodes_from_fastq () {
+
+    set +o pipefail
+
     zcat -f $1 \
     | awk '{
         if (NR%4==1) {
@@ -55,6 +58,9 @@ process alignReads {
         }} END { for (i in arr) {print arr[i]"\\t"i} }' \
     | sort -k1nr | head -n1 | cut -f2 
     # | tr -c "[ACGTN]" "\\t"
+
+    set -o pipefail
+
     }    
 
     case !{fileType} in 
