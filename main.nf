@@ -77,7 +77,7 @@ Channel
 
  workflow {
     main:
-        //inputChannel.view()
+        // inputChannel.view()
         // process files 
         alignedReads = alignReads( inputChannel )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )

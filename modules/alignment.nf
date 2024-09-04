@@ -38,7 +38,7 @@ process alignReads {
     # set -eo pipefail   
 
     get_nreads_from_fastq() {
-        zcat -f $1 | wc -l \
+        zcat -f $1 | grep -c "^+$" \
         | awk '{
             frac=!{params.max_input_reads}/$1; 
             if (frac>=1) {frac=0.999}; 
