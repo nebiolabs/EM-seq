@@ -2,7 +2,7 @@
 process gc_bias {
     cpus 1
     tag { library }
-    conda "picard"
+    conda "bioconda::picard=2.20.7"
     publishDir "${params.flowcell}/${library}/stats/gc_bias"
 
     input:
@@ -20,7 +20,7 @@ process gc_bias {
 process idx_stats {
     label 'cpus_8'
     tag { library }
-    conda "samtools"
+    conda "bioconda::samtools=1.9"
     publishDir "${params.flowcell}/${library}/stats/idxstats"
 
     input:
@@ -38,7 +38,7 @@ process idx_stats {
 process flag_stats {
     label 'cpus_8'
     tag { library }
-    conda "samtools"
+    conda "bioconda::samtools=1.9"
     publishDir "${params.flowcell}/${library}/stats/flagstats"
 
     input:
@@ -56,7 +56,7 @@ process flag_stats {
 process fast_qc {
     cpus 1
     tag { library }
-    conda "fastqc"
+    conda "bioconda::fastqc=0.11.8"
     publishDir "${params.flowcell}/${library}/stats/fastqc"
 
     input:
@@ -74,7 +74,7 @@ process fast_qc {
 process insert_size_metrics {
     cpus 1
     tag { library }
-    conda "picard samtools"
+    conda "bioconda::picard=2.20.7 bioconda::samtools=1.9"
     publishDir "${params.flowcell}/${library}/stats/insert_size"
 
     input:
@@ -122,7 +122,7 @@ process insert_size_metrics {
 process picard_metrics {
     cpus 1
     tag { library }
-    conda "picard"
+    conda "bioconda::picard=2.20.7"
     publishDir "${params.flowcell}/${library}/stats/picard_alignment_metrics"
 
     input:
@@ -141,7 +141,7 @@ process tasmanian {
     label 'cpus_8'
     tag { library }
     publishDir "${params.flowcell}/${library}/stats/tasmanian"
-    conda "bioconda::samtools bioconda::tasmanian-mismatch"
+    conda "bioconda::samtools=1.9 bioconda::tasmanian-mismatch=1.0.7"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)

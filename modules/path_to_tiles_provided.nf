@@ -37,7 +37,7 @@ process parallel_yamls {
 process merge_tiles {
     cpus 1
 
-    conda 'pyyaml=5.4.1'
+    conda 'conda-forge::pyyaml=5.4.1'
 
     input:
         path yaml

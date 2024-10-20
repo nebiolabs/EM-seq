@@ -58,7 +58,7 @@ process methylDackel_extract {
         label 'cpus_8'
         tag "${library}"
         publishDir "${params.flowcell}/${library}/methylDackelExtracts", mode: 'copy'
-        conda "methyldackel=0.4.0 pigz=2.4"
+        conda "bioconda::methyldackel=0.6.1 conda-forge::pigz=2.8"
 
         input:
             tuple val(library), path(md_bam), path(md_bai), val(barcodes) 

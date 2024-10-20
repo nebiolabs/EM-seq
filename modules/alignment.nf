@@ -3,7 +3,7 @@ process alignReads {
     //label 'cpus_8'
     cpus 8
     tag { flowcell }
-    conda "python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4 mamba"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
     publishDir "${params.flowcell}/${library}/bwameth_align"
 
 
@@ -140,7 +140,7 @@ process find_soft_clips {
     label 'cpus_8'
     tag { library }
     publishDir "${params.flowcell}/${library}/softclips", more: 'copy', pattern: '*.{cigar_stats.tsv}*'
-    conda "bioconda::samtools"
+    conda "bioconda::samtools=1.9"
 
     input: 
         tuple val(library), path(bam), path(bai), val(barcodes)
