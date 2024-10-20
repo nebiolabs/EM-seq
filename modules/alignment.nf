@@ -67,7 +67,7 @@ process alignReads {
         "fastq_paired_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
-            downsampling="samtools import -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
+            downsampling="samtools import -u -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
             ;;
         "bam")
             barcodes=$(samtools view -H !{input_file1} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
@@ -77,7 +77,7 @@ process alignReads {
         "fastq_single_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
-            downsampling="samtools import -s !{input_file1} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
+            downsampling="samtools import -u -s !{input_file1} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
             ;;
     esac
 
@@ -88,7 +88,7 @@ process alignReads {
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    bam2fastq="| samtools collate -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
+    bam2fastq="| samtools collate -u -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
     eval ${downsampling} ${bam2fastq}  \
@@ -97,7 +97,7 @@ process alignReads {
     | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,!{params.read_length})} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${barcodes}_!{params.flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
-    | samtools view -hb /dev/stdin \
+    | samtools view -hu /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
     bam_barcode=$(samtools view ${bam_filename} | head -n1 | cut -f3 -d ":")
     # zcat !{library}_*.fq.gz | gzip > !{library}.fq.gz  #for metadata_fastq_channel
