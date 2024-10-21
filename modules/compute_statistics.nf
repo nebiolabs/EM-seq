@@ -74,7 +74,7 @@ process fast_qc {
 process insert_size_metrics {
     cpus 1
     tag { library }
-    conda "bioconda::picard=2.20.7 bioconda::samtools=1.9"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.flowcell}/${library}/stats/insert_size"
 
     input:
