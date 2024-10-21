@@ -11,13 +11,20 @@ println "Processing " + flowcell + "... => " + outputPath
 
 fastq_glob = params.fastq_glob ?: '*.{1,2}.fastq*'
 Channel.fromFilePairs(fastq_glob)
-    .map{ lib,read -> [flowcell: flowcell, library:lib, insert_read1:read[0], insert_read2:read[1], barcode:'N', lane:'all', tile:'all' ]}.set{fq_set_channel}
+    .map{ lib, read -> [flowcell: flowcell, 
+                       library:lib,
+                       insert_read1:read[0], 
+                       insert_read2:read[1], 
+                       barcode:'N', 
+                       lane:'all', 
+                       tile:'all' ]
+    }.set{fq_set_channel}
     
 process mapping {
     cpus fastq_mode == 'tile-fastq' ? 4 : 16
     errorStrategy 'retry'
     tag { [flowcell, fq_set.library] }
-    conda "bwameth=0.2.2 seqtk=1.3 sambamba=0.7.0 fastp=0.20.1 mark-nonconverted-reads=1.1"
+    conda "bioconda::bwameth=0.2.2 bioconda::seqtk=1.3 bioconda::sambamba=0.7.0 bioconda::fastp=0.20.1 bioconda::mark-nonconverted-reads=1.1"
 
     input:
         val fq_set from fq_set_channel
@@ -32,8 +39,8 @@ process mapping {
     inst_name=$(zcat -f '!{fq_set.insert_read1}' | head -n 1 | cut -f 1 -d ':' | sed 's/^@//')
     fastq_barcode=$(zcat -f '!{fq_set.insert_read1}' | head -n 1 | sed -r 's/.*://')
 
-    if [[ "${inst_name:0:2}" == 'A0' ]] || [[ "${inst_name:0:2}" == 'NS' ]] || \
-       [[ "${inst_name:0:2}" == 'NB' ]] || [[ "${inst_name:0:2}" == 'VH' ]] ; then
+    if [[ "${inst_name:0:2}" == 'A0' || "${inst_name:0:2}" == 'NS' || \
+       [[ "${inst_name:0:2}" == 'NB' || "${inst_name:0:2}" == 'VH' || "${inst_name: -2:2}" == 'NX' ]] ; then
        trim_polyg='--trim_poly_g'
        echo '2-color instrument: poly-g trim mode on'
     else
@@ -55,7 +62,7 @@ process mergeAndMarkDuplicates {
     errorStrategy 'retry'
     tag { library }
     publishDir "${outputPath}", mode: 'copy', pattern: '*.{md.bam}*'
-    conda "samtools=1.9 samblaster=0.1.24 sambamba=0.7.0"
+    conda "bioconda::samtools=1.9 bioconda::samblaster=0.1.24 bioconda::sambamba=0.7.0"
 
     input:
         set val(library), file(libraryBam) from aligned_files.groupTuple()
@@ -88,7 +95,7 @@ process mergeAndMarkDuplicates {
         cpus 8
         errorStrategy 'retry'
         tag {library}
-        conda "methyldackel=0.4.0 samtools=1.9"
+        conda "bioconda::methyldackel=0.6.1 conda-forge::pigz=2.8"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_mbias.groupTuple()
@@ -141,7 +148,7 @@ process mergeAndMarkDuplicates {
         cpus 8
         tag {library}
         publishDir "${outputPath}", mode: 'copy'
-        conda "methyldackel=0.4.0 pigz=2.4"
+        conda "bioconda::methyldackel=0.6.1 conda-forge::pigz=2.8"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_extract.groupTuple()
@@ -158,9 +165,9 @@ process mergeAndMarkDuplicates {
     }
 
     process select_human_reads {
-        cpus 8
+        cpus 8 
         tag {library}
-        conda "sambamba=0.7.1 bedtools=2.29.2"
+        conda "bioconda::sambamba=0.7.1 bioconda::bedtools=2.29.2"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_human_reads.groupTuple()
@@ -171,7 +178,7 @@ process mergeAndMarkDuplicates {
 
         shell:
         '''
-        sambamba view -t 8 -l 0 -f bam !{md_file} chr1 chr2 chr3 chr4 chr5 chr6 \
+        sambamba view -t !task.cpus -l 0 -f bam !{md_file} chr1 chr2 chr3 chr4 chr5 chr6 \
                                                   chr7 chr8 chr9 chr10 chr11 chr12 \
                                                   chr13 chr14 chr15 chr16 chr17 chr18 \
                                                   chr19 chr20 chr21 chr22 chrX chrY \
@@ -184,7 +191,7 @@ process mergeAndMarkDuplicates {
         cpus 1
         errorStrategy 'retry'
         tag { library }
-        conda "fastqc=0.11.8"
+        conda "bioconda::fastqc=0.11.8"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_fastqc.groupTuple()
@@ -244,7 +251,7 @@ process mergeAndMarkDuplicates {
         cpus 2
         errorStrategy 'retry'
         tag { library }
-        conda "samtools=1.9"
+        conda "bioconda::samtools=1.9"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_samflagstats.groupTuple(by: 0)
@@ -267,7 +274,7 @@ process mergeAndMarkDuplicates {
         cpus 2
         errorStrategy 'retry'
         tag { library }
-        conda "samtools=1.9"
+        conda "bioconda::samtools=1.9"
 
         input:
             tuple library, file(md_file),file(md_bai) from md_files_for_samstats.groupTuple()
@@ -286,7 +293,7 @@ process mergeAndMarkDuplicates {
         cpus 1
         errorStrategy 'retry'
         tag { library }
-        conda "picard=2.20.7"
+        conda "bioconda::picard=2.20.7"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_picard_gc.groupTuple()
@@ -305,7 +312,7 @@ process mergeAndMarkDuplicates {
         cpus 4
         errorStrategy 'retry'
         tag { library }
-        conda "picard=2.20.7"
+        conda "bioconda::picard=2.20.7"
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_picard.groupTuple()
@@ -323,7 +330,7 @@ process mergeAndMarkDuplicates {
         cpus 1
         errorStrategy 'retry'
         tag { library }
-        conda "picard=2.20.7"
+        conda "bioconda::picard=2.20.7"
 
         input:
             tuple library, file(md_file) from human_bams_gc.groupTuple()
@@ -342,7 +349,7 @@ process mergeAndMarkDuplicates {
         cpus 4
         errorStrategy 'retry'
         tag { library }
-        conda "picard=2.20.7"
+        conda "bioconda::picard=2.20.7"
 
         input:
             tuple library, file(md_file) from human_bams_inserts.groupTuple()
@@ -358,7 +365,7 @@ process mergeAndMarkDuplicates {
 
     process goleft {
         cpus 1
-        conda 'goleft=0.2.0'
+        conda 'bioconda::goleft=0.2.0'
 
         input:
             tuple library, file(md_file), file(md_bai) from md_files_for_goleft.groupTuple()
@@ -376,7 +383,7 @@ process mergeAndMarkDuplicates {
     process multiqc {
         cpus 1
         publishDir "${outputPath}", mode: 'copy'
-        conda "multiqc=1.7"
+        conda "bioconda::multiqc=1.7"
 
         input:
             file('*') from fastqc_results.flatten().toList()
@@ -462,7 +469,7 @@ process mergeAndMarkDuplicates {
 
     process combine_mbias_svg {
         publishDir "${outputPath}", mode: 'copy', pattern: 'combined*'
-        conda 'cairosvg=2.4.2 ghostscript=9.22'
+        conda 'conda-forge::cairosvg=2.4.2 conda-forge::ghostscript=9.22'
 
         input:
             file(svg) from mbias_output_svg.groupTuple()
