@@ -3,11 +3,12 @@ path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/current/"
 
 process aggregate_emseq {
     cpus 1
+    tag { library }
     conda "bioconda::samtools=1.9"
     publishDir "${params.flowcell}/${library}/ngs-agg"
 
     input:
-         tuple val(email), val(library), val(barcodes), path(metadata_fastq), path(nonconverted_counts_tsv), path(fastp),
+         tuple val(email), val(library), val(barcodes), path(nonconverted_counts_tsv), path(fastp),
                path(bam), path(bai), 
                path(gc_metrics),
                path(idxstat),
