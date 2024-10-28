@@ -11,10 +11,10 @@ process gc_bias {
     output:
         tuple val(params.email), val(library), path('*gc_metrics'), emit: for_agg
 
-    // grep ">" /mnt/galaxy/galaxyworks/tool-data/T2T_chm13v2.0+bs_controls/bwameth_index/T2T_chm13v2.0+bs_controls/T2T_chm13v2.0+bs_controls.fa | grep -v "chr[0-9]\|chrX\|chrY" | cut -d" " -f1 | xargs | tr " " "," | tr -d ">"
     shell:
     '''
-    samtools view -h -L chrM,chrEBV,phage_lambda,plasmid_puc19c,phage_T4,phage_Xp12 !{bam} > filtered_input.bam
+    grep ">" /mnt/galaxy/galaxyworks/tool-data/T2T_chm13v2.0+bs_controls/bwameth_index/T2T_chm13v2.0+bs_controls/T2T_chm13v2.0+bs_controls.fa | grep -v "chr[0-9]\|chrX\|chrY" | tr -d ">" | awk '{print $1"\t"1"\t"1000000000}' > exclude_regions.bed
+    samtools view -h -L excluded_regions.bed !{bam} > filtered_input.bam
     picard -Xmx4g CollectGcBiasMetrics IS_BISULFITE_SEQUENCED=true VALIDATION_STRINGENCY=SILENT I="filtered_input.bam" O=!{library}.gc_metrics S=!{library}.gc_summary_metrics CHART=!{library}.gc.pdf R=!{params.genome}
     '''
 }
