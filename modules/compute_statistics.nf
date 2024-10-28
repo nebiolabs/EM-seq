@@ -2,7 +2,7 @@
 process gc_bias {
     cpus 1
     tag { library }
-    conda "bioconda::picard=2.20.7"
+    conda "bioconda::picard=2.20.7 bioconda::samtools=1.9"
     publishDir "${params.flowcell}/${library}/stats/gc_bias"
 
     input:
