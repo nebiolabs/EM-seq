@@ -94,9 +94,10 @@ process alignReads {
     inst_name=$(echo $barcodes | sed 's/^@//')
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
-    
-    bam2fastq="| samtools collate -u -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
+    bam2fastq="| samtools collate -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
+ 
+    set +o pipefail
 
     eval ${downsampling} ${bam2fastq}  \
     | tee >(paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{lane}_!{tile}.fq.gz) \
@@ -133,6 +134,8 @@ process mergeAndMarkDuplicates {
 
     shell:
     '''
+    set +o pipefail
+
     fastq_barcode=$(samtools view !{bam} | head -n1 | cut -d ":" -f1);
     optical_distance=$(echo ${fastq_barcode} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
     picard -Xmx20g MarkDuplicates TAGGING_POLICY=All OPTICAL_DUPLICATE_PIXEL_DISTANCE=${optical_distance} TMP_DIR=!{params.tmp_dir} CREATE_INDEX=true MAX_RECORDS_IN_RAM=5000000 BARCODE_TAG="RX" ASSUME_SORT_ORDER=coordinate VALIDATION_STRINGENCY=SILENT I=!{bam} O=!{library}_!{barcodes}.md.bam M=!{library}.markdups_log
