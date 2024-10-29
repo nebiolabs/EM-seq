@@ -11,20 +11,15 @@ params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
  * INPUT ARGUMENTS *
  * --------------- */
 params.read_length = 76
-params.email       = 'thresholding@emseq.neb.com'
-params.flowcell    = 'N'
+params.email       = 'undefined'
+params.flowcell    = 'undefined'
 params.genome      = 'undefined'
 params.input_glob  =  '*.{1,2}.fastq*'
-params.lane        = 'all'
-params.tile        = 'all'
-params.project     = 'test_project'
-params.sample      = 'test_sample'
-params.barcode     = ''
+params.project     = 'project_undefined'
 params.workflow    = 'Automated EM-seq'
-params.develop_mode  = false // When set to true, workflow will not exit early. 
-outputDir = 'output_for_now' // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
+params.outputDir = "em-seq_output" // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 params.min_mapq = 20 // for methylation assessment.
-params.max_input_reads = 100000000 // default is not downsampling 
+params.max_input_reads = 10000000000 // default is not downsampling 
 params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
@@ -34,7 +29,7 @@ include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_m
 include { aggregate_emseq }                                                                             from './modules/aggregation'
 
 
-println "Processing " + params.flowcell + "... => " + outputDir
+println "Processing " + params.flowcell + "... => " + params.outputDir
 println "Cmd line: $workflow.commandLine"
 
 
@@ -66,11 +61,8 @@ Channel
         if (fileType == 'fastq_paired_end') {
             read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
         }
-        def flowcell = params.flowcell
-        def lane = params.lane
-        def tile = params.tile
         def genome = params.genome
-        return [flowcell, read1File, read2File, lane, tile, genome, fileType]
+        return [read1File, read2File, genome, fileType]
     }.set{ inputChannel}
 
 

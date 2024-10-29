@@ -5,22 +5,19 @@ process alignReads {
     tag { flowcell }
     errorStrategy { task.exitStatus == 140 ? 'ignore' : 'terminate' }
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
-    publishDir "${params.flowcell}/${library}/bwameth_align"
+    publishDir "${library}/bwameth_align"
 
 
     input:
-        tuple val(flowcell), 
-              path(input_file1),
+        tuple path(input_file1),
               path(input_file2),
-              val(lane),
-              val(tile),
               val(genome),
               val(fileType)
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
+        tuple env(flowcell), val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
-        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
+        tuple env(flowcell), val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
         env(bam_barcode), emit: seen_barcode
 
     /* 2 caveats in the following shell script:
@@ -47,6 +44,13 @@ process alignReads {
             }'
     }
 
+    flowcell_from_fastq() {
+        zcat -f $1 | head -n1 | cut -d ":" -f3
+    }
+    flowcell_from_bam(){
+        samtools view $1 | head -n1 | cut -d":" -f3
+    }
+
     barcodes_from_fastq () {
 
     set +o pipefail
@@ -69,6 +73,7 @@ process alignReads {
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
             downsampling="samtools import -u -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
+            flowcell=$(flowcell_from_fastq !{input_file1})
             ;;
         "bam")
             barcodes=$(samtools view -H !{input_file1} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
@@ -78,15 +83,18 @@ process alignReads {
             else
                 ds_suffix=""
             fi
-            
             downsampling="samtools view -h !{input_file1} ${ds_suffix}"
+            flowcell=$(flowcell_from_bam !{input_file1})
             ;;
         "fastq_single_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
             downsampling="samtools import -u -s !{input_file1} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
+            flowcell=$(flowcell_from_fastq !{input_file1})
             ;;
     esac
+
+    flowcell=$( (echo !{params.flowcell} | grep -q "undefined") && echo "${flowcell}" || echo "!{params.flowcell}")
 
     bwa_mem_log_filename="!{library}_${barcodes}_!{flowcell}_!{lane}_!{tile}.log.bwamem"
     bam_filename="!{library}_${barcodes}_!{flowcell}_!{lane}_!{tile}.aln.bam"
@@ -120,7 +128,7 @@ process mergeAndMarkDuplicates {
     cpus 8
     errorStrategy 'retry'
     tag { library }
-    publishDir "${params.flowcell}/${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
+    publishDir "${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
     conda "bioconda::picard=3.1 bioconda::samtools=1.19"
 
     input:

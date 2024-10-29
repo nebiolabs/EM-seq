@@ -3,7 +3,7 @@ process gc_bias {
     cpus 1
     tag { library }
     conda "bioconda::picard=2.20.7 bioconda::samtools=1.9"
-    publishDir "${params.flowcell}/${library}/stats/gc_bias"
+    publishDir "${library}/stats/gc_bias"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -23,7 +23,7 @@ process idx_stats {
     label 'cpus_8'
     tag { library }
     conda "bioconda::samtools=1.9"
-    publishDir "${params.flowcell}/${library}/stats/idxstats"
+    publishDir "${library}/stats/idxstats"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -41,7 +41,7 @@ process flag_stats {
     label 'cpus_8'
     tag { library }
     conda "bioconda::samtools=1.9"
-    publishDir "${params.flowcell}/${library}/stats/flagstats"
+    publishDir "${library}/stats/flagstats"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -59,7 +59,7 @@ process fast_qc {
     cpus 1
     tag { library }
     conda "bioconda::fastqc=0.11.8"
-    publishDir "${params.flowcell}/${library}/stats/fastqc"
+    publishDir "${library}/stats/fastqc"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -77,7 +77,7 @@ process insert_size_metrics {
     cpus 1
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
-    publishDir "${params.flowcell}/${library}/stats/insert_size"
+    publishDir "${library}/stats/insert_size"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -125,7 +125,7 @@ process picard_metrics {
     cpus 1
     tag { library }
     conda "bioconda::picard=2.20.7"
-    publishDir "${params.flowcell}/${library}/stats/picard_alignment_metrics"
+    publishDir "${library}/stats/picard_alignment_metrics"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
@@ -142,7 +142,7 @@ process picard_metrics {
 process tasmanian {
     label 'cpus_8'
     tag { library }
-    publishDir "${params.flowcell}/${library}/stats/tasmanian"
+    publishDir "${library}/stats/tasmanian"
     conda "bioconda::samtools=1.9 bioconda::tasmanian-mismatch=1.0.7"
 
     input:
