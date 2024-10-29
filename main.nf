@@ -10,7 +10,6 @@ params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 /* --------------- *
  * INPUT ARGUMENTS *
  * --------------- */
-params.read_length = 76
 params.email       = 'undefined'
 params.flowcell    = 'undefined'
 params.genome      = 'undefined'

@@ -51,6 +51,14 @@ process alignReads {
         samtools view $1 | head -n1 | cut -d":" -f3
     }
 
+    get_read_length_from_fastq() {
+        zcat -f $1 | head -n2 | tail -n1 | wc -c
+    }
+    get_read_length_from_bam() {
+        samtools view $1 | head -n 100 | awk 'BEGIN{m=0}{if (length($10)>m) {m=length($10)}}END{print m}'
+    }
+
+
     barcodes_from_fastq () {
 
     set +o pipefail
@@ -74,6 +82,7 @@ process alignReads {
             n_reads=$(get_nreads_from_fastq !{input_file1})
             downsampling="samtools import -u -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
             flowcell=$(flowcell_from_fastq !{input_file1})
+            read_length=$(get_read_length_from_fastq !{input_file1})
             ;;
         "bam")
             barcodes=$(samtools view -H !{input_file1} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
@@ -85,12 +94,14 @@ process alignReads {
             fi
             downsampling="samtools view -h !{input_file1} ${ds_suffix}"
             flowcell=$(flowcell_from_bam !{input_file1})
+            read_length=$(get_read_length_from_bam !{input_file1})
             ;;
         "fastq_single_end")
             barcodes=($(barcodes_from_fastq !{input_file1}))
             n_reads=$(get_nreads_from_fastq !{input_file1})
             downsampling="samtools import -u -s !{input_file1} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
             flowcell=$(flowcell_from_fastq !{input_file1})
+            read_length=$(get_read_length_from_fastq !{input_file1})
             ;;
     esac
 
@@ -110,7 +121,7 @@ process alignReads {
     eval ${downsampling} ${bam2fastq}  \
     | tee >(paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{lane}_!{tile}.fq.gz) \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
-    | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,!{params.read_length})} else print $0 }' \
+    | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,${read_length})} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${barcodes}_!{params.flowcell}_!{lane}_!{tile}.nonconverted.tsv" \
     | samtools view -hu /dev/stdin \
