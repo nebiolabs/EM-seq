@@ -13,7 +13,7 @@ process gc_bias {
 
     shell:
     '''
-    grep ">" !{params.genome} | grep -v "chr[0-9]\|chrX\|chrY" | tr -d ">" | awk '{print $1"\t"1"\t"1000000000}' > exclude_regions.bed
+    samtools view -H !{bam} | grep "^@SQ" | grep "plasmid\|phage\|EBV\|chrM" | awk -F":|\\t" '{print $3"\\t"0"\\t"$5}' > exclude_regions.bed
     samtools view -h -L excluded_regions.bed !{bam} > filtered_input.bam
     picard -Xmx4g CollectGcBiasMetrics IS_BISULFITE_SEQUENCED=true VALIDATION_STRINGENCY=SILENT I="filtered_input.bam" O=!{library}.gc_metrics S=!{library}.gc_summary_metrics CHART=!{library}.gc.pdf R=!{params.genome}
     '''
