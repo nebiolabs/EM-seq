@@ -119,7 +119,7 @@ process alignReads {
     set +o pipefail
 
     eval ${downsampling} ${bam2fastq}  \
-    | tee >(paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n"  | gzip > !{library}_!{lane}_!{tile}.fq.gz) \
+    | paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n" | gzip \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | awk '{if (NR%4==2 || NR%4==0) {print substr($0,1,${read_length})} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
@@ -127,7 +127,6 @@ process alignReads {
     | samtools view -hu /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
     bam_barcode=$(samtools view ${bam_filename} | head -n1 | cut -f3 -d ":")
-    # zcat !{library}_*.fq.gz | gzip > !{library}.fq.gz  #for metadata_fastq_channel
     '''
 }
 
