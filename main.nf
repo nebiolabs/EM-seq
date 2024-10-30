@@ -18,7 +18,7 @@ params.project     = 'project_undefined'
 params.workflow    = 'Automated EM-seq'
 params.outputDir = "em-seq_output" // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
 params.min_mapq = 20 // for methylation assessment.
-params.max_input_reads = 10000000000 // default is not downsampling 
+params.max_input_reads = "all_reads" // default is not downsampling 
 params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'

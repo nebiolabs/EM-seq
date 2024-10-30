@@ -90,16 +90,25 @@ process insert_size_metrics {
     # Above params.min_mapq value (default=20)
     echo "insert_size   2bparsedByRailsModel" > !{library}_insertsize_metrics
 
-    mkfifo good_mapq
-    mkfifo bad_mapq
-    samtools view -hq20 -U bad_mapq !{bam} > good_mapq &
+    good_mapq=$(mktemp -u /tmp/good_mapq.XXXXXX) # -u is unique
+    bad_mapq=$(mktemp -u /tmp/bad_mapq.XXXXXX)
+    mkfifo "$good_mapq"
+    mkfifo "$bad_mapq"
+    trap "rm -f $good_mapq $bad_mapq" EXIT # cleanup upon exit
 
-    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I good_mapq -O temp.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
-    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I bad_mapq -O temp2.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    samtools view -hq20 -U "$bad_mapq" !{bam} > "$good_mapq" &
+    samtools_pid=$!
 
-    while [[ ! -f "temp.out.txt" || ! -f "temp2.out.txt" ]]; do sleep 2; done
+    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O temp.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O temp2.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
 
-    rm -f good_mapq bad_mapq
+    # Wait for samtools to finish, then close named pipes
+    wait $samtools_pid
+    exec 3<>"$good_mapq"
+    exec 3<>"$bad_mapq"
+
+    # Wait for remaining processes
+    wait
 
     cat temp.out.txt | awk -v mapq=">=!{params.min_mapq}" '
         BEGIN{n="_"; cols=""}
