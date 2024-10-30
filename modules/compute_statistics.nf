@@ -99,34 +99,28 @@ process insert_size_metrics {
     samtools view -hq20 -U "$bad_mapq" !{bam} > "$good_mapq" &
     samtools_pid=$!
 
-    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O temp.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
-    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O temp2.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
 
     # Wait for samtools to finish, then close named pipes
     wait $samtools_pid
-    exec 3<>"$good_mapq"
-    exec 3<>"$bad_mapq"
+
+    # do we need these pipes to stay open ?
+    #exec 3<>"$good_mapq"
+    #exec 3<>"$bad_mapq"
 
     # Wait for remaining processes
     wait
 
-    cat temp.out.txt | awk -v mapq=">=!{params.min_mapq}" '
-        BEGIN{n="_"; cols=""}
-        {
-            if (length($0)==0) {} 
-            else if (n!="_"){
-                for (i=0; i<4-NF;i++) {cols=cols"\t0"};
-                print $0""cols"\\t"mapq; cols=""} 
-            else {print $0}; 
-            if ($1~/^insert_size/) {n=mapq;} 
-        }' > !{library}_insertsize_metrics
-        
-    # Below params.min_mapq value 
-    cat temp2.out.txt | awk -v mapq="<!{params.min_mapq}" 'BEGIN{n="_";cols=""}{ if (length($0)==0) {} else if (n!="_"){
-        for (i=0; i<4-NF;i++) {cols=cols"\t0"}; print $0""cols"\\t"mapq; cols=""}; if ($1~/^insert_size/) {n=mapq;}}' \
-    >> !{library}_insertsize_metrics
+    # how about this?
+    #extract the comments from the "good" mapq file
+    grep '^#' good_mapq.out.txt > !{library}_insertsize_metrics
+    #get the header line from the "good" mapq file and add a column for the mapq category
+    grep -v '^#' good_mapq.out.txt | head -n 1 | sed 's/$/\\tcategory/' >> !{library}_insertsize_metrics
+    #add a column for the mapq category to the data 
+    grep -v '^#' good_mapq.out.txt | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
+    grep -v '^#' bad_mapq.out.txt | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
 
-    # We could have 2 (fr) or 3 columns (fr AND rf) columns. BTW, we need 4 columns for the model to accept this data. We fill the rest with zeros 
     '''
 }
 
