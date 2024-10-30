@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
  * INCLUDE IN CONFIG FILE!! *
  * ------------------------ */
 params.default_dest_path = '/mnt/galaxy/tmp/users'
-params.tmp_dir           =  'tmp' // params['other_paths'].tmp_dir
+params.tmp_dir           =  '/tmp'
 params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 
 /* --------------- *

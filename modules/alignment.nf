@@ -139,7 +139,7 @@ process mergeAndMarkDuplicates {
     cpus 8
     errorStrategy 'retry'
     tag { library }
-    publishDir "${library}/markduped_bams", mode: 'copy', pattern: '*.{md.bam}*'
+    publishDir "${params.flowcell}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
     conda "bioconda::picard=3.1 bioconda::samtools=1.19"
 
     input:
