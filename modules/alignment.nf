@@ -17,7 +17,7 @@ process alignReads {
         tuple env(flowcell), val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
-        tuple env(flowcell), val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
+        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
         env(bam_barcode), emit: seen_barcode
 
     /* 2 caveats in the following shell script:
@@ -147,7 +147,7 @@ process mergeAndMarkDuplicates {
     cpus 8
     errorStrategy 'retry'
     tag { library }
-    publishDir "${params.flowcell}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
+    publishDir "${library}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
     conda "bioconda::picard=3.1 bioconda::samtools=1.19"
 
     input:
