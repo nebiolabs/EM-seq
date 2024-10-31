@@ -1,6 +1,5 @@
 
 process alignReads {
-    //label 'cpus_8'
     cpus 8
     tag { library }
     errorStrategy { task.exitStatus == 140 ? 'ignore' : 'terminate' }
@@ -20,18 +19,9 @@ process alignReads {
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
         env(bam_barcode), emit: seen_barcode
 
-    /* 2 caveats in the following shell script:
-    1. Could not include  sed 's/.*BC:Z:\([ACTGN-]*\).*@/\1/' (@ symbol to avoid stop commenting this) 
-       hence grep -o replaces it.
-    2. bam2fastq_or_fqmerge="samtools fastq -nT BC -@ !{task.cpus} !{input_file}" generates
-       a successfull fastq with barcodes in header. HOWEVER, bwameth doesn't know how to parse it.
-    3. We first get rid of secondary/supp alignments, in case the bam was already aligned to a genome.
-       Then we collate it for the same reason, as mapped files can be coordinate sorted.
-    */ 
     shell:
 
     library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
-    // def bamFile = (fileType == "bam") ? "${library}.bam" : null
     '''
     set -eo pipefail   
 
@@ -138,10 +128,6 @@ process alignReads {
     bam_barcode=$(samtools view ${bam_filename} | head -n1 | cut -f3 -d ":")
     '''
 }
-
-// If distinguishing PCR or sequencing duplicates doesn't make any difference
-// We don't have to use picard and hence we don't neeed optical distance.
-// Also, to write the least we need to the disk, I piped samblaster in the previous step.
 process mergeAndMarkDuplicates {
     label 'cpus_8'
     cpus 8
@@ -157,7 +143,6 @@ process mergeAndMarkDuplicates {
         tuple val(library), path('*.md.bam'), path('*.md.bai'), val(barcodes), emit: md_bams
         tuple val( params.email ), val(library), path('*.md.bam'), path('*.md.bai'), emit: for_agg
         path('*.markdups_log'), emit: log_files
-        //tuple val(library), path()
 
     shell:
     '''
@@ -168,61 +153,3 @@ process mergeAndMarkDuplicates {
     picard -Xmx20g MarkDuplicates TAGGING_POLICY=All OPTICAL_DUPLICATE_PIXEL_DISTANCE=${optical_distance} TMP_DIR=!{params.tmp_dir} CREATE_INDEX=true MAX_RECORDS_IN_RAM=5000000 BARCODE_TAG="RX" ASSUME_SORT_ORDER=coordinate VALIDATION_STRINGENCY=SILENT I=!{bam} O=!{library}_!{barcodes}.md.bam M=!{library}.markdups_log
     '''
 }
-
-process find_soft_clips {
-    /* I can not see this variable in the output of picard::CollectAlignmentSummaryMetrics.
-     * see alignment_metrics.rb or the picard tool for more information. Perhaps, older
-     * versions of the picard tool will contain this information. 
-     */ 
-    label 'cpus_8'
-    tag { library }
-    publishDir "${params.flowcell}/${library}/softclips", more: 'copy', pattern: '*.{cigar_stats.tsv}*'
-    conda "bioconda::samtools=1.9"
-
-    input: 
-        tuple val(library), path(bam), path(bai), val(barcodes)
-
-    output:
-        tuple val(library), val(barcodes), emit: cigar_stats
-
-    // bam file should be *md.bam
-    shell:
-    '''
-        sam=$(echo !{bam} | sed 's/bam/cigar_stats.tsv/')
-        samtools view !{bam} | awk '{}'
-    '''
-}
-
-//process downsample {
-//    label 'cpus_8'
-//    tag { library }
-//    publishDir "${params.flowcell}/${library}/downsampled"
-//    conda "agbiome:bbtools"
-//
-//    input:
-//        tuple val(flowcell), 
-//              path(input_file),
-//              val(lane),
-//              val(tile),
-//              val(genome)
-//
-//    output:
-//        tuple val(flowcell), 
-//              path(downsampled_reads),
-//              val(lane),
-//              val(tile),
-//              val(genome), emit: downsampled_reads_and_metadata
-//
-//    shell:
-//    '''
-//        if $( echo !{input_file} | grep -q ".bam$"); then
-//            output_file=$(echo !{input_file} | sed 's/.bam/.dspl.bam/')
-//            reformat.sh in=!{input_file} out=!{input_file} reads=4000000 sampleseed=42
-//        else
-//            read1=!{input_file}
-//            read2=$(ls -l ${read1} | awk '{print $NF}' | 's/1.fastq/2.fastq/')
-//                        
-//        fi
-//    '''
-//
-//}
