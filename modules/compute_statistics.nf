@@ -116,11 +116,10 @@ process insert_size_metrics {
     #extract the comments from the "good" mapq file
     grep '^#' good_mapq.out.txt > !{library}_insertsize_metrics
     #get the header line from the "good" mapq file and add a column for the mapq category
-    grep -v '^#' good_mapq.out.txt | head -n 1 | sed 's/$/\\tcategory/' >> !{library}_insertsize_metrics
+    grep -i "rf.count" good_mapq.out.txt  | sed 's/$/\tcategory/' >> testing_insertsize_metrics
     #add a column for the mapq category to the data 
-    grep -v '^#' good_mapq.out.txt | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
-    grep -v '^#' bad_mapq.out.txt | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
-
+    grep '^[0-9][^A-Z]*$' good_mapq.out.txt | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
+    grep '^[0-9][^A-Z]*$' bad_mapq.out.txt | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
     '''
 }
 
