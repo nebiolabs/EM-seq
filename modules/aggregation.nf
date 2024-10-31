@@ -5,7 +5,7 @@ process aggregate_emseq {
     cpus 1
     tag { library }
     conda "bioconda::samtools=1.9"
-    publishDir "${library}/ngs-agg"
+    publishDir "${params.outputDir}/ngs-agg"
 
     input:
          tuple env(flowcell), val(email), val(library), val(barcodes), path(nonconverted_counts_tsv), path(fastp),

@@ -4,9 +4,7 @@ process alignReads {
     tag { library }
     errorStrategy { task.exitStatus == 140 ? 'ignore' : 'terminate' }
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
-    publishDir "${library}/bwameth_align"
-
-
+    publishDir "${params.outputDir}/bwameth_align"
     input:
         tuple path(input_file1),
               path(input_file2),
@@ -133,7 +131,7 @@ process mergeAndMarkDuplicates {
     cpus 8
     errorStrategy 'retry'
     tag { library }
-    publishDir "${library}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
+    publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
     conda "bioconda::picard=3.1 bioconda::samtools=1.19"
 
     input:
