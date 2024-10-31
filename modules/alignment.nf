@@ -33,7 +33,7 @@ process alignReads {
     library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
     // def bamFile = (fileType == "bam") ? "${library}.bam" : null
     '''
-    # set -eo pipefail   
+    set -eo pipefail   
 
     get_nreads_from_fastq() {
         zcat -f $1 | grep -c "^+$" \
@@ -45,17 +45,25 @@ process alignReads {
     }
 
     flowcell_from_fastq() {
+        set +o pipefail
         zcat -f $1 | head -n1 | cut -d ":" -f3
+        set -o pipefail
     }
     flowcell_from_bam(){
+        set +o pipefail
         samtools view $1 | head -n1 | cut -d":" -f3
+        set -o pipefail
     }
 
     get_read_length_from_fastq() {
+        set +o pipefail
         zcat -f $1 | head -n2 | tail -n1 | wc -c
+        set -o pipefail
     }
     get_read_length_from_bam() {
+        set +o pipefail
         samtools view $1 | head -n 100 | awk 'BEGIN{m=0}{if (length($10)>m) {m=length($10)}}END{print m}'
+        set -o pipefail
     }
 
 
@@ -72,7 +80,7 @@ process alignReads {
     | sort -k1nr | head -n1 | cut -f2 
     # | tr -c "[ACGTN]" "\\t"
 
-    set -o pipefail
+    # set -o pipefail
 
     }    
 
@@ -120,7 +128,7 @@ process alignReads {
     set +o pipefail
 
     eval ${downsampling} ${bam2fastq}  \
-    | paste - - - - | sed -n '1~2!p' | tr "\\t" "\\n" \
+    | paste - - - - \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | awk -v rl=${read_length} '{if (NR%4==2 || NR%4==0) {print substr($0,1,rl)} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
