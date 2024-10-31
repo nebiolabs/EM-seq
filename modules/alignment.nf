@@ -128,7 +128,7 @@ process alignReads {
     set +o pipefail
 
     eval ${downsampling} ${bam2fastq}  \
-    | paste - - - - \
+    | paste - - - - | tr "\\t" "\\n" \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | awk -v rl=${read_length} '{if (NR%4==2 || NR%4==0) {print substr($0,1,rl)} else print $0 }' \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
