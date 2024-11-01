@@ -123,7 +123,7 @@ process alignReads {
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${barcodes}_${flowcell}.nonconverted.tsv" \
     | samtools view -hu /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
-    bam_barcode=$(samtools view ${bam_filename} | head -n1 | cut -f3 -d ":")
+    bam_barcode=$(samtools view -H ${bam_filename} | grep '^@RG' | sed -n 's/.*BC:\([^[:space:]]*\).*/\1/p' | head -n1)
     '''
 }
 process mergeAndMarkDuplicates {
