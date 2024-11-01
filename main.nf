@@ -24,7 +24,7 @@ params.downsample_seed = 42
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
-include { gc_bias; idx_stats; flag_stats; fast_qc; insert_size_metrics; picard_metrics; tasmanian }     from './modules/compute_statistics'
+include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq }                                                                             from './modules/aggregation'
 
 
@@ -79,7 +79,7 @@ Channel
         gcbias       = gc_bias( markDup.md_bams )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fast_qc( markDup.md_bams ) // All reads go in here. Good and Bad mapq.
+        fastqc       = fast_qc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams ) 
         // add Matt's pair_orientation.py from seq-shepherd.
         metrics      = picard_metrics( markDup.md_bams )

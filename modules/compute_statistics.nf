@@ -55,7 +55,7 @@ process flag_stats {
     '''
 }
 
-process fast_qc {
+process fastqc {
     cpus 1
     tag { library }
     conda "bioconda::fastqc=0.11.8"
