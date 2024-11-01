@@ -87,8 +87,6 @@ process insert_size_metrics {
 
     shell:
     '''
-    # Above params.min_mapq value (default=20)
-    echo "insert_size   2bparsedByRailsModel" > !{library}_insertsize_metrics
 
     good_mapq=$(mktemp -u /tmp/good_mapq.XXXXXX) # -u is unique
     bad_mapq=$(mktemp -u /tmp/bad_mapq.XXXXXX)

@@ -81,11 +81,10 @@ Channel
         flagstats    = flag_stats( markDup.md_bams )
         fastqc       = fast_qc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams ) 
-        // add Matt's pair_orientation.py from seq-shepherd.
         metrics      = picard_metrics( markDup.md_bams )
-        mismatches   = tasmanian ( markDup.md_bams )
+        mismatches   = tasmanian( markDup.md_bams )
 
-        // Channel for aggregation
+        // Channel for programs that summarize all results
         alignedReads.for_agg.groupTuple(by: [0, 1])
          .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
          .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1]  )
