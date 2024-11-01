@@ -97,7 +97,7 @@ Channel
          .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
          .set{ aggregation_Channel }
 
-        // aggregation_Channel.view()
         aggregate_emseq( aggregation_Channel ) 
+        multiqc( aggregation_Channel )
         
 }
