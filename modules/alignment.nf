@@ -43,16 +43,6 @@ process alignReads {
         set -o pipefail
     }
 
-    get_read_length_from_fastq() {
-        set +o pipefail
-        zcat -f $1 | head -n2 | tail -n1 | wc -c
-        set -o pipefail
-    }
-    get_read_length_from_bam() {
-        set +o pipefail
-        samtools view $1 | head -n 100 | awk 'BEGIN{m=0}{if (length($10)>m) {m=length($10)}}END{print m}'
-        set -o pipefail
-    }
 
 
     barcodes_from_fastq () {
@@ -71,59 +61,88 @@ process alignReads {
         # set -o pipefail
 
     }    
+    get_barcodes_and_rg_line() {
+        local file=$1
+        local type=$2
+        if [ "$type" == "bam" ]; then
+            barcodes=$(samtools view -H $file | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
+            rg_line=$(samtools view -H $file | grep "^@RG" | sed 's/\t/\\t/g')
+        else
+            barcodes=($(barcodes_from_fastq $file))
+            rg_line="@RG\\tID:${barcodes}\\tSM:!{library}\\tBC:${barcodes}"
+        fi
+    }
+
+    get_frac_reads() {
+        local file=$1
+        local type=$2
+        if [ "!{params.max_input_reads}" == "all_reads" ]; then
+            frac_reads=1
+        else
+            if [ "$type" == "bam" ]; then
+                n_reads=$(samtools view -c -F 2304 $file)
+            else
+                n_reads=$(get_nreads_from_fastq $file)
+            fi
+            if [ $n_reads -le !{params.max_input_reads} ]; then
+                frac_reads=1
+            else
+                frac_reads=$(echo $n_reads | awk '{!{params.max_input_reads}/$1}')
+            fi 
+        fi
+    }
 
     case !{fileType} in 
         "fastq_paired_end")
-            barcodes=($(barcodes_from_fastq !{input_file1}))
-            n_reads=$(get_nreads_from_fastq !{input_file1})
-            downsampling="samtools import -u -1 !{input_file1} -2 !{input_file2} -O bam -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
+            get_barcodes_and_rg_line !{input_file1} "fastq"
+            get_frac_reads !{input_file1} "fastq"
+            stream_reads="samtools import -u -1 !{input_file1} -2 !{input_file2}"
             flowcell=$(flowcell_from_fastq !{input_file1})
-            read_length=$(get_read_length_from_fastq !{input_file1})
             ;;
         "bam")
-            barcodes=$(samtools view -H !{input_file1} | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
-            frac_reads=$(samtools view -c !{input_file1} | awk '{frac=!{params.max_input_reads}/$1; if (frac>=1) {print 1} else {split(frac, parts, "."); print parts[2]}}')
-            if [ ${frac_reads} -lt 1 ]; then
-                ds_suffix="-s !{params.downsample_seed}.${frac_reads}"
-            else
-                ds_suffix=""
-            fi
-            downsampling="samtools view -h !{input_file1} ${ds_suffix}"
+            get_barcodes_and_rg_line !{input_file1} "bam"
+            get_frac_reads !{input_file1} "bam"
+            stream_reads="samtools view -u -h !{input_file1}"
             flowcell=$(flowcell_from_bam !{input_file1})
-            read_length=$(get_read_length_from_bam !{input_file1})
             ;;
         "fastq_single_end")
-            barcodes=($(barcodes_from_fastq !{input_file1}))
-            n_reads=$(get_nreads_from_fastq !{input_file1})
-            downsampling="samtools import -u -s !{input_file1} -@!{task.cpus} | samtools view -h -s!{params.downsample_seed}.${n_reads} "
+            get_barcodes_and_rg_line !{input_file1} "fastq"
+            get_frac_reads !{input_file1} "fastq"
+            stream_reads="samtools import -u -s !{input_file1}"
             flowcell=$(flowcell_from_fastq !{input_file1})
-            read_length=$(get_read_length_from_fastq !{input_file1})
             ;;
     esac
 
     flowcell=$( (echo !{params.flowcell} | grep -q "undefined") && echo "${flowcell}" || echo "!{params.flowcell}")
     downsample=$( (echo !{params.downsample} | grep -q "all_reads") && echo "${downsampling}" || echo " ")
 
+    if [ ${frac_reads} -lt 1 ]; then
+        downsample_seed_frac=$(awk -v seed=!{params.downsample_seed} -v frac=${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
+        stream_reads="${stream_reads} | samtools view -u -s ${downsample_seed_frac}")"
+    fi
+
+    # Validate barcodes
+    if [[ ! ${barcodes} =~ ^[-ACGT]+$ ]]; then
+        echo "Warning: Invalid barcode format: ${barcodes}" >&2
+    fi
+
     bwa_mem_log_filename="!{library}_${barcodes}_${flowcell}.log.bwamem"
     bam_filename="!{library}_${barcodes}_${flowcell}.aln.bam"
-    rg_id="@RG\\tID:${barcodes}\\tSM:!{library}"
+   
     inst_name=$(echo $barcodes | sed 's/^@//')
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
-    bam2fastq="| samtools collate -u -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
+    bam2fastq="| samtools collate -f -n 10000 -u -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
  
     set +o pipefail
 
-    eval ${downsampling} ${bam2fastq}  \
-    | paste - - - - | tr "\\t" "\\n" \
+    eval ${stream_reads} ${bam2fastq}  \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
-    | awk -v rl=${read_length} '{if (NR%4==2 || NR%4==0) {print substr($0,1,rl)} else print $0 }' \
-    | bwameth.py -p -t !{task.cpus} --read-group "${rg_id}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
+    | bwameth.py -p -t !{task.cpus} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${barcodes}_${flowcell}.nonconverted.tsv" \
-    | samtools view -hu /dev/stdin \
+    | samtools view -u /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
-    bam_barcode=$(samtools view -H ${bam_filename} | grep '^@RG' | sed -n 's/.*BC:\([^[:space:]]*\).*/\1/p' | head -n1)
     '''
 }
 process mergeAndMarkDuplicates {
