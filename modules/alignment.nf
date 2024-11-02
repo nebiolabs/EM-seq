@@ -133,9 +133,7 @@ process alignReads {
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -n 10000 -u -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
- 
-    set +o pipefail
-
+     
     eval ${stream_reads} ${bam2fastq}  \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
