@@ -33,6 +33,7 @@ process alignReads {
         zcat -f $1 | head -n1 | cut -d ":" -f3
         set -o pipefail
     }
+
     flowcell_from_bam(){
         set +o pipefail
         samtools view $1 | head -n1 | cut -d":" -f3
@@ -61,7 +62,7 @@ process alignReads {
         local type=$2
         if [ "$type" == "bam" ]; then
             barcodes=$(samtools view -H $file | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
-            rg_line=$(samtools view -H $file | grep "^@RG" | sed 's/\t/\\t/g')
+            rg_line=$(samtools view -H $file | grep "^@RG" | sed 's/\\t/\\\\t/g')
         else
             barcodes=($(barcodes_from_fastq $file))
             rg_line="@RG\\tID:${barcodes}\\tSM:!{library}\\tBC:${barcodes}"
@@ -126,13 +127,13 @@ process alignReads {
     bwa_mem_log_filename="!{library}_${barcodes}_${flowcell}.log.bwamem"
     bam_filename="!{library}_${barcodes}_${flowcell}.aln.bam"
    
-    inst_name=$(echo $barcodes | sed 's/^@//')
+    inst_name=$(samtools view !{input_file1} | head -n 1 | cut -d ":" -f 1)
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -r 100000 -u -@!{task.cpus} /dev/stdin -O | samtools fastq -n -@ !{task.cpus} /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
      
-    eval ${stream_reads} ${bam2fastq}  \
+    eval ${stream_reads} ${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
     | bwameth.py -p -t !{task.cpus} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${barcodes}_${flowcell}.nonconverted.tsv" \
