@@ -2,7 +2,6 @@
 process alignReads {
     cpus 16
     tag { library }
-    errorStrategy { task.exitStatus == 140 ? 'ignore' : 'terminate' }
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
     publishDir "${params.outputDir}/bwameth_align"
     input:
