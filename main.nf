@@ -49,7 +49,7 @@ def detectFileType(file) {
 
  workflow {
     main:
-        Channel
+        reads = Channel
         .fromPath(params.input_glob)
         .map { input_file ->
             def fileType = detectFileType(input_file)
@@ -60,14 +60,15 @@ def detectFileType(file) {
             }
             def genome = params.genome
             return [read1File, read2File, genome, fileType]
-        }.set{ inputChannel}
+        }
+        reads.view()
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 
         // inputChannel.view()
         // process files 
-        alignedReads = alignReads( inputChannel )
+        alignedReads = alignReads( reads )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
         extract      = methylDackel_extract( markDup.md_bams )
         mbias        = methylDackel_mbias( markDup.md_bams )
