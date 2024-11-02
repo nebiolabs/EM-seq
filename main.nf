@@ -54,20 +54,18 @@ def detectFileType(file) {
         .map { input_file ->
             def fileType = detectFileType(input_file)
             def read1File = input_file
-            def read2File = '.'
+            def read2File = null
             if (fileType == 'fastq_paired_end') {
                 read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
             }
             def genome = params.genome
             return [read1File, read2File, genome, fileType]
         }
-        reads.view()
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 
-        // inputChannel.view()
-        // process files 
+        // align and mark duplicates
         alignedReads = alignReads( reads )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
         extract      = methylDackel_extract( markDup.md_bams )
