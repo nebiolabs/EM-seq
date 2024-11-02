@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
  * INCLUDE IN CONFIG FILE!! *
  * ------------------------ */
 params.default_dest_path = '/mnt/galaxy/tmp/users'
-params.tmp_dir           =  '/tmp'
+params.tmp_dir           = '/tmp'
 params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 
 /* --------------- *
@@ -13,11 +13,11 @@ params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
 params.email       = 'undefined'
 params.flowcell    = 'undefined'
 params.genome      = 'undefined'
-params.input_glob  =  '*.{1,2}.fastq*'
+params.input_glob  = '*.{1,2}.fastq*'
 params.project     = 'project_undefined'
-params.workflow    = 'Automated EM-seq'
-params.outputDir = "em-seq_output" // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
-params.min_mapq = 20 // for methylation assessment.
+params.workflow    = 'EM-seq'
+params.outputDir   = "em-seq_output" // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
+params.min_mapq    = 20 // for methylation assessment.
 params.max_input_reads = "all_reads" // default is not downsampling 
 params.downsample_seed = 42
 
@@ -28,13 +28,9 @@ include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_me
 include { aggregate_emseq }                                                                             from './modules/aggregation'
 
 
-println "Processing " + params.flowcell + "... => " + params.outputDir
-println "Cmd line: $workflow.commandLine"
-
-
 // detect bam or fastq (or fastq.gz)
 def detectFileType(file) {
-    file_str = file.toString()
+    def file_str = file.toString()
     if (file_str.endsWith('.bam')) {
         return 'bam'
     } else if (file_str.endsWith('.fastq.gz') || file_str.endsWith('.fastq')) {
@@ -51,23 +47,24 @@ def detectFileType(file) {
     }
 }
 
-Channel
-    .fromPath(params.input_glob)
-    .map { input_file ->
-        def fileType = detectFileType(input_file)
-        def read1File = input_file
-        def read2File = params.genome // fake it to have the same number of elements in the tuple.
-        if (fileType == 'fastq_paired_end') {
-            read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
-        }
-        def genome = params.genome
-        return [read1File, read2File, genome, fileType]
-    }.set{ inputChannel}
-
-
-
  workflow {
     main:
+        Channel
+        .fromPath(params.input_glob)
+        .map { input_file ->
+            def fileType = detectFileType(input_file)
+            def read1File = input_file
+            def read2File = ''
+            if (fileType == 'fastq_paired_end') {
+                read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
+            }
+            def genome = params.genome
+            return [read1File, read2File, genome, fileType]
+        }.set{ inputChannel}
+
+        println "Processing " + params.flowcell + "... => " + params.outputDir
+        println "Cmd line: $workflow.commandLine"
+
         // inputChannel.view()
         // process files 
         alignedReads = alignReads( inputChannel )
