@@ -49,12 +49,13 @@ def detectFileType(file) {
 
  workflow {
     main:
+        placeholder_r2 = File.createTempFile("placeholder.2", ".fastq")
         reads = Channel
         .fromPath(params.input_glob)
         .map { input_file ->
             def fileType = detectFileType(input_file)
             def read1File = input_file
-            def read2File = File.createTempFile("placeholder.2", ".fastq")
+            def read2File = placeholder_r2.toString()
             if (fileType == 'fastq_paired_end') {
                 read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
             }
