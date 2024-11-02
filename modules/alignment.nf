@@ -115,7 +115,7 @@ process alignReads {
 
     if [ ${frac_reads} -lt 1 ]; then
         downsample_seed_frac=$(awk -v seed=!{params.downsample_seed} -v frac=${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
-        stream_reads="${stream_reads} | samtools view -u -s ${downsample_seed_frac}")"
+        stream_reads="${stream_reads} | samtools view -u -s ${downsample_seed_frac}"
     fi
 
     # Validate barcodes
