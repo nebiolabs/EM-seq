@@ -1,12 +1,5 @@
 nextflow.enable.dsl=2
 
-/* ------------------------ *
- * INCLUDE IN CONFIG FILE!! *
- * ------------------------ */
-params.default_dest_path = '/mnt/galaxy/tmp/users'
-params.tmp_dir           = '/tmp'
-params.path_to_ngs_agg   = '/mnt/bioinfo/prg/ngs-aggregate_results/current'
-
 /* --------------- *
  * INPUT ARGUMENTS *
  * --------------- */
@@ -16,16 +9,17 @@ params.genome      = 'undefined'
 params.input_glob  = '*.{1,2}.fastq*'
 params.project     = 'project_undefined'
 params.workflow    = 'EM-seq'
-params.outputDir   = "em-seq_output" // params.outdir ?: new File([default_dest_path, "email",flowcell].join(File.separator))
+params.outputDir   = "em-seq_output" 
+params.tmp_dir     = '/tmp'
 params.min_mapq    = 20 // for methylation assessment.
-params.max_input_reads = "all_reads" // default is not downsampling 
+params.max_input_reads = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
 params.downsample_seed = 42
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
-include { aggregate_emseq; multiqc }                                                                             from './modules/aggregation'
+include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
 
 
 // detect bam or fastq (or fastq.gz)

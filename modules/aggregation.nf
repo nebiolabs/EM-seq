@@ -1,7 +1,5 @@
-path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/current/"
 
 process multiqc {
-    cpus 1
     tag { library }
     conda "bioconda::multiqc=1.25"
     publishDir "${params.outputDir}"
@@ -61,7 +59,6 @@ process multiqc {
 }
 
 process aggregate_emseq {
-    cpus 1
     tag { library }
     conda "bioconda::samtools=1.9"
     publishDir "${params.outputDir}/ngs-agg"
@@ -85,8 +82,8 @@ process aggregate_emseq {
 
     cat !{nonconverted_counts_tsv} | awk -v l=!{library} '{print l"\t"$0}' > !{library}.nonconverted_counts.for_agg.tsv
     
-    export RBENV_VERSION=$(cat !{path_to_ngs_agg}/.ruby-version)
-    RAILS_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
+    export RBENV_VERSION=$(cat !{params.path_to_ngs_agg}/.ruby-version)
+    RAILS_ENV=production !{params.path_to_ngs_agg}/bin/bundle exec !{params.path_to_ngs_agg}/aggregate_results.rb \
         --bam !{bam} \
         --bai !{bai} \
         --name !{library} \

@@ -1,6 +1,6 @@
 
 process gc_bias {
-    cpus 1
+    label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=2.20.7 bioconda::samtools=1.9"
     publishDir "${params.outputDir}/stats/gc_bias"
@@ -13,14 +13,19 @@ process gc_bias {
 
     shell:
     '''
-    samtools view -H !{bam} | grep "^@SQ" | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" | awk -F":|\\t" '{print $3"\\t"0"\\t"$5}' > include_regions.bed
+    samtools view -H !{bam} | grep "^@SQ" \
+    | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" \
+    | awk -F":|\\t" '{print $3"\\t"0"\\t"$5}' > include_regions.bed
+
     samtools view -h -L include_regions.bed !{bam} | \
-    picard -Xmx4g CollectGcBiasMetrics IS_BISULFITE_SEQUENCED=true VALIDATION_STRINGENCY=SILENT I=/dev/stdin O=!{library}.gc_metrics S=!{library}.gc_summary_metrics CHART=!{library}.gc.pdf R=!{params.genome}
+    picard -Xmx!{task.memory.toGiga()}g CollectGcBiasMetrics \
+        --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
+        -I /dev/stdin -O !{library}.gc_metrics -S !{library}.gc_summary_metrics \
+        --CHART !{library}.gc.pdf -R !{params.genome}
     '''
 }
 
 process idx_stats {
-    label 'cpus_8'
     tag { library }
     conda "bioconda::samtools=1.9"
     publishDir "${params.outputDir}/stats/idxstats"
@@ -38,7 +43,7 @@ process idx_stats {
 }
 
 process flag_stats {
-    label 'cpus_8'
+    label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.9"
     publishDir "${params.outputDir}/stats/flagstats"
@@ -56,7 +61,6 @@ process flag_stats {
 }
 
 process fastqc {
-    cpus 1
     tag { library }
     conda "bioconda::fastqc=0.11.8"
     publishDir "${params.outputDir}/stats/fastqc"
@@ -74,7 +78,7 @@ process fastqc {
 }
 
 process insert_size_metrics {
-    cpus 1
+    label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/insert_size"
@@ -97,8 +101,12 @@ process insert_size_metrics {
     samtools view -hq20 -U "$bad_mapq" !{bam} > "$good_mapq" &
     samtools_pid=$!
 
-    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
-    picard -Xmx16g CollectInsertSizeMetrics --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt --MINIMUM_PCT 0 --Histogram_FILE /dev/null &
+    picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
+        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
+        --MINIMUM_PCT 0 --HISTOGRAM_FILE /dev/null &
+    picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
+        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt \
+        --MINIMUM_PCT 0 --HISTOGRAM_FILE /dev/null &
 
     # Wait for samtools to finish, then close named pipes
     wait $samtools_pid
@@ -122,7 +130,7 @@ process insert_size_metrics {
 }
 
 process picard_metrics {
-    cpus 1
+    label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=2.20.7"
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
@@ -135,12 +143,14 @@ process picard_metrics {
 
     shell:
     '''
-    picard -Xmx16g CollectAlignmentSummaryMetrics VALIDATION_STRINGENCY=SILENT BS=true R=!{params.genome} I=!{bam} O=!{library}.alignment_summary_metrics.txt
+    picard -Xmx!{task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
+        --VALIDATION_STRINGENCY SILENT -BS true -R !{params.genome} \
+        -I !{bam} -O !{library}.alignment_summary_metrics.txt
     '''
 }
 
 process tasmanian {
-    cpus 8
+    label 'medium_cpu'
     tag { library }
     publishDir "${params.outputDir}/stats/tasmanian"
     conda "bioconda::samtools=1.9 bioconda::tasmanian-mismatch=1.0.7"

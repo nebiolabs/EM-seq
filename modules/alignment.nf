@@ -1,6 +1,6 @@
 
 process alignReads {
-    cpus 16
+    label 'high_cpu'
     tag { library }
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
     publishDir "${params.outputDir}/bwameth_align"
@@ -124,8 +124,7 @@ process alignReads {
         echo "Warning: Invalid barcode format: ${barcodes}" >&2
     fi
 
-    bwa_mem_log_filename="!{library}_${barcodes}_${flowcell}.log.bwamem"
-    bam_filename="!{library}_${barcodes}_${flowcell}.aln.bam"
+    base_outputname="!{library}_${barcodes}_${flowcell}"
    
     inst_name=$(samtools view !{input_file1} | head -n 1 | cut -d ":" -f 1)
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
@@ -134,17 +133,16 @@ process alignReads {
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
      
     eval ${stream_reads} ${bam2fastq} \
-    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j !{library}_fastp.json 2> fastp.stderr \
-    | bwameth.py -p -t !{task.cpus} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> ${bwa_mem_log_filename} \
-    | mark-nonconverted-reads.py --reference !{params.genome} 2> "!{library}_${barcodes}_${flowcell}.nonconverted.tsv" \
+    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${${base_outputname}.fastp.json" 2> fastp.stderr \
+    | bwameth.py -p -t !{task.cpus/2} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
+    | mark-nonconverted-reads.py --reference !{params.genome} 2> "${base_output_name}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
-    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
+    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus/2} -m !{task.memory.toGiga()*3/4}GB -o "${base_outputname}.aln.bam" /dev/stdin
     '''
 }
 
 process mergeAndMarkDuplicates {
-    cpus 16
-    errorStrategy 'retry'
+    label 'high_cpu'
     tag { library }
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
     conda "bioconda::picard=3.1 bioconda::samtools=1.19"

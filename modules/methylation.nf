@@ -1,7 +1,7 @@
 
 
 process methylDackel_mbias {
-    cpus 8
+    label 'medium_cpu'
     errorStrategy 'retry'
     tag "${library}"
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8"
@@ -55,7 +55,7 @@ process methylDackel_mbias {
 
 
 process methylDackel_extract {
-    cpus 8
+    label 'high_cpu'
     tag "${library}"
     publishDir "${params.outputDir}/methylDackelExtracts", mode: 'copy'
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8"
@@ -68,7 +68,8 @@ process methylDackel_extract {
 
     shell:
     '''
-    MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} --CHH --CHG -o !{library}.!{barcodes} !{params.genome} !{md_bam} 
+    MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} \
+        --CHH --CHG -o !{library}.!{barcodes} !{params.genome} !{md_bam} 
     pigz -p !{task.cpus} *.methylKit 
     '''
 }
