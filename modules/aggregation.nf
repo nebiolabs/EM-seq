@@ -90,7 +90,6 @@ process aggregate_emseq {
         --bam !{bam} \
         --bai !{bai} \
         --name !{library} \
-        --barcode1 ${bc} \
         --lane !{params.lane} \
         --contact_email !{params.email} \
         --project !{params.project} \
