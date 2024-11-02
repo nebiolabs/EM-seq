@@ -41,8 +41,6 @@ process alignReads {
         set -o pipefail
     }
 
-
-
     barcodes_from_fastq () {
 
         set +o pipefail
@@ -59,6 +57,7 @@ process alignReads {
         # set -o pipefail
 
     }    
+    
     get_barcodes_and_rg_line() {
         local file=$1
         local type=$2
@@ -141,6 +140,7 @@ process alignReads {
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{task.cpus} -m !{task.cpus*8}GB -o ${bam_filename} /dev/stdin
     '''
 }
+
 process mergeAndMarkDuplicates {
     cpus 16
     errorStrategy 'retry'
