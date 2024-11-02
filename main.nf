@@ -25,7 +25,7 @@ params.downsample_seed = 42
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
-include { aggregate_emseq }                                                                             from './modules/aggregation'
+include { aggregate_emseq; multiqc }                                                                             from './modules/aggregation'
 
 
 // detect bam or fastq (or fastq.gz)
@@ -76,7 +76,7 @@ def detectFileType(file) {
         gcbias       = gc_bias( markDup.md_bams )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fast_qc( markDup.md_bams )
+        fastqc       = fastqc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams ) 
         metrics      = picard_metrics( markDup.md_bams )
         mismatches   = tasmanian( markDup.md_bams )
