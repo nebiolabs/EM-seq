@@ -53,7 +53,7 @@ process alignReads {
         | sort -k1nr | head -n1 | cut -f2 
         # | tr -c "[ACGTN]" "\\t"
 
-        # set -o pipefail
+        set -o pipefail
 
     }    
     
