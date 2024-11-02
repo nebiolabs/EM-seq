@@ -19,8 +19,6 @@ process alignReads {
 
     library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
     '''
-    set -eo pipefail   
-
     get_nreads_from_fastq() {
         zcat -f $1 | grep -c "^+$" \
         | awk '{
@@ -109,9 +107,11 @@ process alignReads {
             flowcell=$(flowcell_from_fastq !{input_file1})
             ;;
     esac
-
-    flowcell=$( (echo !{params.flowcell} | grep -q "undefined") && echo "${flowcell}" || echo "!{params.flowcell}")
-    downsample=$( (echo !{params.downsample} | grep -q "all_reads") && echo "${downsampling}" || echo " ")
+    if [ "!{params.flowcell}" == "undefined" ]; then
+        flowcell="${flowcell}"
+    else
+        flowcell="!{params.flowcell}"
+    fi
 
     if [ ${frac_reads} -lt 1 ]; then
         downsample_seed_frac=$(awk -v seed=!{params.downsample_seed} -v frac=${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
