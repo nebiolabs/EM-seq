@@ -133,7 +133,7 @@ process alignReads {
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
      
     eval ${stream_reads} ${bam2fastq} \
-    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${${base_outputname}.fastp.json" 2> fastp.stderr \
+    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}.fastp.json" 2> fastp.stderr \
     | bwameth.py -p -t !{task.cpus/2} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "${base_output_name}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
