@@ -15,7 +15,6 @@ process alignReads {
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
-        env(bam_barcode), emit: seen_barcode
 
     shell:
 
