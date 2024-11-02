@@ -54,7 +54,7 @@ def detectFileType(file) {
         .map { input_file ->
             def fileType = detectFileType(input_file)
             def read1File = input_file
-            def read2File = input_file // dupliate for single-end and bam files
+            def read2File = File.createTempFile("placeholder.2", ".fastq")
             if (fileType == 'fastq_paired_end') {
                 read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
             }
