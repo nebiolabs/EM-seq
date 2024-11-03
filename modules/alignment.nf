@@ -137,7 +137,7 @@ process alignReads {
     | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
-    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus*.intdiv(8))} -m !{(task.memory.toGiga()*3).intdiv(4)}GB -o "${base_outputname}.aln.bam" /dev/stdin
+    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus.intdiv(8))} -m !{(task.memory.toGiga()*3).intdiv(4)}GB -o "${base_outputname}.aln.bam" /dev/stdin
     '''
 }
 
