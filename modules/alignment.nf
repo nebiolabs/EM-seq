@@ -158,9 +158,22 @@ process mergeAndMarkDuplicates {
     shell:
     '''
     set +o pipefail
+    inst_name=$(samtools view !{bam} | head -n1 | cut -d ":" -f1);
+    set -o pipefail
+    
+    optical_distance=$(echo ${inst_name} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
 
-    fastq_barcode=$(samtools view !{bam} | head -n1 | cut -d ":" -f1);
-    optical_distance=$(echo ${fastq_barcode} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
-    picard -Xmx40g MarkDuplicates TAGGING_POLICY=All OPTICAL_DUPLICATE_PIXEL_DISTANCE=${optical_distance} TMP_DIR=!{params.tmp_dir} CREATE_INDEX=true MAX_RECORDS_IN_RAM=5000000 BARCODE_TAG="RX" ASSUME_SORT_ORDER=coordinate VALIDATION_STRINGENCY=SILENT I=!{bam} O=!{library}_!{barcodes}.md.bam M=!{library}.markdups_log
+    picard -Xmx!{task.memory.toGiga()}g MarkDuplicates \
+        --TAGGING_POLICY All \
+        --OPTICAL_DUPLICATE_PIXEL_DISTANCE ${optical_distance} \
+        --TMP_DIR !{params.tmp_dir} \
+        --CREATE_INDEX true \
+        --MAX_RECORDS_IN_RAM 5000000 \
+        --BARCODE_TAG "RX" \
+        --ASSUME_SORT_ORDER coordinate \
+        --VALIDATION_STRINGENCY SILENT \
+        -I !{bam} \
+        -O !{library}_!{barcodes}.md.bam \
+        -M !{library}.markdups_log
     '''
 }
