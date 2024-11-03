@@ -2,7 +2,7 @@
 process gc_bias {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=2.20.7 bioconda::samtools=1.9"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
@@ -132,7 +132,7 @@ process insert_size_metrics {
 process picard_metrics {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=2.20.7"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:
