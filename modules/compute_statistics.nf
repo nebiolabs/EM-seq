@@ -88,42 +88,34 @@ process insert_size_metrics {
 
     output:
         tuple val(params.email), val(library), path('*_metrics'), emit: for_agg
+        tuple val(params.email), val(library), path('good_mapq.out.txt'), emit: high_mapq_insert_size_metrics
 
     shell:
     '''
 
-    good_mapq=$(mktemp -u /tmp/good_mapq.XXXXXX) # -u is unique
-    bad_mapq=$(mktemp -u /tmp/bad_mapq.XXXXXX)
+    good_mapq=$(mktemp -u good_mapq.XXXXXX)
+    bad_mapq=$(mktemp -u bad_mapq.XXXXXX)
     mkfifo "$good_mapq"
     mkfifo "$bad_mapq"
     trap "rm -f $good_mapq $bad_mapq" EXIT # cleanup upon exit
 
-    samtools view -hq20 -U "$bad_mapq" !{bam} > "$good_mapq" &
+    samtools view -h -q 20 -U "$bad_mapq" !{bam} > "$good_mapq" &
     samtools_pid=$!
 
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
         --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
-        --MINIMUM_PCT 0 --HISTOGRAM_FILE /dev/null &
+        --MINIMUM_PCT 0 -H /dev/null &
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
         --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt \
-        --MINIMUM_PCT 0 --HISTOGRAM_FILE /dev/null &
+        --MINIMUM_PCT 0 -H /dev/null &
 
     # Wait for samtools to finish, then close named pipes
     wait $samtools_pid
 
-    # do we need these pipes to stay open ?
-    #exec 3<>"$good_mapq"
-    #exec 3<>"$bad_mapq"
-
-    # Wait for remaining processes
-    wait
-
-    # how about this?
-    #extract the comments from the "good" mapq file
-    grep '^#' good_mapq.out.txt > !{library}_insertsize_metrics
-    #get the header line from the "good" mapq file and add a column for the mapq category
-    grep -i "rf.count" good_mapq.out.txt  | sed 's/$/\tcategory/' >> testing_insertsize_metrics
-    #add a column for the mapq category to the data 
+    # extract the leading lines from the "good" mapq file
+    grep -B 1000 '^insert_size' good_mapq.out.txt > !{library}_insertsize_metrics
+    # add a column for the mapq category to the hisogram header
+    sed -i 's/count$/count\\tcategory/' !{library}_insertsize_metrics
     grep '^[0-9][^A-Z]*$' good_mapq.out.txt | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
     grep '^[0-9][^A-Z]*$' bad_mapq.out.txt | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
     '''
