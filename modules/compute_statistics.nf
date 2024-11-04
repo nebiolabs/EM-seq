@@ -88,7 +88,7 @@ process insert_size_metrics {
 
     output:
         tuple val(params.email), val(library), path('*_metrics'), emit: for_agg
-        tuple val(params.email), val(library), path('good_mapq.out.txt'), emit: high_mapq_insert_size_metrics
+        tuple val(params.email), val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq_insert_size_metrics
 
     shell:
     '''
@@ -103,12 +103,12 @@ process insert_size_metrics {
     samtools_pid=$!
 
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
-        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
+        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O !{library}_good_mapq.insert_size_metrics.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_good_mapq_pid=$!
 
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
-        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt \
+        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O !{library}_bad_mapq.insert_size_metrics.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_bad_mapq_pid=$!
 
@@ -122,8 +122,8 @@ process insert_size_metrics {
     grep -B 1000 '^insert_size' good_mapq.out.txt > !{library}_insertsize_metrics
     # add a column for the mapq category to the hisogram header
     sed -i 's/count$/count\\tcategory/' !{library}_insertsize_metrics
-    grep '^[0-9][^A-Z]*$' good_mapq.out.txt | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
-    grep '^[0-9][^A-Z]*$' bad_mapq.out.txt | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
+    grep '^[0-9][^A-Z]*$' !{library}_good_mapq.insert_size_metrics.txt  | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
+    grep '^[0-9][^A-Z]*$' !{library}_bad_mapq.insert_size_metrics.txt  | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
     '''
 }
 
