@@ -105,12 +105,18 @@ process insert_size_metrics {
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
         --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
+    picard_good_mapq_pid=$!
+
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
         --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
+    picard_bad_mapq_pid=$!
 
-    # Wait for samtools to finish, then close named pipes
+    # Wait for programs to finish, named pipes will be closed by the trap
     wait $samtools_pid
+    wait $picard_good_mapq_pid
+    wait $picard_bad_mapq_pid
+
 
     # extract the leading lines from the "good" mapq file
     grep -B 1000 '^insert_size' good_mapq.out.txt > !{library}_insertsize_metrics
