@@ -89,4 +89,9 @@ def detectFileType(file) {
             .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
 
         aggregate_emseq( grouped_email_library ) 
+
+        all_results = grouped_email_library.join(
+            insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]
+        ).groupTuple().flatten().filter { it.every { file(it).exists() } }
+        multiqc( all_results )
 }

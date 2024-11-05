@@ -1,22 +1,17 @@
 
 process multiqc {
-    tag { library }
     conda "bioconda::multiqc=1.25"
     publishDir "${params.outputDir}"
 
     input:
-        tuple env(flowcell), val(email), val(library), val(barcodes), 
-              path(nonconverted_counts_tsv), path(fastp), path(bam), path(bai), 
-              path(gc_metrics), path(idxstat), path(flagstat), path(fastqc_zip), 
-              path(insertsize_metrics), path(tasmanian), path(mbias), 
-              path(alignment_summary_metrics_txt)
+        tuple val(email), path('*')
 
     output:
         path("multiqc_report.html"), emit: multiqc_report
 
     script:
     '''
-    cat <<CONFIG > multiqc_config.yaml 
+    cat <<-CONFIG > multiqc_config.yaml 
     title: EM-seq Alignment Summary - !{flowcell}
     extra_fn_clean_exts:
         - '.md'
@@ -52,7 +47,7 @@ process multiqc {
             avg_sequence_length: False
             percent_fails: False
             total_sequences: False
-    CONFIG
+CONFIG
 
     multiqc -ip . 
     '''
