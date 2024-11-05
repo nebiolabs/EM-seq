@@ -64,7 +64,7 @@ process aggregate_emseq {
     publishDir "${params.outputDir}/ngs-agg"
 
     input:
-        tuple env(flowcell), val(email), val(library), val(barcodes), 
+        tuple val(email), val(library), val(barcodes), 
               path(nonconverted_counts_tsv), path(fastp), path(bam), path(bai), 
               path(gc_metrics), path(idxstat), path(flagstat), path(fastqc_zip), 
               path(insertsize_metrics), path(tasmanian), path(mbias), 
