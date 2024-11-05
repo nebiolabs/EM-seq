@@ -43,7 +43,8 @@ def detectFileType(file) {
 
  workflow {
     main:
-        placeholder_r2 = File.createTempFile("placeholder.2", ".fastq")
+        // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
+        placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
         reads = Channel
         .fromPath(params.input_glob)
         .map { input_file ->
