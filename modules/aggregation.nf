@@ -87,10 +87,8 @@ process aggregate_emseq {
         --bam !{bam} \
         --bai !{bai} \
         --name !{library} \
-        --lane !{params.lane} \
         --contact_email !{params.email} \
         --project !{params.project} \
-        --sample !{params.sample} \
         --genome !{params.genome} \
         --gc !{gc_metrics} \
         --idx_stats !{idxstat} \
@@ -101,7 +99,6 @@ process aggregate_emseq {
         --insert !{insertsize_metrics} \
         --tasmanian !{tasmanian} \
         --aln !{alignment_summary_metrics_txt} \
-        --metadatafq_file !{metadata_fastq} \
         --fastp !{fastp} \
         --workflow !{params.workflow}_!{library} 2> ngs_agg.err 1> ngs_agg.out
     '''
