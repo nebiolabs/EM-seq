@@ -10,7 +10,7 @@ process alignReads {
               val(genome),
               val(fileType)
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
+        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
@@ -177,3 +177,28 @@ process mergeAndMarkDuplicates {
         -M !{library}.markdups_log
     '''
 }
+
+process find_soft_clips {
+    /* I can not see this variable in the output of picard::CollectAlignmentSummaryMetrics.
+     * see alignment_metrics.rb or the picard tool for more information. Perhaps, older
+     * versions of the picard tool will contain this information. 
+     */ 
+    label 'cpus_8'
+    tag { library }
+    publishDir "${params.flowcell}/${library}/softclips", more: 'copy', pattern: '*.{cigar_stats.tsv}*'
+    conda "bioconda::samtools=1.9"
+
+    input: 
+        tuple val(library), path(bam), path(bai), val(barcodes)
+
+    output:
+        tuple val(library), val(barcodes), emit: cigar_stats
+
+    // bam file should be *md.bam
+    shell:
+    '''
+        sam=$(echo !{bam} | sed 's/bam/cigar_stats.tsv/')
+        samtools view !{bam} | awk '{}'
+    '''
+}
+

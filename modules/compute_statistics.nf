@@ -79,6 +79,7 @@ process fastqc {
 
 process insert_size_metrics {
     label 'medium_cpu'
+    memory '-Xmx4g'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/insert_size"
@@ -101,14 +102,14 @@ process insert_size_metrics {
 
     samtools view -h -q 20 -U "$bad_mapq" !{bam} > "$good_mapq" &
     samtools_pid=$!
+    picard !{task.memory} CollectInsertSizeMetrics \
 
-    picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
-        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O !{library}_good_mapq.insert_size_metrics.txt \
+        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_good_mapq_pid=$!
 
-    picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
-        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O !{library}_bad_mapq.insert_size_metrics.txt \
+    picard !{task.memory} CollectInsertSizeMetrics \
+        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_bad_mapq_pid=$!
 
@@ -122,8 +123,23 @@ process insert_size_metrics {
     grep -B 1000 '^insert_size' good_mapq.out.txt > !{library}_insertsize_metrics
     # add a column for the mapq category to the hisogram header
     sed -i 's/count$/count\\tcategory/' !{library}_insertsize_metrics
-    grep '^[0-9][^A-Z]*$' !{library}_good_mapq.insert_size_metrics.txt  | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
-    grep '^[0-9][^A-Z]*$' !{library}_bad_mapq.insert_size_metrics.txt  | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
+    grep '^[0-9][^A-Z]*$' good_mapq.out.txt | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
+    grep '^[0-9][^A-Z]*$' bad_mapq.out.txt | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
+
+    # make sure we have 5 columns not 4 (if tandem_counts = 0 )
+    cat !{library}_insertsize_metrics | awk '{
+        if (header_seen==1) {
+            if (add_tandem==1) {
+                print $1"\t"$2"\t"$3"\t"0"\t"$4
+            }
+            else {print $0}
+        } 
+        else {print $0}
+        if ($1~/^insert_size/) {
+            header_seen=1; 
+            if (NF==4) {add_tandem=1;}
+        }
+    }' > tmp && mv tmp !{library}_insertsize_metrics
     '''
 }
 
