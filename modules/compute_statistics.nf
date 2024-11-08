@@ -1,6 +1,7 @@
 
 process gc_bias {
     label 'medium_cpu'
+    memory '-Xmx4g'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/gc_bias"
@@ -18,7 +19,7 @@ process gc_bias {
     | awk -F":|\\t" '{print $3"\\t"0"\\t"$5}' > include_regions.bed
 
     samtools view -h -L include_regions.bed !{bam} | \
-    picard -Xmx!{task.memory.toGiga()}g CollectGcBiasMetrics \
+    picard !{task.memory} CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O !{library}.gc_metrics -S !{library}.gc_summary_metrics \
         --CHART !{library}.gc.pdf -R !{params.genome}
