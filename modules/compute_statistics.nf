@@ -146,6 +146,7 @@ process insert_size_metrics {
 
 process picard_metrics {
     label 'medium_cpu'
+    memory '-Xmx4g'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
@@ -158,7 +159,7 @@ process picard_metrics {
 
     shell:
     '''
-    picard -Xmx!{task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
+    picard !{task.memory} CollectAlignmentSummaryMetrics \
         --VALIDATION_STRINGENCY SILENT -BS true -R !{params.genome} \
         -I !{bam} -O !{library}.alignment_summary_metrics.txt
     '''
