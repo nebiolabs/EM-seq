@@ -64,7 +64,7 @@ process alignReads {
         local type=$2
         if [ "$type" == "bam" ]; then
             barcodes=$(samtools view -H $file | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
-            rg_line=$(samtools view -H $file | grep "^@RG" | sed 's/\\t/\\\\t/g')
+            rg_line=$(samtools view -H $file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
         else
             barcodes=($(barcodes_from_fastq $file))
             rg_line="@RG\\tID:${barcodes}\\tSM:!{library}\\tBC:${barcodes}"
