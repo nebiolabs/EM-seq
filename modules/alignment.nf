@@ -58,6 +58,8 @@ process alignReads {
     }    
     
     get_barcodes_and_rg_line() {
+	set +o pipefail
+
         local file=$1
         local type=$2
         if [ "$type" == "bam" ]; then
@@ -67,6 +69,7 @@ process alignReads {
             barcodes=($(barcodes_from_fastq $file))
             rg_line="@RG\\tID:${barcodes}\\tSM:!{library}\\tBC:${barcodes}"
         fi
+	set -o pipefail
     }
 
     get_frac_reads() {
@@ -87,6 +90,8 @@ process alignReads {
             fi 
         fi
     }
+
+    echo "Analyzing files that are !{fileType}"
 
     case !{fileType} in 
         "fastq_paired_end")
