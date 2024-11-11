@@ -130,15 +130,19 @@ process alignReads {
     fi
 
     base_outputname="!{library}_${barcodes}_${flowcell}"
-   
+
+    set +o pipefail   
+
     inst_name=$(samtools view !{input_file1} | head -n 1 | cut -d ":" -f 1)
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
      
+    set -o pipefail
+	
     eval ${stream_reads} ${bam2fastq} \
-    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}.fastp.json" 2> fastp.stderr \
+    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}_fastp.json" 2> fastp.stderr \
     | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \

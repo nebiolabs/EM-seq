@@ -1,7 +1,6 @@
 
 process gc_bias {
     label 'medium_cpu'
-    memory '-Xmx4g'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/gc_bias"
@@ -19,7 +18,7 @@ process gc_bias {
     | awk -F":|\\t" '{print $3"\\t"0"\\t"$5}' > include_regions.bed
 
     samtools view -h -L include_regions.bed !{bam} | \
-    picard !{task.memory} CollectGcBiasMetrics \
+    picard -Xmx!{task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O !{library}.gc_metrics -S !{library}.gc_summary_metrics \
         --CHART !{library}.gc.pdf -R !{params.genome}
@@ -80,7 +79,6 @@ process fastqc {
 
 process insert_size_metrics {
     label 'medium_cpu'
-    memory '-Xmx4g'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/insert_size"
@@ -103,13 +101,13 @@ process insert_size_metrics {
 
     samtools view -h -q 20 -U "$bad_mapq" !{bam} > "$good_mapq" &
     samtools_pid=$!
-    picard !{task.memory} CollectInsertSizeMetrics \
+    picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
 
         --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_good_mapq_pid=$!
 
-    picard !{task.memory} CollectInsertSizeMetrics \
+    picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
         --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$bad_mapq" -O bad_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_bad_mapq_pid=$!
@@ -146,7 +144,6 @@ process insert_size_metrics {
 
 process picard_metrics {
     label 'medium_cpu'
-    memory '-Xmx4g'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
@@ -159,7 +156,7 @@ process picard_metrics {
 
     shell:
     '''
-    picard !{task.memory} CollectAlignmentSummaryMetrics \
+    picard -Xmx!{task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
         --VALIDATION_STRINGENCY SILENT -BS true -R !{params.genome} \
         -I !{bam} -O !{library}.alignment_summary_metrics.txt
     '''
