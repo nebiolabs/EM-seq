@@ -138,6 +138,9 @@ process insert_size_metrics {
             if (NF==4) {add_tandem=1;}
         }
     }' > tmp && mv tmp !{library}_insertsize_metrics
+
+    # for multiqc channel
+    mv good_mapq.out.txt !{library}.good_mapq.insert_size_metrics.txt
     '''
 }
 
