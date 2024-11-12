@@ -5,14 +5,14 @@ genome_path='/mnt/galaxy/galaxyworks/tool-data/T2T_chm13v2.0+bs_controls/bwameth
 conda activate nextflow
 
 nextflow main.nf  \
-  --input_glob "combined_fastqs/*R1.fastq.gz" \
+  --input_glob "test_data/*1.fastq.gz" \
   --genome "${genome_path}" \
-  --email "devanich@neb.com" \
-  --max_input_reads 43929170 \
-  --flowcell "ds_43929170" \
+  --email "aerijman@neb.com" \
+  --max_input_reads 1000000 \
+  --flowcell "test_pipeline" \
   -with-report  "emseq_metadata_report.html" \
   -with-timeline "emseq_metadata_timeline.html" \
   -with-dag "emseq_metadata_dag.html" \
-  -w "/mnt/hpc_scratch/aerijman/element_emseq_wkdir" \
+  -w "/mnt/hpc_scratch/" \
   --read_length 151
   -resume

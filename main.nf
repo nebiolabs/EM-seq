@@ -14,6 +14,7 @@ params.tmp_dir     = '/tmp'
 params.min_mapq    = 20 // for methylation assessment.
 params.max_input_reads = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
 params.downsample_seed = 42
+params.internal_neb = 'false'
 
 // include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
@@ -88,10 +89,19 @@ def detectFileType(file) {
             .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
             .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
 
-        aggregate_emseq( grouped_email_library ) 
+        if (params.internal_neb.toUpperCase() == "TRUE") {
+            aggregate_emseq( grouped_email_library ) 
+        }
+        else {
+            all_results = grouped_email_library
+                .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
+	    .flatten() 
+	    // .groupTuple().flatten() //.filter { it.every { file(it).exists() } }
 
-        all_results = grouped_email_library.join(
-            insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]
-        ).groupTuple().flatten().filter { it.every { file(it).exists() } }
-        multiqc( all_results )
+            println("testing the channel all_results *******************")
+            all_results.view()
+            // multiqc( all_results )
+        }
+
+
 }
