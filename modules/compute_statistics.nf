@@ -102,8 +102,7 @@ process insert_size_metrics {
     samtools view -h -q 20 -U "$bad_mapq" !{bam} > "$good_mapq" &
     samtools_pid=$!
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
-
-        --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
+	--INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_good_mapq_pid=$!
 
