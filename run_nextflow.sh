@@ -8,11 +8,11 @@ nextflow main.nf  \
   --input_glob "test_data/*1.fastq.gz" \
   --genome "${genome_path}" \
   --email "aerijman@neb.com" \
-  --max_input_reads 1000000 \
+  --max_input_reads 10000 \
   --flowcell "test_pipeline" \
   -with-report  "emseq_metadata_report.html" \
   -with-timeline "emseq_metadata_timeline.html" \
   -with-dag "emseq_metadata_dag.html" \
   -w "/mnt/hpc_scratch/" \
-  --read_length 151
+  --read_length 151 \
   -resume
