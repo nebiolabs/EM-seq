@@ -14,9 +14,8 @@ params.tmp_dir     = '/tmp'
 params.min_mapq    = 20 // for methylation assessment.
 params.max_input_reads = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
 params.downsample_seed = 42
-params.internal_neb = 'false'
+params.enable_neb_agg = 'false'
 
-// include { PATH_TO_TILES_KNOWN } from './modules/path_to_tiles_provided'
 include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
@@ -89,7 +88,7 @@ def detectFileType(file) {
             .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
             .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
 
-        if (params.internal_neb.toString().toUpperCase() == "TRUE") {
+        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_email_library ) 
         }
         else {
