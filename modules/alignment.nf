@@ -86,7 +86,7 @@ process alignReads {
             if [ $n_reads -le !{params.max_input_reads} ]; then
                 frac_reads=1
             else
-                frac_reads=$(echo $n_reads | awk '{!{params.max_input_reads}/$1}')
+                frac_reads=$(echo $n_reads | awk '{print !{params.max_input_reads}/$1}')
             fi 
         fi
     }
