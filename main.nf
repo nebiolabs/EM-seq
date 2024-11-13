@@ -89,7 +89,7 @@ def detectFileType(file) {
             .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
             .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
 
-        if (params.internal_neb.toUpperCase() == "TRUE") {
+        if (params.internal_neb.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_email_library ) 
         }
         else {
