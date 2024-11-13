@@ -9,8 +9,8 @@ process multiqc {
     input:
         tuple val(email), path('*')
 
-    output:
-        path("multiqc_report.html"), emit: multiqc_report
+    output:   
+        path("*multiqc_report.html"), emit: multiqc_report
 
     script:
     '''

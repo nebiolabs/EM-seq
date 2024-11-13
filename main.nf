@@ -95,12 +95,12 @@ def detectFileType(file) {
         else {
             all_results = grouped_email_library
                 .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
-	    .flatten() 
-	    // .groupTuple().flatten() //.filter { it.every { file(it).exists() } }
-
-            println("testing the channel all_results *******************")
-            all_results.view()
-            // multiqc( all_results )
+	            .groupTuple().flatten().toList()
+                .map { items -> 
+                    def (email, pathFiles) = [items[0], items[4..-1]]
+                        return [email, pathFiles]
+                    }
+            multiqc( all_results )
         }
 
 
