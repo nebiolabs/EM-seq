@@ -3,6 +3,7 @@ path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/dev2/" //current/"
 
 
 process multiqc {
+    label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
     publishDir "${params.outputDir}"
 

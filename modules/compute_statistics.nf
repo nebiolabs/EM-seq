@@ -26,6 +26,7 @@ process gc_bias {
 }
 
 process idx_stats {
+    label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.9"
     publishDir "${params.outputDir}/stats/idxstats"
@@ -61,6 +62,7 @@ process flag_stats {
 }
 
 process fastqc {
+    label 'medium_cpu'
     tag { library }
     conda "bioconda::fastqc=0.11.8"
     publishDir "${params.outputDir}/stats/fastqc"
