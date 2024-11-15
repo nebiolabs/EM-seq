@@ -17,7 +17,6 @@ process alignReads {
 
     shell:
 
-    // library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
     library = input_file1.baseName.replaceFirst(/_R1.fastq|_1.fastq|.1.fastq/,"").replaceFirst(/.gz|.bam/,"")
     '''
     get_nreads_from_fastq() {
