@@ -116,6 +116,6 @@ process aggregate_emseq {
     --tasmanian !{tasmanian} \
     --aln !{alignment_summary_metrics_txt} \
     --fastp !{fastp} \
-    --workflow !{params.workflow}_!{library} 2> ngs_agg.err 1> ngs_agg.out
+    --workflow !{params.workflow} 2> ngs_agg.!{library}.err 1> ngs_agg.!{library}.out
     '''
 }
