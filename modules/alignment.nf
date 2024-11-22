@@ -19,14 +19,6 @@ process alignReads {
 
     library = input_file1.baseName.replaceFirst(/_R1.fastq|_1.fastq|.1.fastq/,"").replaceFirst(/.gz|.bam/,"")
     '''
-    get_nreads_from_fastq() {
-        zcat -f $1 | grep -c "^+$" \
-        | awk '{
-            frac=!{params.max_input_reads}/$1; 
-            if (frac>=1) {frac=0.999}; 
-            split(frac, numParts, "."); print numParts[2]
-            }'
-    }
 
     flowcell_from_fastq() {
         set +o pipefail
@@ -81,7 +73,7 @@ process alignReads {
             if [ "$type" == "bam" ]; then
                 n_reads=$(samtools view -c -F 2304 $file)
             else
-                n_reads=$(get_nreads_from_fastq $file)
+                 n_reads=$(zcat -f $file | grep -c "^+$") 
             fi
             if [ $n_reads -le !{params.max_input_reads} ]; then
                 frac_reads=1
@@ -119,7 +111,7 @@ process alignReads {
         flowcell="!{params.flowcell}"
     fi
 
-    if (( $(echo "${frac_reads}} < 1" | bc -l) )); then
+    if (( $(echo "${frac_reads} < 1" | bc -l) )); then
         downsample_seed_frac=$(awk -v seed=!{params.downsample_seed} -v frac=${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
         stream_reads="${stream_reads} | samtools view -u -s ${downsample_seed_frac}"
     fi
