@@ -54,6 +54,10 @@ def detectFileType(file) {
             if (fileType == 'fastq_paired_end') {
                 read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
             }
+            if (read1File.toString() == read2File) {
+                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
+                throw new IllegalStateException("Invalid paired-end file configuration")
+            }
             def genome = params.genome
             return [read1File, read2File, genome, fileType]
         }
