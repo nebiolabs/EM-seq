@@ -33,25 +33,19 @@ process alignReads {
     }
 
     barcodes_from_fastq () {
-
         set +o pipefail
-
         zcat -f $1 \
         | awk '{
             if (NR%4==1) {
                 split($0, parts, ":"); 
                 arr[ parts[ length(parts) ] ]++
             }} END { for (i in arr) {print arr[i]"\\t"i} }' \
-        | sort -k1nr | head -n1 | cut -f2 
-        # | tr -c "[ACGTN]" "\\t"
-
+        | sort -k1nr | head -n1 | cut -f2
         set -o pipefail
-
     }    
     
     get_barcodes_and_rg_line() {
 	set +o pipefail
-
         local file=$1
         local type=$2
         if [ "$type" == "bam" ]; then
@@ -165,12 +159,15 @@ process mergeAndMarkDuplicates {
     
     optical_distance=$(echo ${inst_name} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
 
+    MAX_RECORDS_IN_RAM=$(echo "(${task.memory.toMega()} * 1024 * 0.8) / 1000" | bc)
+    # Each record typically consumes ~1 KB of memory. 80% of memory is safe, according to copilot.
+
     picard -Xmx!{task.memory.toGiga()}g MarkDuplicates \
         --TAGGING_POLICY All \
         --OPTICAL_DUPLICATE_PIXEL_DISTANCE ${optical_distance} \
         --TMP_DIR !{params.tmp_dir} \
         --CREATE_INDEX true \
-        --MAX_RECORDS_IN_RAM 5000000 \
+        --MAX_RECORDS_IN_RAM ${MAX_RECORDS_IN_RAM} \
         --BARCODE_TAG "RX" \
         --ASSUME_SORT_ORDER coordinate \
         --VALIDATION_STRINGENCY SILENT \

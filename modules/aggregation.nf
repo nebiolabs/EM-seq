@@ -1,6 +1,6 @@
 path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/dev2/" //current/"
 //"/Users/aerijman/Documents/new_ngs/newer/ngs-aggregate_results"
-
+// I will change that path as soon as we merge insert_size_fix.
 
 process multiqc {
     label 'medium_cpu'
