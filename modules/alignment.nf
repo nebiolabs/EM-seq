@@ -159,7 +159,7 @@ process mergeAndMarkDuplicates {
     
     optical_distance=$(echo ${inst_name} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
 
-    MAX_RECORDS_IN_RAM=$(echo "(${task.memory.toMega()} * 1024 * 0.8) / 1000" | bc)
+    MAX_RECORDS_IN_RAM=$(echo "(!{task.memory.toMega()} * 1024 * 0.8) / 1000" | bc)
     # Each record typically consumes ~1 KB of memory. 80% of memory is safe, according to copilot.
 
     picard -Xmx!{task.memory.toGiga()}g MarkDuplicates \
