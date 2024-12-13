@@ -95,16 +95,16 @@ def detectFileType(file) {
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_email_library ) 
         }
-        else {
-            all_results = grouped_email_library
-                .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
-	            .groupTuple().flatten().toList()
-                .map { items -> 
-                    def (email, pathFiles) = [items[0], items[4..-1]]
-                        return [email, pathFiles]
-                    }
-            multiqc( all_results )
-        }
+        
+        all_results = grouped_email_library
+            .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
+            .groupTuple().flatten().toList()
+            .map { items -> 
+                def (email, pathFiles) = [items[0], items[4..-1]]
+                    return [email, pathFiles]
+                }
+        multiqc( all_results )
+    
 
 
 }
