@@ -86,6 +86,10 @@ process aggregate_emseq {
         bc=$(echo !{barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
     fi
 
+        # Validate barcodes
+    if [[ ! ${barcodes} =~ ^[-ACGT]+$ ]]; then
+        echo "Warning: Invalid barcode format: ${barcodes}" >&2
+    fi
 
     unzip *fastqc.zip
 

@@ -10,15 +10,23 @@ process alignReads {
               val(genome),
               val(fileType)
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*_fastp.json"), emit: for_agg
+        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
 
     shell:
 
-    library = input_file1.baseName.replaceFirst(/_R1.fastq|_1.fastq|.1.fastq/,"").replaceFirst(/.gz|.bam/,"")
+    library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
     '''
+    get_nreads_from_fastq() {
+        zcat -f $1 | grep -c "^+$" \
+        | awk '{
+            frac=!{params.max_input_reads}/$1; 
+            if (frac>=1) {frac=0.999}; 
+            split(frac, numParts, "."); print numParts[2]
+            }'
+    }
 
     flowcell_from_fastq() {
         set +o pipefail
@@ -33,29 +41,33 @@ process alignReads {
     }
 
     barcodes_from_fastq () {
+
         set +o pipefail
+
         zcat -f $1 \
+        | head -n10000 \
         | awk '{
             if (NR%4==1) {
                 split($0, parts, ":"); 
                 arr[ parts[ length(parts) ] ]++
             }} END { for (i in arr) {print arr[i]"\\t"i} }' \
-        | sort -k1nr | head -n1 | cut -f2
+        | sort -k1nr | head -n1 | cut -f2 
+        # | tr -c "[ACGTN]" "\\t"
+
         set -o pipefail
+
     }    
     
     get_barcodes_and_rg_line() {
-	set +o pipefail
         local file=$1
         local type=$2
         if [ "$type" == "bam" ]; then
             barcodes=$(samtools view -H $file | grep @RG | awk '{for (i=1;i<=NF;i++) {if ($i~/BC:/) {print substr($i,4,length($i))} } }' | head -n1)
-            rg_line=$(samtools view -H $file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
+            rg_line=$(samtools view -H $file | grep "^@RG" | sed 's/\\t/\\\\t/g')
         else
             barcodes=($(barcodes_from_fastq $file))
             rg_line="@RG\\tID:${barcodes}\\tSM:!{library}\\tBC:${barcodes}"
         fi
-	set -o pipefail
     }
 
     get_frac_reads() {
@@ -67,17 +79,15 @@ process alignReads {
             if [ "$type" == "bam" ]; then
                 n_reads=$(samtools view -c -F 2304 $file)
             else
-                 n_reads=$(zcat -f $file | grep -c "^+$") 
+                n_reads=$(get_nreads_from_fastq $file)
             fi
             if [ $n_reads -le !{params.max_input_reads} ]; then
                 frac_reads=1
             else
-                frac_reads=$(echo $n_reads | awk '{print !{params.max_input_reads}/$1}')
+                frac_reads=$(echo $n_reads | awk '{!{params.max_input_reads}/$1}')
             fi 
         fi
     }
-
-    echo "Analyzing files that are !{fileType}"
 
     case !{fileType} in 
         "fastq_paired_end")
@@ -105,35 +115,25 @@ process alignReads {
         flowcell="!{params.flowcell}"
     fi
 
-    if (( $(echo "${frac_reads} < 1" | bc -l) )); then
+    if [ ${frac_reads} -lt 1 ]; then
         downsample_seed_frac=$(awk -v seed=!{params.downsample_seed} -v frac=${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
         stream_reads="${stream_reads} | samtools view -u -s ${downsample_seed_frac}"
     fi
 
-    # Validate barcodes
-    if [[ ! ${barcodes} =~ ^[-ACGT]+$ ]]; then
-        echo "Warning: Invalid barcode format: ${barcodes}" >&2
-    fi
-
     base_outputname="!{library}_${barcodes}_${flowcell}"
-
-    set +o pipefail   
-
+   
     inst_name=$(samtools view !{input_file1} | head -n 1 | cut -d ":" -f 1)
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
-
-    set -o pipefail
-	
+     
     eval ${stream_reads} ${bam2fastq} \
-    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}_fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t !{Math.max(1,(task.cpus*8).intdiv(8))} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
+    | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}.fastp.json" 2> fastp.stderr \
+    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
     | mark-nonconverted-reads.py --reference !{params.genome} 2> "${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
-    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus.intdiv(8))} -m !{(task.memory.toGiga()*5).intdiv(8)}GB -o "${base_outputname}.aln.bam" /dev/stdin
-
+    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus.intdiv(8))} -m !{(task.memory.toGiga()*3).intdiv(4)}GB -o "${base_outputname}.aln.bam" /dev/stdin
     '''
 }
 
@@ -159,15 +159,12 @@ process mergeAndMarkDuplicates {
     
     optical_distance=$(echo ${inst_name} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
 
-    MAX_RECORDS_IN_RAM=$(echo "(!{task.memory.toMega()} * 1024 * 0.8) / 1000" | bc)
-    # Each record typically consumes ~1 KB of memory. 80% of memory is safe, according to copilot.
-
     picard -Xmx!{task.memory.toGiga()}g MarkDuplicates \
         --TAGGING_POLICY All \
         --OPTICAL_DUPLICATE_PIXEL_DISTANCE ${optical_distance} \
         --TMP_DIR !{params.tmp_dir} \
         --CREATE_INDEX true \
-        --MAX_RECORDS_IN_RAM ${MAX_RECORDS_IN_RAM} \
+        --MAX_RECORDS_IN_RAM 5000000 \
         --BARCODE_TAG "RX" \
         --ASSUME_SORT_ORDER coordinate \
         --VALIDATION_STRINGENCY SILENT \
@@ -177,27 +174,17 @@ process mergeAndMarkDuplicates {
     '''
 }
 
-process find_soft_clips {
-    /* I can not see this variable in the output of picard::CollectAlignmentSummaryMetrics.
-     * see alignment_metrics.rb or the picard tool for more information. Perhaps, older
-     * versions of the picard tool will contain this information. 
-     */ 
-    label 'cpus_8'
-    tag { library }
-    publishDir "${params.flowcell}/${library}/softclips", more: 'copy', pattern: '*.{cigar_stats.tsv}*'
-    conda "bioconda::samtools=1.9"
 
-    input: 
-        tuple val(library), path(bam), path(bai), val(barcodes)
+process bwa_index {
+    // publishDir on wherever the genome is located.
+    // Hence genome param should be full path
+    label 'low_cpu'
+    tag { genome }
+    conda "bioconda::samtools=1.19 bioconda::bwa=0.7.18"
 
-    output:
-        tuple val(library), val(barcodes), emit: cigar_stats
-
-    // bam file should be *md.bam
     shell:
     '''
-        sam=$(echo !{bam} | sed 's/bam/cigar_stats.tsv/')
-        samtools view !{bam} | awk '{}'
+    samtools faidx !{params.genome}
+    bwa index !{params.genome}
     '''
 }
-
