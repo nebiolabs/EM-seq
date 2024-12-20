@@ -16,7 +16,7 @@ params.max_input_reads = "all_reads" // default is not downsampling , set to a n
 params.downsample_seed = 42
 params.enable_neb_agg = 'True'
 
-include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
+include { alignReads; mergeAndMarkDuplicates; bwa_index }                                               from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
@@ -45,6 +45,13 @@ def detectFileType(file) {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
+
+        // if reference is not indexed, index it.
+        if (! file("${params.genome}.bwt").exists()) {
+             bwa_index()
+            println "Using genome: ${params.genome}"
+        }
+
         reads = Channel
         .fromPath(params.input_glob)
         .map { input_file ->
@@ -58,14 +65,7 @@ def detectFileType(file) {
                 log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
-            // if reference is not indexed, index it.
-            if ("${params.genome}.bwt".exists()) {
-                def genome = params.genome
-                println "Using genome: ${params.genome}"
-            } else {
-                def genome = bwa_index(params.genome)
-                println "Indexing genome: ${params.genome}"
-            }            
+            def genome = params.genome
             return [read1File, read2File, genome, fileType]
         }
 
