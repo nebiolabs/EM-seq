@@ -180,11 +180,12 @@ process bwa_index {
     // Hence genome param should be full path
     label 'low_cpu'
     tag { genome }
-    conda "bioconda::samtools=1.19 bioconda::bwa=0.7.18"
+    conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7" //bioconda::bwa=0.7.18"
 
     shell:
     '''
+    bwameth.py index !{params.genome}
     samtools faidx !{params.genome}
-    bwa index !{params.genome}
+    # bwa index !{params.genome}
     '''
 }
