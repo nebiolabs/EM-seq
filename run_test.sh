@@ -41,7 +41,7 @@ rm tmp_fq
 
 gen_rand_seq() { 
     length=$1
-    tr -dc 'ACGT' < /dev/urandom | head -c ${length}
+ 	LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
 }
 export -f gen_rand_seq
 revcomp() {
