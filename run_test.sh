@@ -56,11 +56,14 @@ samtools view ${tmp}/emseq-test.u.bam | \
     cut -f10 | paste - - | \
     awk 'BEGIN{srand()}{
         min=20; 
-        max=700; 
+        max=700;
         random_number = int(min + rand() * (max - min + 1)); 
-        r=system("gen_rand_seq " random_number);
-        read2=system("revcomp " $2);
-        # read2=$2
+        cmd1 = "gen_rand_seq "random_number 
+        cmd1 | getline r;
+        close(cmd1)
+        cmd2 = "revcomp " $2 
+        cmd2 | getline read2;
+        close(cmd2)
         print $1""r""read2
     }' | tr -d "\n" | fold -w60 >> ${tmp}/reference.fa
     #| shuf | tr -d "\n" | fold -w60 >> ${tmp}/reference.fa
@@ -109,6 +112,16 @@ nextflow run ${pwd}/main.nf  \
   -w "${tmp}/work" \
   --read_length 151 \
   --enable_neb_agg "false" \
-  -resume
+  -resume 2>&1 > test.log.out
+
+# Check results
+cat stats/flagstats/emseq-test_76..flagstat |\
+    grep -q "5000 + 0 properly paired" && echo "flagstats OK" || echo flagstats not OK" > test.log.out
+tail -n2 stats/picard_alignment_metrics/emseq-test_76..alignment_summary_metrics.txt |\
+    awk 'BEGIN{result="alignment metrics not OK"}{if ($1==76 && $2>4996) {result="alignment metrics OK"}}END{print result}' > test.log.out
+
+cd ..
+rm -r tmp
+popd
 
 # /mnt/hpc_scratch/" \
