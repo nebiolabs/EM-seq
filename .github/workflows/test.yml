@@ -34,16 +34,8 @@ jobs:
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.ACTIONS_SSH_PRIVATE_KEY }}
-      - name: Setup miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          miniforge-variant: Mambaforge
-          channels: conda-forge, bioconda, defaults
-          auto-activate-base: true
-          use-mamba: true
-			- name: Install Nextflow
-  			run: conda install -y -c bioconda nextflow=${{ matrix.NXF_VER }}
+      - name: Setup Nextflow
+        uses: nf-core/setup-nextflow@v2.0.0
       - name: Run nf test
         run: |
           sudo apt-get install libxml2-utils
