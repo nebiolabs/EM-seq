@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Nextflow
         uses: nf-core/setup-nextflow@v2.0.0
-      - name: Run nf test
+      - name: Run test script
         run: |
-          sudo apt-get install libxml2-utils
+          sudo apt-get install -y libxml2-utils samtools
           bash run_test.sh
