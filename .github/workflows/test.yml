@@ -30,10 +30,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up SSH # for cloning private test_sequencing_runs repo
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.ACTIONS_SSH_PRIVATE_KEY }}
       - name: Setup Nextflow
         uses: nf-core/setup-nextflow@v2.0.0
       - name: Run nf test
