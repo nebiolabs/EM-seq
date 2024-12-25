@@ -1,3 +1,4 @@
+set -euo pipefail
 pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
 mkdir ${tmp}
