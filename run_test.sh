@@ -6,6 +6,20 @@ pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
 mkdir ${tmp}
 
+
+# check conda is installed OR install it #
+# -------------------------------------- #
+if command -v conda &> /dev/null; then
+    activate_conda=$(type -a conda | grep -Eo '/.*conda' | head -n 1 | sed 's/\/bin\|\/condabin.*$/\/bin\/activate/')
+else
+    echo "please install conda. Then run this script"   
+fi
+. ${activate_conda}
+conda create --name nextflow.emseq --yes python=3.8 && conda install --name nextflow.emseq --yes bioconda:nextflow=23.10 bioconda::samtools=1.19
+conda activate nextflow.emseq
+
+
+
 # make 151 nt-long bam and fastq files WITH simulated conversions #
 # --------------------------------------------------------------- #
 
@@ -96,10 +110,6 @@ gzip -c ${tmp}/emseq-test_76.R2.fastq > ${tmp}/emseq-test_76.R2.fastq.gz
 # --------- #
 
 genome_path=${tmp}/reference.fa
-
-#. /mnt/home/aerijman/miniconda3/bin/activate
-. ~/miniconda3/bin/activate
-conda activate nextflow
 
 pushd ${tmp}
 # loop for different type of files, fastq, fastq.gz and bam
