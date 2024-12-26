@@ -1,4 +1,7 @@
+#!/bin/bash
 set -euo pipefail
+
+
 pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
 mkdir ${tmp}
@@ -121,8 +124,6 @@ cat stats/flagstats/emseq-test_76..flagstat |\
 tail -n2 stats/picard_alignment_metrics/emseq-test_76..alignment_summary_metrics.txt |\
     awk 'BEGIN{result="alignment metrics not OK"}{if ($1==76 && $2>4996) {result="alignment metrics OK"}}END{print result}' > test.log.out
 
-cd ..
-rm -r tmp
-popd
+rm -r ${tmp}
 
 # /mnt/hpc_scratch/" \
