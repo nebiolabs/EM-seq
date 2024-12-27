@@ -27,9 +27,6 @@ conda install -c conda-forge libgcc-ng=12
 # 
 
 conda create --name nextflow.emseq --yes python=3.8 && conda install --name nextflow.emseq --yes bioconda:nextflow=23.10 bioconda::samtools=1.19
-
-exec $SHELL
-conda init
 conda activate nextflow.emseq
 
 
