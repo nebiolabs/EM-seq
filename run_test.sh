@@ -14,7 +14,8 @@ if command -v conda &> /dev/null; then
 else
     echo "please install conda. Then run this script"   
 fi
-. ${activate_conda} || echo "Perhaps conda is in: $(type -a conda)"
+. ${activate_conda} || echo "Perhaps conda is not in: $(type -a conda) ?"
+conda install -c conda-forge libgcc-ng=12
 conda create --name nextflow.emseq --yes python=3.8 && conda install --name nextflow.emseq --yes bioconda:nextflow=23.10 bioconda::samtools=1.19
 conda activate nextflow.emseq
 
