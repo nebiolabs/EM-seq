@@ -47,18 +47,18 @@ gen_rand_seq() {
     length=$1
  	LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
 }
-export -f gen_rand_seq
+# export -f gen_rand_seq
 revcomp() {
     echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
 }
-export -f revcomp
+# export -f revcomp
 
 
 echo ">chr_Human_autosome_chr1" > ${tmp}/reference.fa
 
 samtools view ${tmp}/emseq-test.u.bam | \
     cut -f10 | paste - - | \
-    awk 'BEGIN{srand()}{
+    awk -v gen_rand_seq="gen_rand_seq" -v revcomp="revcomp" 'BEGIN{srand()}{
         min=20; 
         max=700;
         random_number = int(min + rand() * (max - min + 1)); 
