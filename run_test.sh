@@ -23,6 +23,7 @@ conda config --add channels defaults
 conda config --add channels conda-forge
 conda config --add channels bioconda
 conda install -c conda-forge libgcc-ng=12
+conda init
 # 
 
 conda create --name nextflow.emseq --yes python=3.8 && conda install --name nextflow.emseq --yes bioconda:nextflow=23.10 bioconda::samtools=1.19
