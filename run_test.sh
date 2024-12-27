@@ -4,7 +4,7 @@ set -euo pipefail
 
 pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
-mkdir ${tmp}
+[ -d "${tmp}" ] || mkdir -p "${tmp}"
 
 
 # check conda is installed OR install it #
@@ -126,13 +126,13 @@ nextflow run ${pwd}/main.nf  \
   -w "${tmp}/work" \
   --read_length 151 \
   --enable_neb_agg "false" \
-  -resume 2>&1 > test.log.out
+  -resume 2>&1 > ${pwd}/test.log.out
 
 # Check results
-cat stats/flagstats/emseq-test_76..flagstat |\
-    grep -q "5000 + 0 properly paired" && echo "flagstats OK" || echo flagstats not OK" > test.log.out
-tail -n2 stats/picard_alignment_metrics/emseq-test_76..alignment_summary_metrics.txt |\
-    awk 'BEGIN{result="alignment metrics not OK"}{if ($1==76 && $2>4996) {result="alignment metrics OK"}}END{print result}' > test.log.out
+cat em-seq_output/stats/flagstats/emseq-test_76..flagstat |\
+    grep -q "5000 + 0 properly paired" && echo "flagstats OK" || echo flagstats not OK" >> ${pwd}/test.log.out
+tail -n2 em-seq_output/stats/picard_alignment_metrics/emseq-test_76..alignment_summary_metrics.txt |\
+    awk 'BEGIN{result="alignment metrics not OK"}{if ($1==76 && $2>4996) {result="alignment metrics OK"}}END{print result}' >> ${pwd}/test.log.out
 
 rm -r ${tmp}
 
