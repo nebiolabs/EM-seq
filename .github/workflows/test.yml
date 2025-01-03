@@ -28,6 +28,14 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          miniforge-variant: Mambaforge
+          channels: conda-forge, bioconda, defaults
+          auto-activate-base: true
+          use-mamba: true
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Setup Nextflow

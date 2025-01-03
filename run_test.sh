@@ -10,7 +10,7 @@ tmp="${pwd}/test_data/tmp"
 # check conda is installed OR install it #
 # -------------------------------------- #
 if command -v conda &> /dev/null; then
-    activate_conda=$(type -a conda | grep -Eo '/.*conda' | head -n 1 | sed 's/\/bin\|\/condabin.*$/\/bin\/activate/')
+    activate_conda=$(type -a conda | grep -Eo '/.*conda' | head -n 1 | sed 's/\/bin\|\/condabin/\/bin/' | sed 's/bin.*/bin\/activate/')
 else
     echo "please install conda. Then run this script"
     exit 1
@@ -18,12 +18,12 @@ fi
 . ${activate_conda} || echo "Perhaps conda is not in: $(type -a conda) ?"
 
 # All these are to avoid dependencies problems... # 
-conda update conda
-conda update --all
-conda config --add channels defaults
-conda config --add channels conda-forge
-conda config --add channels bioconda
-conda install -c conda-forge libgcc-ng=12
+#conda update conda -y
+#conda update --all -y
+#conda config --add channels defaults 
+#conda config --add channels conda-forge 
+#conda config --add channels bioconda 
+#conda install -c conda-forge libgcc-ng=12 -y
 # 
 
 conda create --name nextflow.emseq --yes python=3.8 && conda install --name nextflow.emseq --yes bioconda:nextflow=23.10 bioconda::samtools=1.19
