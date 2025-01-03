@@ -1,4 +1,5 @@
 #!/bin/bash
+
 set -euo pipefail
 
 
@@ -6,6 +7,16 @@ pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
 [ -d "${tmp}" ] || mkdir -p "${tmp}"
 
+
+# To be used later in the script #
+# ------------------------------ #
+gen_rand_seq() {
+    length=$1
+    LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
+}
+revcomp() {
+    echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
+}
 
 # check conda is installed OR install it #
 # -------------------------------------- #
@@ -34,7 +45,7 @@ conda activate nextflow.emseq
 # make 151 nt-long bam and fastq files WITH simulated conversions #
 # --------------------------------------------------------------- #
 
-ln -s ${pwd}/test_data/emseq-test_R*.fastq ${tmp}/
+ln -sf ${pwd}/test_data/emseq-test_R*.fastq ${tmp}/
 
 mkfifo tmp_fq
 paste -d "\n" <(samtools sort ${tmp}/emseq-test_R1.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=77; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') <(samtools sort ${tmp}/emseq-test_R2.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=141; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') > tmp_fq &
@@ -67,18 +78,6 @@ rm tmp_fq
 
 # make genome and index #
 # ---------------------
-
-gen_rand_seq() { 
-    length=$1
- 	LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
-}
-# export -f gen_rand_seq
-revcomp() {
-    echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
-}
-# export -f revcomp
-
-
 echo ">chr_Human_autosome_chr1" > ${tmp}/reference.fa
 
 samtools view ${tmp}/emseq-test.u.bam | \
