@@ -13,14 +13,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
-
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -29,18 +21,19 @@ jobs:
         sudo apt-get install -y tr
         sudo apt-get install -y gzip
 
-    - name: Run tests
-      run: |
-        chmod +x run_test.sh
-        ./run_test.sh
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v2
-      with:
-        name: test-results
-        path: |
-          ${tmp}/test.log.out
-          ${tmp}/emseq_metadata_report.html
-          ${tmp}/emseq_metadata_timeline.html
-          ${tmp}/emseq_metadata_dag.html
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          # miniforge-variant: Mambaforge
+          channels: conda-forge, bioconda, defaults
+          auto-activate-base: true
+          use-mamba: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Nextflow
+        uses: nf-core/setup-nextflow@v2.0.0
+      - name: Run test script
+        run: |
+          sudo apt-get install -y libxml2-utils samtools
+          bash run_test.sh
