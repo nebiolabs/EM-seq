@@ -1,31 +1,37 @@
 name: test
-
+# Controls when the workflow will run:
 on:
+  # Triggers the workflow on push to master branch, or on pull request
+  # to any branch:
   push:
     branches:
-      - before_read_from_file_commit
+      - master
   pull_request:
-    branches:
-      - before_read_from_file_commit
 
 jobs:
-  test:
+
+  # label of the job:
+  tests:
+    name: Tests
+    # containers must run in Linux based operating systems:
     runs-on: ubuntu-latest
-
+    # Do not ignore bash profile files. From:
+    # https://github.com/marketplace/actions/setup-miniconda
+    # This is needed to run conda. It prevents the error:
+    # CommandNotFoundError: Your shell has not been properly configured
+    # to use 'conda activate'.
+    strategy:
+      matrix:
+        NXF_VER:
+          - "23.04.1"
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y samtools
-        sudo apt-get install -y nextflow
-        sudo apt-get install -y tr
-        sudo apt-get install -y gzip
-
       - name: Setup miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          # miniforge-variant: Mambaforge
           channels: conda-forge, bioconda, defaults
           auto-activate-base: true
           use-mamba: true
