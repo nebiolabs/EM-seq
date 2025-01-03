@@ -1,46 +1,46 @@
 name: test
-# Controls when the workflow will run:
+
 on:
-  # Triggers the workflow on push to master branch, or on pull request
-  # to any branch:
   push:
     branches:
-      - master
+      - before_read_from_file_commit
   pull_request:
+    branches:
+      - before_read_from_file_commit
 
 jobs:
-
-  # label of the job:
-  tests:
-    name: Tests
-    # containers must run in Linux based operating systems:
+  test:
     runs-on: ubuntu-latest
-    # Do not ignore bash profile files. From:
-    # https://github.com/marketplace/actions/setup-miniconda
-    # This is needed to run conda. It prevents the error:
-    # CommandNotFoundError: Your shell has not been properly configured
-    # to use 'conda activate'.
-    strategy:
-      matrix:
-        NXF_VER:
-          - "23.04.1"
-    defaults:
-      run:
-        shell: bash -l {0}
+
     steps:
-      - name: Setup miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          miniforge-variant: Mambaforge
-          channels: conda-forge, bioconda, defaults
-          auto-activate-base: true
-          use-mamba: true
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Nextflow
-        uses: nf-core/setup-nextflow@v2.0.0
-      - name: Run test script
-        run: |
-          sudo apt-get install -y libxml2-utils samtools
-          bash run_test.sh
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y samtools
+        sudo apt-get install -y nextflow
+        sudo apt-get install -y tr
+        sudo apt-get install -y gzip
+
+    - name: Run tests
+      run: |
+        chmod +x run_test.sh
+        ./run_test.sh
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results
+        path: |
+          ${tmp}/test.log.out
+          ${tmp}/emseq_metadata_report.html
+          ${tmp}/emseq_metadata_timeline.html
+          ${tmp}/emseq_metadata_dag.html
