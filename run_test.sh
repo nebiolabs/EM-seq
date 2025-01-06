@@ -25,8 +25,9 @@ conda config --add channels bioconda
 conda install -c conda-forge libgcc-ng=12 -y
 
 conda create --name nextflow.emseq --yes python=3.8 && conda install --name nextflow.emseq --yes bioconda:nextflow=23.10 bioconda::samtools=1.19
+exec $SHELL
+conda init
 conda activate nextflow.emseq
-
 
 # make 151 nt-long bam and fastq files WITH simulated conversions #
 # --------------------------------------------------------------- #
@@ -69,10 +70,12 @@ echo ">chr_Human_autosome_chr1" > ${tmp}/reference.fa
 gen_rand_seq() {
     length=$1
     LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
-} && \
+} 
 revcomp() {
     echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
-} && export -f gen_rand_seq revcomp && \
+} 
+export -f gen_rand_seq revcomp
+
 samtools view ${tmp}/emseq-test.u.bam | \
     cut -f10 | paste - - | \
     awk -v gen_rand_seq="gen_rand_seq" -v revcomp="revcomp" 'BEGIN{srand()}{
