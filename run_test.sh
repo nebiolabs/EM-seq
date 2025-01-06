@@ -7,18 +7,6 @@ tmp="${pwd}/test_data/tmp"
 [ -d "${tmp}" ] || mkdir -p "${tmp}"
 
 
-# To be used later in the script #
-# ------------------------------ #
-gen_rand_seq() {
-    length=$1
-    LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
-}
-revcomp() {
-    echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
-}
-
-export -f gen_rand_seq revcomp
-
 # check conda is installed OR install it #
 # -------------------------------------- #
 if command -v conda &> /dev/null; then
@@ -77,6 +65,15 @@ rm tmp_fq
 # make genome and index #
 # ---------------------
 echo ">chr_Human_autosome_chr1" > ${tmp}/reference.fa
+
+gen_rand_seq() {
+    length=$1
+    LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
+}
+revcomp() {
+    echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
+}
+export -f gen_rand_seq revcomp 
 
 samtools view ${tmp}/emseq-test.u.bam | \
     cut -f10 | paste - - | \
