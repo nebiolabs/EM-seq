@@ -17,6 +17,8 @@ revcomp() {
     echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
 }
 
+export -f gen_rand_seq revcomp
+
 # check conda is installed OR install it #
 # -------------------------------------- #
 if command -v conda &> /dev/null; then
