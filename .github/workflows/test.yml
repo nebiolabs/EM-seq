@@ -34,7 +34,6 @@ jobs:
           auto-update-conda: true
           channels: conda-forge, bioconda, defaults
           auto-activate-base: true
-          use-mamba: true
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Setup Nextflow
