@@ -143,12 +143,22 @@ nextflow run ${pwd}/main.nf  \
   --enable_neb_agg "false" \
   -resume 2>&1 > ${pwd}/test.log.out
 
+# Check if Nextflow run was successful
+if [ $? -ne 0 ]; then
+    echo "Nextflow pipeline failed" >> ${pwd}/test.log.out 
+    exit 1
+else
+    echo "Nextflow pipeline succeeded" >> ${pwd}/test.log.out
+fi
+
+
 # Check results
+echo "checking results..."
 cat em-seq_output/stats/flagstats/emseq-test_76..flagstat |\
-    grep -q "5000 + 0 properly paired" && echo "flagstats OK" || echo flagstats not OK" >> ${pwd}/test.log.out
+    grep -q "5000 + 0 properly paired" && echo "flagstats OK" >> ${pwd}/test.log.out || echo "flagstats not OK" >> ${pwd}/test.log.out
 tail -n2 em-seq_output/stats/picard_alignment_metrics/emseq-test_76..alignment_summary_metrics.txt |\
     awk 'BEGIN{result="alignment metrics not OK"}{if ($1==76 && $2>4996) {result="alignment metrics OK"}}END{print result}' >> ${pwd}/test.log.out
 
 rm -r ${tmp}
+echo "FINISHED"
 
-# /mnt/hpc_scratch/" \
