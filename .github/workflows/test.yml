@@ -1,0 +1,44 @@
+name: test
+# Controls when the workflow will run:
+on:
+  # Triggers the workflow on push to master branch, or on pull request
+  # to any branch:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+
+  # label of the job:
+  tests:
+    name: Tests
+    # containers must run in Linux based operating systems:
+    runs-on: ubuntu-latest
+    # Do not ignore bash profile files. From:
+    # https://github.com/marketplace/actions/setup-miniconda
+    # This is needed to run conda. It prevents the error:
+    # CommandNotFoundError: Your shell has not been properly configured
+    # to use 'conda activate'.
+    strategy:
+      matrix:
+        NXF_VER:
+          - "23.04.1"
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          channels: conda-forge, bioconda, defaults
+          auto-activate-base: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Nextflow
+        uses: nf-core/setup-nextflow@v2.0.0
+      - name: Run test script
+        run: |
+          sudo apt-get install -y libxml2-utils samtools
+          bash run_test.sh
