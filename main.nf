@@ -54,67 +54,67 @@ def detectFileType(file) {
                 return [genomeDir, genome]
         }
         index = bwa_index( ref_fasta )
-        index.view()
-        // reads = Channel
-        // .fromPath(params.input_glob)
-        // .map { input_file ->
-        //     def fileType = detectFileType(input_file)
-        //     def read1File = input_file
-        //     def read2File = placeholder_r2.toString()
-        //     if (fileType == 'fastq_paired_end') {
-        //         read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
-        //     }
-        //     if (read1File.toString() == read2File) {
-        //         log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
-        //         throw new IllegalStateException("Invalid paired-end file configuration")
-        //     }
-        //     def genome = params.genome
-        //     return [read1File, read2File, genome, fileType]
-        // }
 
-        // println "Processing " + params.flowcell + "... => " + params.outputDir
-        // println "Cmd line: $workflow.commandLine"
+        reads = Channel
+        .fromPath(params.input_glob)
+        .map { input_file ->
+            def fileType = detectFileType(input_file)
+            def read1File = input_file
+            def read2File = placeholder_r2.toString()
+            if (fileType == 'fastq_paired_end') {
+                read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
+            }
+            if (read1File.toString() == read2File) {
+                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
+                throw new IllegalStateException("Invalid paired-end file configuration")
+            }
+            def genome = params.genome
+            return [read1File, read2File, genome, fileType]
+        }
 
-        // // align and mark duplicates
-        // alignedReads = alignReads( reads )
-        // markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        // extract      = methylDackel_extract( markDup.md_bams )
-        // mbias        = methylDackel_mbias( markDup.md_bams )
+        println "Processing " + params.flowcell + "... => " + params.outputDir
+        println "Cmd line: $workflow.commandLine"
 
-        // // collect statistics
-        // gcbias       = gc_bias( markDup.md_bams )
-        // idxstats     = idx_stats( markDup.md_bams )
-        // flagstats    = flag_stats( markDup.md_bams )
-        // fastqc       = fastqc( markDup.md_bams )
-        // insertsize   = insert_size_metrics( markDup.md_bams ) 
-        // metrics      = picard_metrics( markDup.md_bams )
-        // mismatches   = tasmanian( markDup.md_bams )
+        // align and mark duplicates
+        alignedReads = alignReads( reads )
+        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+        extract      = methylDackel_extract( markDup.md_bams )
+        mbias        = methylDackel_mbias( markDup.md_bams )
 
-        // // Channel for programs that summarize all results
-        // grouped_email_library = alignedReads.for_agg.groupTuple(by: [0, 1])
-        //     .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-        //     .combine(index)
+        // collect statistics
+        gcbias       = gc_bias( markDup.md_bams )
+        idxstats     = idx_stats( markDup.md_bams )
+        flagstats    = flag_stats( markDup.md_bams )
+        fastqc       = fastqc( markDup.md_bams )
+        insertsize   = insert_size_metrics( markDup.md_bams ) 
+        metrics      = picard_metrics( markDup.md_bams )
+        mismatches   = tasmanian( markDup.md_bams )
 
-        // if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-        //     aggregate_emseq( grouped_email_library ) 
-        // }
+        // Channel for programs that summarize all results
+        grouped_email_library = alignedReads.for_agg.groupTuple(by: [0, 1])
+            .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+            .combine(index)
+
+        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
+            aggregate_emseq( grouped_email_library ) 
+        }
         
-        // all_results = grouped_email_library
-        //     .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
-        //     .groupTuple().flatten().toList()
-        //     .map { items -> 
-        //         def (email, pathFiles) = [items[0], items[4..-1]]
-        //             return [email, pathFiles]
-        //         }
-        // multiqc( all_results )
+        all_results = grouped_email_library
+            .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
+            .groupTuple().flatten().toList()
+            .map { items -> 
+                def (email, pathFiles) = [items[0], items[4..-1]]
+                    return [email, pathFiles]
+                }
+        multiqc( all_results )
     
 
 
