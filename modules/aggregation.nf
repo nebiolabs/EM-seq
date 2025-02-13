@@ -68,7 +68,8 @@ process aggregate_emseq {
                path(insertsize_metrics),
                path(tasmanian),
                path(mbias),
-               path(alignment_summary_metrics_txt)
+               path(alignment_summary_metrics_txt),
+               val(index)
 
     output:
         path('ngs_agg.*')

@@ -6,7 +6,7 @@ process gc_bias {
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
         tuple val(params.email), val(library), path('*gc_metrics'), emit: for_agg
@@ -21,7 +21,7 @@ process gc_bias {
     picard -Xmx!{task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O !{library}.gc_metrics -S !{library}.gc_summary_metrics \
-        --CHART !{library}.gc.pdf -R !{params.genome}
+        --CHART !{library}.gc.pdf -R !{index}
     '''
 }
 
@@ -32,7 +32,7 @@ process idx_stats {
     publishDir "${params.outputDir}/stats/idxstats"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
         tuple val(params.email), val(library), path("*idxstat"), emit: for_agg
@@ -50,7 +50,7 @@ process flag_stats {
     publishDir "${params.outputDir}/stats/flagstats"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
         tuple val(params.email), val(library), path("*flagstat"), emit: for_agg
@@ -68,7 +68,7 @@ process fastqc {
     publishDir "${params.outputDir}/stats/fastqc"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
         tuple val(params.email), val(library), path('*_fastqc.zip'), emit: for_agg
@@ -86,7 +86,7 @@ process insert_size_metrics {
     publishDir "${params.outputDir}/stats/insert_size"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
         tuple val(params.email), val(library), path('*_metrics'), emit: for_agg
@@ -153,7 +153,7 @@ process picard_metrics {
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
         tuple val(params.email), val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
@@ -161,7 +161,7 @@ process picard_metrics {
     shell:
     '''
     picard -Xmx!{task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
-        --VALIDATION_STRINGENCY SILENT -BS true -R !{params.genome} \
+        --VALIDATION_STRINGENCY SILENT -BS true -R !{index} \
         -I !{bam} -O !{library}.alignment_summary_metrics.txt
     '''
 }
@@ -173,7 +173,7 @@ process tasmanian {
     conda "bioconda::samtools=1.9 bioconda::tasmanian-mismatch=1.0.7"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
         tuple val(params.email), val(library), path('*.csv'), emit: for_agg
@@ -183,7 +183,7 @@ process tasmanian {
     set +e
     set +o pipefail
 
-    samtools view -q 30 -F 3840 !{bam} | head -n 2000000 | run_tasmanian -r !{params.genome} > !{library}.csv
+    samtools view -q 30 -F 3840 !{bam} | head -n 2000000 | run_tasmanian -r !{index} > !{library}.csv
     '''
 
 }

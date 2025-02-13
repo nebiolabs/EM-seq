@@ -8,7 +8,7 @@ process methylDackel_mbias {
     publishDir "${params.outputDir}/methylDackelExtracts/mbias"
 
     input:
-        tuple val(library), path(md_bam), path(md_bai), val(barcodes)
+        tuple val(library), path(md_bam), path(md_bai), val(barcodes), val(index)
 
     output:
         path('*.svg'), emit: mbias_output_svg
@@ -32,11 +32,11 @@ process methylDackel_mbias {
             # not sure why we need both --keepDupes and -F, probably a bug in mbias
             join -t $'\t' -j1 -o 1.2,1.3,1.4,1.5,1.6,2.5,2.6 -a 1 -e 0 \
             <( \
-                MethylDackel mbias --noSVG $arg -@ !{task.cpus} -r $chr !{params.genome} !{md_bam} | \
+                MethylDackel mbias --noSVG $arg -@ !{task.cpus} -r $chr !{index} !{md_bam} | \
                 tail -n +2 | awk '{print $1"-"$2"-"$3"\t"$0}' | sort -k 1b,1
             ) \
             <( \
-                MethylDackel mbias --noSVG --keepDupes -F 2816 $arg -@ !{task.cpus} -r $chr !{params.genome} !{md_bam} | \
+                MethylDackel mbias --noSVG --keepDupes -F 2816 $arg -@ !{task.cpus} -r $chr !{index} !{md_bam} | \
                 tail -n +2 | awk '{print $1"-"$2"-"$3"\t"$0}' | sort -k 1b,1
             ) \
             | sed "s/^/${chr}\t${context}\t/" \
@@ -44,10 +44,10 @@ process methylDackel_mbias {
         done
     done
     # makes the svg files for trimming checks
-    MethylDackel mbias -@ !{task.cpus} --noCpG --CHH --CHG -r ${chrs[0]} !{params.genome} !{md_bam} !{library}_chn
+    MethylDackel mbias -@ !{task.cpus} --noCpG --CHH --CHG -r ${chrs[0]} !{index} !{md_bam} !{library}_chn
     for f in *chn*.svg; do sed -i "s/Strand<\\/text>/Strand $f ${chrs[0]} CHN <\\/text>/" $f; done;
 
-    MethylDackel mbias -@ !{task.cpus} -r ${chrs[0]} !{params.genome} !{md_bam} !{library}_cpg
+    MethylDackel mbias -@ !{task.cpus} -r ${chrs[0]} !{index} !{md_bam} !{library}_cpg
     for f in *cpg*.svg; do sed -i "s/Strand<\\/text>/Strand $f ${chrs[0]} CpG<\\/text>/" $f; done;
 
     '''

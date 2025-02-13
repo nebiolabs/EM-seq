@@ -8,12 +8,13 @@ process alignReads {
         tuple path(input_file1),
               path(input_file2),
               val(genome),
-              val(fileType)
+              val(fileType),
+              val(index)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
-        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
+        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), val(index), emit: bam_files
 
     shell:
 
@@ -130,8 +131,8 @@ process alignReads {
      
     eval ${stream_reads} ${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
-    | mark-nonconverted-reads.py --reference !{params.genome} 2> "${base_outputname}.nonconverted.tsv" \
+    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{index} /dev/stdin 2> "${base_outputname}.log.bwamem" \
+    | mark-nonconverted-reads.py --reference !{index} 2> "${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus.intdiv(8))} -m !{(task.memory.toGiga()*3).intdiv(4)}GB -o "${base_outputname}.aln.bam" /dev/stdin
     '''
@@ -144,10 +145,10 @@ process mergeAndMarkDuplicates {
     conda "bioconda::picard=3.1 bioconda::samtools=1.19"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes) 
+        tuple val(library), path(bam), path(bai), val(barcodes), val(index)
 
     output:
-        tuple val(library), path('*.md.bam'), path('*.md.bai'), val(barcodes), emit: md_bams
+        tuple val(library), path('*.md.bam'), path('*.md.bai'), val(barcodes), val(index), emit: md_bams
         tuple val( params.email ), val(library), path('*.md.bam'), path('*.md.bai'), emit: for_agg
         path('*.markdups_log'), emit: log_files
 
@@ -179,13 +180,29 @@ process bwa_index {
     // publishDir on wherever the genome is located.
     // Hence genome param should be full path
     label 'low_cpu'
+    
+    storeDir params.reference_store ?: genome_dir
+    
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7" //bioconda::bwa=0.7.18"
 
-    shell:
-    '''
-    bwameth.py index !{params.genome}
-    samtools faidx !{params.genome}
-    # bwa index !{params.genome}
-    '''
+    input:
+        tuple val(genome_dir), val(fasta)
+    
+    output:
+        path("*.fa")
+
+    script:
+    def index_dir = params.reference_store ?: genome_dir
+    """
+    reference=\$(basename ${fasta})
+    if [ ! -f \$reference ]; then
+        ln -s ${fasta} .
+    fi
+
+    bwameth.py index \$reference
+    samtools faidx \$reference
+
+    index=${index_dir}/\${reference}
+    """
 }
