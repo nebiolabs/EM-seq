@@ -47,10 +47,7 @@ def detectFileType(file) {
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
 
         // if reference is not indexed, index it.
-        if (! file("${params.genome}.bwt").exists()) {
-             bwa_index()
-            println "Using genome: ${params.genome}"
-        }
+        genome = bwa_index()
 
         reads = Channel
         .fromPath(params.input_glob)
@@ -65,8 +62,7 @@ def detectFileType(file) {
                 log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
-            def genome = params.genome
-            return [read1File, read2File, genome, fileType]
+            return [read1File, read2File, genome.out, fileType]
         }
 
         println "Processing " + params.flowcell + "... => " + params.outputDir

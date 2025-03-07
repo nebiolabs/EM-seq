@@ -174,18 +174,44 @@ process mergeAndMarkDuplicates {
     '''
 }
 
-
 process bwa_index {
-    // publishDir on wherever the genome is located.
-    // Hence genome param should be full path
+    /* This pipeline is for internal AND external use. StoreDir is not a good
+     * option for external use. Instead, we link or make the genome and 
+     * output the genome file as it was previously given in the parameters.
+     */
     label 'low_cpu'
     tag { genome }
-    conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7" //bioconda::bwa=0.7.18"
+    conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
+    publishDir "${genome_path}" 
 
-    shell:
-    '''
-    bwameth.py index !{params.genome}
-    samtools faidx !{params.genome}
-    # bwa index !{params.genome}
-    '''
+    input:
+        val(genome)
+
+    output:
+        val(genome_file)
+
+
+    script:
+
+    def genomePath = file(genome)
+    def genomeDir = genomePath.parent
+    def genomeBase = genomePath.baseName
+
+    genome_path = 'bwameth_index'
+    genome_file = "${genome_path}/${genomeBase}"
+
+    """
+    ln -s ${genome} .
+    
+    bwt_file=$(ls ${genomePath}*.bwt 2>/dev/null)
+
+    if [ -n "${bwt_file}" ]; then
+        echo "Genome index files already exist. Creating links"
+        ln -s ${genomeDir}/${genomeBase}* .
+    else
+        echo "Genome index files do not exist. Creating index files."
+        bwameth.py index ${genome}
+        samtools faidx ${genome}
+    fi
+    """
 }
