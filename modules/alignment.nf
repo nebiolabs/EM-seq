@@ -7,7 +7,7 @@ process alignReads {
     input:
         tuple path(input_file1),
               path(input_file2),
-              val(genome),
+              file(genome),
               val(fileType)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
@@ -130,8 +130,8 @@ process alignReads {
      
     eval ${stream_reads} ${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{params.genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
-    | mark-nonconverted-reads.py --reference !{params.genome} 2> "${base_outputname}.nonconverted.tsv" \
+    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
+    | mark-nonconverted-reads.py --reference !{genome} 2> "${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus.intdiv(8))} -m !{(task.memory.toGiga()*3).intdiv(4)}GB -o "${base_outputname}.aln.bam" /dev/stdin
     '''
@@ -182,35 +182,30 @@ process bwa_index {
     label 'low_cpu'
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
-    publishDir "${genome_path}" 
-
-    input:
-        val(genome)
+    publishDir "bwameth_index" 
 
     output:
-        env(genome_file)
+        file("*.fa")
 
-
-    genome_path = 'bwameth_index'
 
     shell:
-    """
-    ln -s !genome} .
-    
-    genomePath=$(realpath !{genome})
+    '''
+    genomePath=$(realpath !{params.genome})
     genomeDir=$(dirname ${genomePath})
     genomeBase=$(basename ${genomePath})
-    genome_file="${genome_path}/${genomeBase}"
 
-    bwt_file=$(ls ${genomePath}*.bwt 2>/dev/null)
+    bwt_file="$(ls ${genomePath}*.bwt 2>/dev/null)"
+
+    echo "$bwt_file is a thing"
 
     if [ -n "${bwt_file}" ]; then
         echo "Genome index files already exist. Creating links"
         ln -s ${genomeDir}/${genomeBase}* .
     else
         echo "Genome index files do not exist. Creating index files."
-        bwameth.py index ${genome}
-        samtools faidx ${genome}
+        ln -s !{params.genome} .
+        bwameth.py index ${genomeBase}
+        samtools faidx ${genomeBase}
     fi
-    """
+    '''
 }

@@ -62,7 +62,7 @@ def detectFileType(file) {
                 log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
-            return [read1File, read2File, genome.out, fileType]
+            return [read1File, read2File, genome, fileType]
         }
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
