@@ -188,21 +188,20 @@ process bwa_index {
         val(genome)
 
     output:
-        val(genome_file)
+        env(genome_file)
 
-
-    script:
-
-    def genomePath = file(genome)
-    def genomeDir = genomePath.parent
-    def genomeBase = genomePath.baseName
 
     genome_path = 'bwameth_index'
-    genome_file = "${genome_path}/${genomeBase}"
 
+    shell:
     """
-    ln -s ${genome} .
+    ln -s !genome} .
     
+    genomePath=$(realpath !{genome})
+    genomeDir=$(dirname ${genomePath})
+    genomeBase=$(basename ${genomePath})
+    genome_file="${genome_path}/${genomeBase}"
+
     bwt_file=$(ls ${genomePath}*.bwt 2>/dev/null)
 
     if [ -n "${bwt_file}" ]; then
