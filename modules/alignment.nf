@@ -10,7 +10,7 @@ process alignReads {
               file(genome),
               val(fileType)
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
+        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), path("read_count.txt") emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
@@ -89,23 +89,27 @@ process alignReads {
         fi
     }
 
+    # We can rely on num_reads_used from workflow_invocations table.
+    get_readcount_pairs=" | tee >(grep -v "^@" | wc -l | awk '{n+=$1}END{print n/2}' > read_count.txt)"
+    get_readcount_single=" | tee >(grep -v "^@" | wc -l | awk '{n+=$1}END{print n}'  > read_count.txt)"
+
     case !{fileType} in 
         "fastq_paired_end")
             get_barcodes_and_rg_line !{input_file1} "fastq"
             get_frac_reads !{input_file1} "fastq"
-            stream_reads="samtools import -u -1 !{input_file1} -2 !{input_file2}"
+            stream_reads="samtools import -u -1 !{input_file1} -2 !{input_file2} ${get_readcount_pairs}"
             flowcell=$(flowcell_from_fastq !{input_file1})
             ;;
         "bam")
             get_barcodes_and_rg_line !{input_file1} "bam"
             get_frac_reads !{input_file1} "bam"
-            stream_reads="samtools view -u -h !{input_file1}"
+            stream_reads="samtools view -u -h !{input_file1} ${get_readcount_pairs}"
             flowcell=$(flowcell_from_bam !{input_file1})
             ;;
         "fastq_single_end")
             get_barcodes_and_rg_line !{input_file1} "fastq"
             get_frac_reads !{input_file1} "fastq"
-            stream_reads="samtools import -u -s !{input_file1}"
+            stream_reads="samtools import -u -s !{input_file1} ${get_readcount_single}"
             flowcell=$(flowcell_from_fastq !{input_file1})
             ;;
     esac
