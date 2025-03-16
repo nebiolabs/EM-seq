@@ -1,4 +1,5 @@
 nextflow.enable.dsl=2
+import java.nio.file.*
 
 /* --------------- *
  * INPUT ARGUMENTS *
@@ -99,8 +100,17 @@ def detectFileType(file) {
             aggregate_emseq( grouped_email_library ) 
 
             def targetDir = "/mnt/galaxy/tmp/users/${params.email}/${params.flowcell}"
+            def sourceDir = Paths.get(params.outputDir)
 
-            new File(params.outputDir).renameTo(new File(targetDir))
+            Files.createDirectories(targetDir)            
+            Files.walk(sourceDir).forEach { sourcePath ->
+            def targetPath = targetDir.resolve(sourceDir.relativize(sourcePath))
+                if (Files.isDirectory(sourcePath)) {
+                    Files.createDirectories(targetPath)
+                } else {
+                    Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES)
+                }
+            }
         
         }
         
