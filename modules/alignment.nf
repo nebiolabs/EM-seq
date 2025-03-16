@@ -89,7 +89,7 @@ process alignReads {
         fi
     }
 
-    # We can rely on num_reads_used from workflow_invocations table.
+    # We can't rely on num_reads_used from workflow_invocations table.
     get_readcount_pairs=" | tee >(grep -v "^@" | wc -l | awk '{n+=$1}END{print n/2}' > read_count.txt)"
     get_readcount_single=" | tee >(grep -v "^@" | wc -l | awk '{n+=$1}END{print n}'  > read_count.txt)"
 
