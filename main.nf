@@ -97,6 +97,11 @@ def detectFileType(file) {
 
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_email_library ) 
+
+            def targetDir = "/mnt/galaxy/tmp/users/${params.email}/${params.flowcell}"
+
+            new File(params.outputDir).renameTo(new File(targetDir))
+        
         }
         
         all_results = grouped_email_library
