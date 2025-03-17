@@ -3,7 +3,7 @@ process alignReads {
     label 'high_cpu'
     tag { library }
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
-    publishDir "${params.outputDir}/bwameth_align"
+    publishDir "${params.outputDir}/bwameth_align", mode: params.enable_neb_agg ? 'copy' : 'link'
     input:
         tuple path(input_file1),
               path(input_file2),
@@ -182,7 +182,7 @@ process bwa_index {
     label 'low_cpu'
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
-    publishDir "bwameth_index" 
+    publishDir "bwameth_index" , mode: params.enable_neb_agg ? 'copy' : 'link'
 
     output:
         file("*.fa")
