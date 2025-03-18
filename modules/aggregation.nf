@@ -1,7 +1,7 @@
 process multiqc {
     label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
-    publishDir "${params.outputDir}"
+    publishDir "${params.outputDir}", mode: params.galaxy_mode
 
     input:
         tuple val(email), path('*')
@@ -56,7 +56,7 @@ CONFIG
 process aggregate_emseq {
     tag { library }
     conda "bioconda::samtools=1.9"
-    publishDir "${params.outputDir}/ngs-agg"
+    publishDir "${params.outputDir}/ngs-agg", mode: params.galaxy_mode
 
     input:
          tuple val(email), val(library), val(barcodes), path(nonconverted_counts_tsv), path(fastp),
