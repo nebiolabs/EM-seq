@@ -1,6 +1,4 @@
-path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/current" //current/"
-//"/Users/aerijman/Documents/new_ngs/newer/ngs-aggregate_results"
-// I will change that path as soon as we merge insert_size_fix.
+path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/current"
 
 process multiqc {
     label 'medium_cpu'
@@ -90,6 +88,10 @@ process aggregate_emseq {
         bc=$(echo !{barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
     fi
 
+        # Validate barcodes
+    if [[ ! ${barcodes} =~ ^[-ACGT]+$ ]]; then
+        echo "Warning: Invalid barcode format: ${barcodes}" >&2
+    fi
 
     unzip *fastqc.zip
 

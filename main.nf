@@ -6,7 +6,7 @@ nextflow.enable.dsl=2
 params.email       = 'undefined'
 params.flowcell    = 'undefined'
 params.genome      = 'undefined'
-params.input_glob  = '*.{1,2}.fastq*'
+params.input_glob  = '*_R1.fastq*' // either the .bam or fastq read 1
 params.project     = 'project_undefined'
 params.workflow    = 'EM-seq'
 params.outputDir   = "em-seq_output" 
@@ -16,7 +16,7 @@ params.max_input_reads = "all_reads" // default is not downsampling , set to a n
 params.downsample_seed = 42
 params.enable_neb_agg = 'True'
 
-include { alignReads; mergeAndMarkDuplicates }                                                          from './modules/alignment'
+include { alignReads; mergeAndMarkDuplicates; bwa_index }                                               from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
@@ -45,6 +45,13 @@ def detectFileType(file) {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
+
+        // if reference is not indexed, index it.
+        if (! file("${params.genome}.bwt").exists()) {
+             bwa_index()
+            println "Using genome: ${params.genome}"
+        }
+
         reads = Channel
         .fromPath(params.input_glob)
         .map { input_file ->
@@ -95,16 +102,16 @@ def detectFileType(file) {
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_email_library ) 
         }
-        else {
-            all_results = grouped_email_library
-                .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
-	            .groupTuple().flatten().toList()
-                .map { items -> 
-                    def (email, pathFiles) = [items[0], items[4..-1]]
-                        return [email, pathFiles]
-                    }
-            multiqc( all_results )
-        }
+        
+        all_results = grouped_email_library
+            .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
+            .groupTuple().flatten().toList()
+            .map { items -> 
+                def (email, pathFiles) = [items[0], items[4..-1]]
+                    return [email, pathFiles]
+                }
+        multiqc( all_results )
+    
 
 
 }
