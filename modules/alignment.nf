@@ -190,13 +190,11 @@ process bwa_index {
 
     shell:
     '''
-    genomePath=$(realpath !{params.genome})
+    genomePath=!{params.genome}
     genomeDir=$(dirname ${genomePath})
     genomeBase=$(basename ${genomePath})
 
     bwt_file="$(ls ${genomePath}*.bwt 2>/dev/null)"
-
-    echo "$bwt_file is a thing"
 
     if [ -n "${bwt_file}" ]; then
         echo "Genome index files already exist. Creating links"
