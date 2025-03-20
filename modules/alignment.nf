@@ -7,7 +7,7 @@ process alignReads {
     input:
         tuple path(input_file1),
               path(input_file2),
-              file(genome),
+	      path(genome) from Channel.fromPath('genome_path/*fa')
               val(fileType)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), val(fileType), path(input_file1), path(input_file2), emit: for_agg
@@ -185,7 +185,7 @@ process bwa_index {
     publishDir "bwameth_index" 
 
     output:
-        file("*.fa")
+        path("genome_path/*")
 
 
     shell:
@@ -194,16 +194,18 @@ process bwa_index {
     genomeDir=$(dirname ${genomePath})
     genomeBase=$(basename ${genomePath})
 
+    mkdir genome_path
+
     bwt_file="$(ls ${genomePath}*.bwt 2>/dev/null)"
 
     if [ -n "${bwt_file}" ]; then
         echo "Genome index files already exist. Creating links"
-        ln -s ${genomeDir}/${genomeBase}* .
+        ln -s ${genomeDir}/${genomeBase}* genome_path/
     else
         echo "Genome index files do not exist. Creating index files."
-        ln -s !{params.genome} .
-        bwameth.py index ${genomeBase}
-        samtools faidx ${genomeBase}
+        ln -s !{params.genome} genome_path/
+        bwameth.py index genome_path/${genomeBase}
+        samtools faidx genome_path/${genomeBase}
     fi
     '''
 }
