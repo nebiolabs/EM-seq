@@ -7,7 +7,7 @@ process alignReads {
     input:
         tuple path(input_file1),
               path(input_file2),
-	      path(genome) from Channel.fromPath('genome_path/*fa')
+	      val(genome),
               val(fileType)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), val(fileType), path(input_file1), path(input_file2), emit: for_agg
@@ -19,6 +19,8 @@ process alignReads {
 
     library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
     '''
+
+
     get_nreads_from_fastq() {
         zcat -f $1 | grep -c "^+$" \
         | awk '{
@@ -185,7 +187,7 @@ process bwa_index {
     publishDir "bwameth_index" 
 
     output:
-        path("genome_path/*")
+        path("genome_path")
 
 
     shell:
@@ -194,7 +196,7 @@ process bwa_index {
     genomeDir=$(dirname ${genomePath})
     genomeBase=$(basename ${genomePath})
 
-    mkdir genome_path
+    mkdir -p genome_path
 
     bwt_file="$(ls ${genomePath}*.bwt 2>/dev/null)"
 
@@ -207,5 +209,6 @@ process bwa_index {
         bwameth.py index genome_path/${genomeBase}
         samtools faidx genome_path/${genomeBase}
     fi
+
     '''
 }
