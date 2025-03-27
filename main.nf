@@ -47,7 +47,12 @@ def detectFileType(file) {
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
 
         // if reference is not indexed, index it.
-        genome = bwa_index()
+        if (! file(${params.genome}).exists()) {
+             // bwa_index()
+	        exit 1, "Exiting em-seq workflow: no genome index was provided"
+	}
+        println "Using genome: ${params.genome}"
+        
 
         reads = Channel
         .fromPath(params.input_glob)
@@ -62,7 +67,9 @@ def detectFileType(file) {
                 log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
-            return [read1File, read2File, genome, fileType]
+            def genome = params.genome
+	    def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
+            return [params.email, library, read1File, read2File, genome, fileType]
         }
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
@@ -84,7 +91,8 @@ def detectFileType(file) {
         mismatches   = tasmanian( markDup.md_bams )
 
         // Channel for programs that summarize all results
-        grouped_email_library = alignedReads.for_agg.groupTuple(by: [0, 1])
+        grouped_email_library = reads
+	    .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
             .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
             .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
             .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
@@ -100,13 +108,14 @@ def detectFileType(file) {
         }
         
         all_results = grouped_email_library
-            .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1]) 
+            .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1])
             .groupTuple().flatten().toList()
-            .map { items -> 
+            .map { items ->
                 def (email, pathFiles) = [items[0], items[4..-1]]
                     return [email, pathFiles]
                 }
-        multiqc( all_results )
+
+        //multiqc( all_results )
     
 
 
