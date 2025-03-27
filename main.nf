@@ -47,10 +47,12 @@ def detectFileType(file) {
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
 
         // if reference is not indexed, index it.
-        if (! file(${params.genome}).exists()) {
-             // bwa_index()
-	        exit 1, "Exiting em-seq workflow: no genome index was provided"
-	}
+
+        if (!file(params.genome).exists()) {
+            println "Workflow failed: Genome file does not exist."
+            System.exit(1)  // Exit with a custom status code
+            // bwa_index()
+        }
         println "Using genome: ${params.genome}"
         
 
@@ -90,7 +92,9 @@ def detectFileType(file) {
         metrics      = picard_metrics( markDup.md_bams )
         mismatches   = tasmanian( markDup.md_bams )
 
-        // Channel for programs that summarize all results
+        // Channels and processes that summarize all results
+
+        // channel for internal summaries
         grouped_email_library = reads
 	    .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
             .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
@@ -107,16 +111,14 @@ def detectFileType(file) {
             aggregate_emseq( grouped_email_library ) 
         }
         
+        // channel for external multiqc analysis
         all_results = grouped_email_library
-            .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0,1]), by: [0,1])
-            .groupTuple().flatten().toList()
-            .map { items ->
-                def (email, pathFiles) = [items[0], items[4..-1]]
-                    return [email, pathFiles]
-                }
+        .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
+        .map { items -> [items[0], items[7..-1]] }
+        .groupTuple()
+        .flatten()
+        .toList()
+        .map { items -> [items[0], items[7..-1]] }
 
-        //multiqc( all_results )
-    
-
-
+        multiqc( all_results )
 }
