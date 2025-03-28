@@ -57,7 +57,7 @@ def detectFileType(file) {
             //genome_path += it.toString()
         //}
 
-        println "Genome path: ${genome_path}"
+        //println "Genome path: ${genome_path}"
         println "Using genome: ${params.genome}"
         
 
