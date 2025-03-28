@@ -224,7 +224,7 @@ process bwa_index {
 
     shell:
     '''
-    genomeDir=$(dirname $(realpath !{params.genome})
+    genomeDir=$(dirname $(realpath !{params.genome}))
     genomeName=$(basename ${genomePath})
     genomePrefix=$(echo ${genomeName} | sed 's/\\.[.fa|\\.fasta]*$//')
 
