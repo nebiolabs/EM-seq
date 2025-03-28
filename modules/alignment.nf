@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        val(stdout)
+        path(stdout)
 
     shell:
     '''
