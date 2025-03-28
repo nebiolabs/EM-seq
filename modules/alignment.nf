@@ -220,8 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        env(genPath)
-        //path("genome_path.txt")
+        path("genome_path.txt")
 
     shell:
     '''
@@ -244,6 +243,5 @@ process bwa_index {
     fi
 
     echo "bwameth_index/genome_index/${genomeName}" > genome_path.txt
-    genPath="bwameth_index/genome_index/${genomeName}"
     '''
 }

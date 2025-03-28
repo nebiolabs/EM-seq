@@ -53,9 +53,11 @@ def detectFileType(file) {
         //    System.exit(1)  // Exit with a custom status code
 
         // genome_path = '' // ${System.getProperty('user.dir')} + '/'
-        genome_path = bwa_index().toString() //{ it -> 
+        genome_path = bwa_index() //{ it -> 
             //genome_path += it.toString()
         //}
+        genome_path.view()
+
 
         println "Genome path: ${genome_path}"
         println "Using genome: ${params.genome}"
