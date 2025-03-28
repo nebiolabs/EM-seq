@@ -52,16 +52,10 @@ def detectFileType(file) {
         //    println "Workflow failed: Genome file does not exist."
         //    System.exit(1)  // Exit with a custom status code
 
-    genome_path = ${System.getProperty('user.dir')} + '/'
-    bwa_index().view {it -> 
-        def genome_path += it.toString()
-    }
-    
-    
-    //    def genome_path = bwa_index().subscribe { val ->
-    //            genome_path = val.toString()
-    //    }
-        //genome_path = bwa_index().toString()
+        genome_path = '' // ${System.getProperty('user.dir')} + '/'
+        bwa_index().view { it -> 
+            genome_path += it.toString()
+        }
 
         println "Genome path: ${genome_path}"
         println "Using genome: ${params.genome}"
