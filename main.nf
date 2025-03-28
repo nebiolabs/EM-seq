@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
  * --------------- */
 params.email       = 'undefined'
 params.flowcell    = 'undefined'
-params.genome      = 'undefined'
+params.genome      = 'undefined' // HAS TO BE THE FULL PATH!! 
 params.input_glob  = '*_R1.fastq*' // either the .bam or fastq read 1
 params.project     = 'project_undefined'
 params.workflow    = 'EM-seq'
