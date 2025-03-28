@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        val("bwameth_index/genome_index/${genomeName}")
+        env(${path_to_genome_index})
 
     shell:
     '''
@@ -242,5 +242,6 @@ process bwa_index {
         samtools faidx genome_index/${genomeName}
     fi
 
+    path_to_genome_index="bwameth_index/genome_index/${genomeName}"
     '''
 }
