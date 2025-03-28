@@ -52,6 +52,8 @@ def detectFileType(file) {
         //    println "Workflow failed: Genome file does not exist."
         //    System.exit(1)  // Exit with a custom status code
 
+    genome_path = bwa_index().toList()
+    genome_path.view()
         def genome_path = bwa_index().subscribe { val ->
                 genome_path = val.toString()
         }
