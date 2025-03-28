@@ -58,15 +58,7 @@ def detectFileType(file) {
        // }
         //println "Genome path: ${genome_path}"
         //bwa_index().view()
-        genome_path = bwa_index().view{ 
-            it -> 
-                if (it) {
-                    it.toString()
-                } else {
-                    println "Error: Genome indexing failed."
-                    System.exit(1)
-                }
-        }
+        genome_path = bwa_index().subscribe{  it -> { it.toString() } }
         println "Genome file exists at: ${genome_path}"
         println "Using genome: ${params.genome}"
         
