@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        path("genome_path.txt")
+        env(genomePath)
 
     shell:
     '''
@@ -242,6 +242,6 @@ process bwa_index {
         samtools faidx genome_index/${genomeName}
     fi
 
-    echo "bwameth_index/genome_index/${genomeName}" > genome_path.txt
+    genomePath="bwameth_index/genome_index/${genomeName}"
     '''
 }

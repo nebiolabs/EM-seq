@@ -52,83 +52,77 @@ def detectFileType(file) {
         //    println "Workflow failed: Genome file does not exist."
         //    System.exit(1)  // Exit with a custom status code
 
-        // genome_path = '' // ${System.getProperty('user.dir')} + '/'
-        genome_path = bwa_index() //{ it -> 
-            //genome_path += it.toString()
-        //}
-        genome_path.view { filePath -> 
-            def fileContent = new File(filePath).text
-            println fileContent
+        genome_path = '' // ${System.getProperty('user.dir')} + '/'
+        genome_path = bwa_index().view{ it -> 
+            genome_path += it.toString()
         }
-
-
-        println "Genome path: ${genome_path}"
+        prinln "Genome path: ${genome_path}"
         println "Using genome: ${params.genome}"
         
-
-        reads = Channel
-        .fromPath(params.input_glob)
-        .map { input_file ->
-            def fileType = detectFileType(input_file)
-            def read1File = input_file
-            def read2File = placeholder_r2.toString()
-            if (fileType == 'fastq_paired_end') {
-                read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
-            }
-            if (read1File.toString() == read2File) {
-                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
-                throw new IllegalStateException("Invalid paired-end file configuration")
-            }
-            def genome = !{genome_path} //params.genome
-	    def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
-            return [params.email, library, read1File, read2File, genome, fileType]
-        }
-
-        println "Processing " + params.flowcell + "... => " + params.outputDir
-        println "Cmd line: $workflow.commandLine"
-
-        // align and mark duplicates
-        alignedReads = alignReads( reads )
-        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams )
-        mbias        = methylDackel_mbias( markDup.md_bams )
-
-        // collect statistics
-        gcbias       = gc_bias( markDup.md_bams )
-        idxstats     = idx_stats( markDup.md_bams )
-        flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fastqc( markDup.md_bams )
-        insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams )
-        mismatches   = tasmanian( markDup.md_bams )
-
-        // Channels and processes that summarize all results
-
-        // channel for internal summaries
-        grouped_email_library = reads
-	    .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
-            .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-
-        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-            aggregate_emseq( grouped_email_library ) 
-        }
-        
-        // channel for external multiqc analysis
-        all_results = grouped_email_library
-        .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
-        .map { items -> [items[0], items[7..-1]] }
-        .groupTuple()
-        .flatten()
-        .toList()
-        .map { items -> [items[0], items[7..-1]] }
-
-        multiqc( all_results )
+//
+//        reads = Channel
+//        .fromPath(params.input_glob)
+//        .map { input_file ->
+//            def fileType = detectFileType(input_file)
+//            def read1File = input_file
+//            def read2File = placeholder_r2.toString()
+//            if (fileType == 'fastq_paired_end') {
+//                read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
+//            }
+//            if (read1File.toString() == read2File) {
+//                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
+//                throw new IllegalStateException("Invalid paired-end file configuration")
+//            }
+//            def genome = !{genome_path} //params.genome
+//	    def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
+//            return [params.email, library, read1File, read2File, genome, fileType]
+//        }
+//
+//        println "Processing " + params.flowcell + "... => " + params.outputDir
+//        println "Cmd line: $workflow.commandLine"
+//
+//        // align and mark duplicates
+//        alignedReads = alignReads( reads )
+//        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+//        extract      = methylDackel_extract( markDup.md_bams )
+//        mbias        = methylDackel_mbias( markDup.md_bams )
+//
+//        // collect statistics
+//        gcbias       = gc_bias( markDup.md_bams )
+//        idxstats     = idx_stats( markDup.md_bams )
+//        flagstats    = flag_stats( markDup.md_bams )
+//        fastqc       = fastqc( markDup.md_bams )
+//        insertsize   = insert_size_metrics( markDup.md_bams ) 
+//        metrics      = picard_metrics( markDup.md_bams )
+//        mismatches   = tasmanian( markDup.md_bams )
+//
+//        // Channels and processes that summarize all results
+//
+//        // channel for internal summaries
+//        grouped_email_library = reads
+//	    .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
+//            .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//            .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+//
+//        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
+//            aggregate_emseq( grouped_email_library ) 
+//        }
+//        
+//        // channel for external multiqc analysis
+//        all_results = grouped_email_library
+//        .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
+//        .map { items -> [items[0], items[7..-1]] }
+//        .groupTuple()
+//        .flatten()
+//        .toList()
+//        .map { items -> [items[0], items[7..-1]] }
+//
+//        multiqc( all_results )
 }
