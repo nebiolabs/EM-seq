@@ -217,30 +217,30 @@ process bwa_index {
     label 'low_cpu'
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
-    publishDir "bwameth_index" 
+    publishDir "bwameth_index"
 
     output:
-        path("genome_path")
+        path("genome_index")
 
 
     shell:
     '''
-    genomePath=!{params.genome}
-    genomeDir=$(dirname ${genomePath})
-    genomeBase=$(basename ${genomePath})
+    genomeDir=$(dirname $(realpath !{params.genome})
+    genomeName=$(basename ${genomePath})
+    genomePrefix=$(echo ${genomeName} | sed 's/\\.[.fa|\\.fasta]*$//')
 
-    mkdir -p genome_path
+    mkdir -p genome_index
 
-    bwt_file="$(ls ${genomePath}*.bwt 2>/dev/null)"
+    bwt_file="$(ls ${genomeDir}/*.bwt 2>/dev/null)"
 
     if [ -n "${bwt_file}" ]; then
         echo "Genome index files already exist. Creating links"
-        ln -s ${genomeDir}/${genomeBase}* genome_path/
+        ln -s ${genomeDir}/${genomePrefix}* genome_index/
     else
         echo "Genome index files do not exist. Creating index files."
-        ln -s !{params.genome} genome_path/
-        bwameth.py index genome_path/${genomeBase}
-        samtools faidx genome_path/${genomeBase}
+        ln -s !{params.genome} genome_index/
+        bwameth.py index genome_index/${genomeName}
+        samtools faidx genome_index/${genomeName}
     fi
 
     '''
