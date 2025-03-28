@@ -48,11 +48,11 @@ def detectFileType(file) {
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
 
         // if reference is not indexed, index it.
-        if (!file(params.genome).exists()) {
-            println "Workflow failed: Genome file does not exist."
-            System.exit(1)  // Exit with a custom status code
-            bwa_index()
-        }
+        //if (!file(params.genome).exists()) {
+        //    println "Workflow failed: Genome file does not exist."
+        //    System.exit(1)  // Exit with a custom status code
+        genome_path = bwa_index().toString()
+        //}
         println "Using genome: ${params.genome}"
         
 
@@ -69,7 +69,7 @@ def detectFileType(file) {
                 log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
-            def genome = params.genome
+            def genome = !{genome_path} //params.genome
 	    def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
             return [params.email, library, read1File, read2File, genome, fileType]
         }
