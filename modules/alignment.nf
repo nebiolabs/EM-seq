@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        env(${path_to_genome_index})
+        env(path_to_genome_index)
 
     shell:
     '''
