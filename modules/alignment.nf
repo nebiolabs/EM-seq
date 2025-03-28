@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        env(path_to_genome_index)
+        stdout
 
     shell:
     '''
@@ -233,15 +233,15 @@ process bwa_index {
     bwt_file="$(ls ${genomeDir}/*.bwt 2>/dev/null)"
 
     if [ -n "${bwt_file}" ]; then
-        echo "Genome index files already exist. Creating links"
+        echo "Genome index files already exist. Creating links" >&2
         ln -sf ${genomeDir}/${genomePrefix}* genome_index/
     else
-        echo "Genome index files do not exist. Creating index files."
+        echo "Genome index files do not exist. Creating index files." >&2
         ln -sf !{params.genome} genome_index/
         bwameth.py index genome_index/${genomeName}
         samtools faidx genome_index/${genomeName}
     fi
 
-    export path_to_genome_index="bwameth_index/genome_index/${genomeName}"
+    echo "bwameth_index/genome_index/${genomeName}"
     '''
 }
