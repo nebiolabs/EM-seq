@@ -242,6 +242,6 @@ process bwa_index {
         samtools faidx genome_index/${genomeName}
     fi
 
-    path_to_genome_index="bwameth_index/genome_index/${genomeName}"
+    export path_to_genome_index="bwameth_index/genome_index/${genomeName}"
     '''
 }
