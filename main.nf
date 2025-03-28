@@ -54,9 +54,9 @@ def detectFileType(file) {
 
     genome_path = bwa_index().toList()
     genome_path.view()
-        def genome_path = bwa_index().subscribe { val ->
-                genome_path = val.toString()
-        }
+    //    def genome_path = bwa_index().subscribe { val ->
+    //            genome_path = val.toString()
+    //    }
         //genome_path = bwa_index().toString()
 
         println "Genome path: ${genome_path}"
