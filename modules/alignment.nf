@@ -218,16 +218,16 @@ process bwa_index {
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
     publishDir "bwameth_index"
-    
+
     input:
-    path genome_file from file(params.genome)
+    val genome_file
 
     output:
     path "${genome_file.baseName}.{amb,ann,bwt,pac,sa}"
 
     script:
     """
-    if [ ! -f "${genome_file.baseName}.bwt" ]; then
+    if [ ! -f "${${params.genome}.baseName}.bwt" ]; then
         bwameth.py index ${genome_file}
     else
         echo "Index files already exist for ${genome_file.baseName}"

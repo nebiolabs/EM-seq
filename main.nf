@@ -52,7 +52,7 @@ def detectFileType(file) {
             System.exit(1)  // Exit with a custom status code
         }
 
-        genome_index_ch = bwa_index()
+        genome_index_ch = bwa_index(params.genome)
 
        reads = Channel
        .fromPath(params.input_glob)
