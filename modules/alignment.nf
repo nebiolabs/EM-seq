@@ -227,10 +227,11 @@ process bwa_index {
 
     script:
     """
-    if [ ! -f "${genome_file.baseName}.bwt" ]; then
-        echo " bwameth.py index ${genome_file} "
+    real_genome_file=\$(readlink -f ${genome_file})
+    if [ ! -f "\${real_genome_file}.bwt" ]; then
+        bwameth.py index \${real_genome_file}
     else
-        echo "Index files already exist for ${genome_file.baseName}"
+        echo "Index files already exist for \${real_genome_file}"
     fi
     """
 }
