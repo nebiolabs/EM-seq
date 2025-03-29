@@ -66,7 +66,7 @@ def detectFileType(file) {
 
         genome_path = bwa_index_w()
         genome_path.collect().onComplete { genome_path ->
-         def genome_path_str = genome_path.join(", ")}
+            def genome_path_str = genome_path.join(", ")
         }
         println "Genome file exists at: ${genome_path}"
         println "Using genome: ${params.genome}"
