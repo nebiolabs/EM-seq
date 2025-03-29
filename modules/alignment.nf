@@ -220,14 +220,14 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-    path "${params.genome.toString().replaceAll(/\..*/, '')}.{amb,ann,bwt,pac,sa}"
+    path "${genome_file.baseName}.{amb,ann,bwt,pac,sa}"
 
     script:
     """
-    if [ ! -f "${params.genome.toString().replaceAll(/\..*/, '')}.bwt" ]; then
-        bwameth.py index ${params.genome}
+    if [ ! -f "${genome_file.baseName}.bwt" ]; then
+        bwameth.py index ${genome_file}
     else
-        echo "Index files already exist for ${params.genome.toString().replaceAll(/\..*/, '')}"
+        echo "Index files already exist for ${genome_file.baseName}"
     fi
     """
 }
