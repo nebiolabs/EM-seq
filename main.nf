@@ -51,7 +51,7 @@ def detectFileType(file) {
             println "Workflow failed: Genome file does not exist."
             System.exit(1)  // Exit with a custom status code
         }
-        genome_ch = fromPath(params.genome)
+        genome_ch = Channel.fromPath(params.genome)
         genome_index_ch = bwa_index(genome_ch)
 
        reads = Channel
