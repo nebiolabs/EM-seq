@@ -223,10 +223,11 @@ process bwa_index {
     path "${params.genome.toPath().getFileName().toString().replaceAll(/\..*/, '')}.{amb,ann,bwt,pac,sa}"
 
     script:
-    '''
+    """
      if [ ! -f "${params.genome.toPath().getFileName().toString().replaceAll(/\..*/, '')}.bwt" ]; then
         bwameth.py index ${params.genome}
     else
         echo "Index files already exist for ${params.genome.toPath().getFileName().toString().replaceAll(/\..*/, '')}"
-    fi    '''
+    fi    
+    """
 }
