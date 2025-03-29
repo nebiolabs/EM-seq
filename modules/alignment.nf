@@ -227,7 +227,7 @@ process bwa_index {
 
     script:
     """
-    if [ ! -f "${${params.genome}.baseName}.bwt" ]; then
+    if [ ! -f "${genome_file.baseName}.bwt" ]; then
         bwameth.py index ${genome_file}
     else
         echo "Index files already exist for ${genome_file.baseName}"
