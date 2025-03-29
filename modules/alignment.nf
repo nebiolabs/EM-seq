@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-    path "${params.genome}.baseName.{amb,ann,bwt,pac,sa}"
+    path "${params.genome.toPath().getFileName().toString().replaceAll(/\..*/, '')}.{amb,ann,bwt,pac,sa}"
 
     shell:
     '''
