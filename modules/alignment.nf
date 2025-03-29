@@ -220,11 +220,11 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        "${params.genome.baseName}.{amb,ann,bwt,pac,sa}"
+    path "${params.genome.baseName}.{amb,ann,bwt,pac,sa}"
 
     shell:
     '''
-if [ ! -f "!{params.genome.baseName}.bwt" ]; then
+    if [ ! -f "!{params.genome.baseName}.bwt" ]; then
         bwameth.py index !{genome_file}
     else
         echo "Index files already exist for !{genome_file.baseName}"
