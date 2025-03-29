@@ -220,28 +220,14 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        env(genomePath)
+        "${params.genome.baseName}.{amb,ann,bwt,pac,sa}"
 
     shell:
     '''
-    genomeDir=$(dirname !{params.genome})
-    genomeName=$(basename !{params.genome})
-    genomePrefix=$(echo ${genomeName} | sed 's/\\.[.fa|\\.fasta]*$//')
-    
-    mkdir -p genome_index
-
-    bwt_file="$(ls ${genomeDir}/*.bwt 2>/dev/null)"
-
-    if [ -n "${bwt_file}" ]; then
-        echo "Genome index files already exist. Creating links" >&2
-        ln -sf ${genomeDir}/${genomePrefix}* genome_index/
+if [ ! -f "!{params.genome.baseName}.bwt" ]; then
+        bwameth.py index !{genome_file}
     else
-        echo "Genome index files do not exist. Creating index files." >&2
-        ln -sf !{params.genome} genome_index/
-        bwameth.py index genome_index/${genomeName}
-        samtools faidx genome_index/${genomeName}
+        echo "Index files already exist for !{genome_file.baseName}"
     fi
-
-    genomePath="bwameth_index/genome_index/${genomeName}"
     '''
 }

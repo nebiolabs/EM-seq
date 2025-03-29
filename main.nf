@@ -41,58 +41,43 @@ def detectFileType(file) {
     }
 }
 
- subworkflow bwa_index_w {
-    genome_path = bwa_index()
-    emit: genome_path  
- }
-
  workflow {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
 
         // if reference is not indexed, index it.
-        //if (!file(params.genome).exists()) {
-        //    println "Workflow failed: Genome file does not exist."
-        //    System.exit(1)  // Exit with a custom status code
-
-
-        //genome_path = '' // ${System.getProperty('user.dir')} + '/'
-        //genome_path = bwa_index().view{ it -> 
-        //    genome_path += it.toString()
-       // }
-        //println "Genome path: ${genome_path}"
-        //bwa_index().view()
-
-        genome_path = bwa_index_w()
-        genome_path.collect().onComplete { genome_path ->
-            def genome_path_str = genome_path.join(", ")
+        if (!file(params.genome).exists()) {
+            println "Workflow failed: Genome file does not exist."
+            System.exit(1)  // Exit with a custom status code
         }
-        println "Genome file exists at: ${genome_path}"
-        println "Using genome: ${params.genome}"
 
-//
-//        reads = Channel
-//        .fromPath(params.input_glob)
-//        .map { input_file ->
-//            def fileType = detectFileType(input_file)
-//            def read1File = input_file
-//            def read2File = placeholder_r2.toString()
-//            if (fileType == 'fastq_paired_end') {
-//                read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
-//            }
-//            if (read1File.toString() == read2File) {
-//                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
-//                throw new IllegalStateException("Invalid paired-end file configuration")
-//            }
-//            def genome = !{genome_path} //params.genome
-//	    def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
-//            return [params.email, library, read1File, read2File, genome, fileType]
-//        }
-//
-//        println "Processing " + params.flowcell + "... => " + params.outputDir
-//        println "Cmd line: $workflow.commandLine"
-//
+        genome_index_ch = bwa_index()
+
+       reads = Channel
+       .fromPath(params.input_glob)
+       .map { input_file ->
+           def fileType = detectFileType(input_file)
+           def read1File = input_file
+           def read2File = placeholder_r2.toString()
+           if (fileType == 'fastq_paired_end') {
+               read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
+           }
+           if (read1File.toString() == read2File) {
+               log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
+               throw new IllegalStateException("Invalid paired-end file configuration")
+           }
+           def genome = genome_index_ch
+	       def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
+           return [params.email, library, read1File, read2File, genome, fileType]
+       }
+
+        println "Processing " + params.flowcell + "... => " + params.outputDir
+        println "Cmd line: $workflow.commandLine"
+
+        reads.view()
+
+
 //        // align and mark duplicates
 //        alignedReads = alignReads( reads )
 //        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
