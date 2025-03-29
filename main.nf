@@ -41,6 +41,10 @@ def detectFileType(file) {
     }
 }
 
+ subworkflow bwa_index_w {
+    genome_path = bwa_index()
+    emit: genome_path  
+ }
 
  workflow {
     main:
@@ -52,16 +56,21 @@ def detectFileType(file) {
         //    println "Workflow failed: Genome file does not exist."
         //    System.exit(1)  // Exit with a custom status code
 
+
         //genome_path = '' // ${System.getProperty('user.dir')} + '/'
         //genome_path = bwa_index().view{ it -> 
         //    genome_path += it.toString()
        // }
         //println "Genome path: ${genome_path}"
         //bwa_index().view()
-        genome_path = bwa_index().subscribe{  it -> { it.toString() } }
+
+        genome_path = bwa_index_w()
+        genome_path.collect().onComplete { genome_path ->
+         def genome_path_str = genome_path.join(", ")}
+        }
         println "Genome file exists at: ${genome_path}"
         println "Using genome: ${params.genome}"
-        
+
 //
 //        reads = Channel
 //        .fromPath(params.input_glob)

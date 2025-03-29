@@ -220,14 +220,14 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-        tuple env(genomePath)
+        env(genomePath)
 
     shell:
     '''
     genomeDir=$(dirname !{params.genome})
     genomeName=$(basename !{params.genome})
     genomePrefix=$(echo ${genomeName} | sed 's/\\.[.fa|\\.fasta]*$//')
-
+    
     mkdir -p genome_index
 
     bwt_file="$(ls ${genomeDir}/*.bwt 2>/dev/null)"
