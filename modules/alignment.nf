@@ -218,6 +218,9 @@ process bwa_index {
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
     publishDir "bwameth_index"
+    
+    input:
+    path genome_file from file(params.genome)
 
     output:
     path "${genome_file.baseName}.{amb,ann,bwt,pac,sa}"
