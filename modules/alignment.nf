@@ -222,12 +222,11 @@ process bwa_index {
     output:
     path "${params.genome.toPath().getFileName().toString().replaceAll(/\..*/, '')}.{amb,ann,bwt,pac,sa}"
 
-    shell:
+    script:
     '''
-    if [ ! -f "!{params.genome.baseName}.bwt" ]; then
-        bwameth.py index !{genome_file}
+     if [ ! -f "${params.genome.toPath().getFileName().toString().replaceAll(/\..*/, '')}.bwt" ]; then
+        bwameth.py index ${params.genome}
     else
-        echo "Index files already exist for !{genome_file.baseName}"
-    fi
-    '''
+        echo "Index files already exist for ${params.genome.toPath().getFileName().toString().replaceAll(/\..*/, '')}"
+    fi    '''
 }
