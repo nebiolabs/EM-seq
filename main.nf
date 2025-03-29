@@ -67,11 +67,11 @@ def detectFileType(file) {
                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                throw new IllegalStateException("Invalid paired-end file configuration")
            }
-           def genome = genome_index_ch
 	       def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
-           return [params.email, library, read1File, read2File, genome, fileType]
-       }
-
+           return [params.email, library, read1File, read2File, fileType]
+        }
+        .join(genome_index_ch)
+        
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 
