@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     input:
-    val genome_file
+    path genome_file
 
     output:
     path "${genome_file.baseName}.{amb,ann,bwt,pac,sa}"
