@@ -9,8 +9,8 @@ process alignReads {
           val(library),
           path(input_file1),
           path(input_file2),
-          val(fileType),
-          path(genome)
+          val(fileType)
+        path(genome)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams

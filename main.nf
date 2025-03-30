@@ -57,7 +57,6 @@ def detectFileType(file) {
 
 
         genome_index_ch = bwa_index()
-        genome_index_ch.view()
 
        reads = Channel
        .fromPath(params.input_glob)
@@ -75,15 +74,14 @@ def detectFileType(file) {
 	       def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
            return [params.email, library, read1File, read2File, fileType]
         }
-        .join(genome_index_ch)
+        //.join(genome_index_ch)
         
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 
-        reads.view()
 
         // align and mark duplicates
-//        alignedReads = alignReads( reads )
+        alignedReads = alignReads( reads, genome_index_ch )
 //        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
 //        extract      = methylDackel_extract( markDup.md_bams )
 //        mbias        = methylDackel_mbias( markDup.md_bams )
