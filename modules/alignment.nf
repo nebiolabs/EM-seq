@@ -219,15 +219,12 @@ process bwa_index {
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
     publishDir "bwameth_index"
 
-    input:
-    path genome_file
-
     output:
     path "*.{amb,ann,bwt,pac,sa}"
 
     script:
     """
-    real_genome_file="\$(basename ${genome_file})"
+    real_genome_file="\$(basename ${params.genome})"
     ln -sf "\$(dirname ${params.genome})/\${real_genome_file}"* .
     
     if [ ! -f "\${real_genome_file}.bwt" ]; then
