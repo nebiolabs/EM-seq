@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-    path "*.{fa,amb,ann,bwt,pac,sa}"
+    path "*.{fa,fai,amb,ann,bwt,pac,sa}"
 
     script:
     """
