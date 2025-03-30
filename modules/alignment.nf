@@ -227,7 +227,7 @@ process bwa_index {
 
     script:
     """
-    real_genome_file=\$(readlink -f ${genome_file})
+    real_genome_file="\$(dirname ${genome_file})/\$(basename ${genome_file})"
     if [ ! -f "\${real_genome_file}.bwt" ]; then
         bwameth.py index \${real_genome_file}
     else
