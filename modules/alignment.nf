@@ -220,7 +220,7 @@ process bwa_index {
     publishDir "bwameth_index"
 
     output:
-    path "*.{amb,ann,bwt,pac,sa}"
+    tuple val(${real_genome_file}), path "*.{amb,ann,bwt,pac,sa}"
 
     script:
     """

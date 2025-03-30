@@ -78,9 +78,10 @@ def detectFileType(file) {
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 
+        reads.view()
 
         // align and mark duplicates
-        alignedReads = alignReads( reads )
+//        alignedReads = alignReads( reads )
 //        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
 //        extract      = methylDackel_extract( markDup.md_bams )
 //        mbias        = methylDackel_mbias( markDup.md_bams )
