@@ -55,8 +55,8 @@ def detectFileType(file) {
             
         }
 
-        genome_ch = Channel.fromPath(params.genome)
-        genome_index_ch = bwa_index(genome_ch)
+        //genome_ch = Channel.fromPath(params.genome)
+        genome_index_ch = bwa_index() //genome_ch)
 
        reads = Channel
        .fromPath(params.input_glob)
