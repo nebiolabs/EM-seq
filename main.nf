@@ -55,8 +55,7 @@ def detectFileType(file) {
             
         }
 
-        //genome_ch = Channel.fromPath(params.genome)
-        genome_index_ch = bwa_index() //genome_ch)
+        genome_index_ch = bwa_index()
 
        reads = Channel
        .fromPath(params.input_glob)
@@ -79,11 +78,9 @@ def detectFileType(file) {
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 
-        reads.view()
 
-
-//        // align and mark duplicates
-//        alignedReads = alignReads( reads )
+        // align and mark duplicates
+        alignedReads = alignReads( reads )
 //        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
 //        extract      = methylDackel_extract( markDup.md_bams )
 //        mbias        = methylDackel_mbias( markDup.md_bams )
