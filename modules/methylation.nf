@@ -5,7 +5,7 @@ process methylDackel_mbias {
     errorStrategy 'retry'
     tag "${library}"
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8"
-    publishDir "${params.outputDir}/methylDackelExtracts/mbias"
+    publishDir "${params.outputDir}/methylDackelExtracts/mbias", mode: params.galaxy_mode
 
     input:
         tuple val(library), path(md_bam), path(md_bai), val(barcodes)
@@ -57,7 +57,7 @@ process methylDackel_mbias {
 process methylDackel_extract {
     label 'high_cpu'
     tag "${library}"
-    publishDir "${params.outputDir}/methylDackelExtracts", mode: 'copy'
+    publishDir "${params.outputDir}/methylDackelExtracts", mode: 'copy' 
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8"
 
     input:
