@@ -223,7 +223,7 @@ process bwa_index {
     path genome_file
 
     output:
-    path "${genome_file.baseName}.{amb,ann,bwt,pac,sa}"
+    path "*.{amb,ann,bwt,pac,sa}"
 
     script:
     """
