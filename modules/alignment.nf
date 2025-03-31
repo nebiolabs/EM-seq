@@ -210,10 +210,12 @@ process mergeAndMarkDuplicates {
 }
 
 process bwa_index {
-    /* This pipeline is for internal AND external use. StoreDir is not a good
-     * option for external use. Instead, we link or make the genome and 
-     * output the genome file as it was previously given in the parameters.
+    /* This pipeline is for internal AND external use.
+     * Attempts to link the reference index. If there is no index
+     * we download it from the provided URL.
+     * If no index and no URL, User will have to debug.
      */
+
     label 'low_cpu'
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
@@ -225,9 +227,19 @@ process bwa_index {
     script:
     """
     real_genome_file="\$(basename ${params.genome})"
-    ln -sf "\$(dirname ${params.genome})/\${real_genome_file}"* .
-    
+    ln -sf "\$(dirname ${params.genome})/\${real_genome_file}"* .    
+
     if [ ! -f "\${real_genome_file}.bwt" ]; then
+        # if the reference .fa file is a url, not a local path
+        if [ ! -f "\${real_genome_file}" ]; then
+            echo "Trying to download the reference"
+            filename=\$(basename ${params.genome})
+
+            if ! curl -f -o \$filename ${params.genome}; then
+                echo "Error: Failed to download \${params.genome}" >&2
+                exit 1
+            fi
+        fi
         bwameth.py index \${real_genome_file}
     else
         echo "Index files already exist for \${real_genome_file}"

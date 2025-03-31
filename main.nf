@@ -82,34 +82,34 @@ def detectFileType(file) {
 
         // align and mark duplicates
         alignedReads = alignReads( reads, genome_index_ch )
-//        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-//        extract      = methylDackel_extract( markDup.md_bams )
-//        mbias        = methylDackel_mbias( markDup.md_bams )
-//
-//        // collect statistics
-//        gcbias       = gc_bias( markDup.md_bams )
-//        idxstats     = idx_stats( markDup.md_bams )
-//        flagstats    = flag_stats( markDup.md_bams )
-//        fastqc       = fastqc( markDup.md_bams )
-//        insertsize   = insert_size_metrics( markDup.md_bams ) 
-//        metrics      = picard_metrics( markDup.md_bams )
-//        mismatches   = tasmanian( markDup.md_bams )
-//
-//        // Channels and processes that summarize all results
-//
-//        // channel for internal summaries
-//        grouped_email_library = reads
-//	    .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
-//            .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//            .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-//
+       markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+       extract      = methylDackel_extract( markDup.md_bams, genome_index_ch )
+       mbias        = methylDackel_mbias( markDup.md_bams, genome_index_ch )
+
+       // collect statistics
+       gcbias       = gc_bias( markDup.md_bams, genome_index_ch )
+       idxstats     = idx_stats( markDup.md_bams )
+       flagstats    = flag_stats( markDup.md_bams )
+       fastqc       = fastqc( markDup.md_bams )
+       insertsize   = insert_size_metrics( markDup.md_bams ) 
+       metrics      = picard_metrics( markDup.md_bams, genome_index_ch )
+       mismatches   = tasmanian( markDup.md_bams, genome_index_ch )
+
+       // Channels and processes that summarize all results
+
+       // channel for internal summaries
+       grouped_email_library = reads
+	    .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
+           .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+           .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+
 //        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
 //            aggregate_emseq( grouped_email_library ) 
 //        }
