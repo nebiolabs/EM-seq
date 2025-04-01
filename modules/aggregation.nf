@@ -1,3 +1,5 @@
+ 
+
 process multiqc {
     label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
@@ -59,7 +61,7 @@ process aggregate_emseq {
     publishDir "${params.outputDir}/ngs-agg"
 
     input:         
-	tuple  val(email), val(library), path(fq_or_bam), path(_read2), val(genome), val(fileType),
+	tuple  val(email), val(library), path(fq_or_bam), path(_read2), val(fileType),
 	       val(barcodes), path(nonconverted_counts_tsv), path(fastp),
                path(bam), path(bai), 
                path(gc_metrics),
@@ -75,12 +77,9 @@ process aggregate_emseq {
         path('ngs_agg.*')
 
     shell:
-
-    path_to_ngs_agg = "/mnt/bioinfo/prg/ngs-aggregate_results/current/"
-
     '''
-
-    genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
+    revision=$(cat !{workflow.projectDir}/ngs-agg_revision.yaml)
+    path_to_ngs_agg="/mnt/bioinfo/prg/ngs-aggregate_results/releases/${revision}/" # current/"
 
     # bc = barcode1 + barcode2 if exists.
     if echo !{barcodes} | grep -q "+" 
@@ -101,8 +100,8 @@ process aggregate_emseq {
     
     metadata=$(echo "!{fq_or_bam}" | awk '{if ($1~/fastq/) {metad="fq"} else if ($1~/bam/) {metad="bam"}; print "--metadata_"metad"_file "$1}')
 
-    export RBENV_VERSION=$(cat !{path_to_ngs_agg}/.ruby-version)
-    RAILS_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
+    export RBENV_VERSION=$(cat ${path_to_ngs_agg}/.ruby-version)
+    RAILS_ENV=production ${path_to_ngs_agg}/bin/bundle exec ${path_to_ngs_agg}/aggregate_results.rb \
     --bam !{bam} \
     --bai !{bai} \
     --name !{library} \
@@ -111,7 +110,7 @@ process aggregate_emseq {
     --contact_email !{params.email} \
     --project !{params.project} \
     --sample !{params.sample} \
-    --genome !{params.genome} \
+    --genome $(basename !{params.genome}) \
     --gc !{gc_metrics} \
     --idx_stats !{idxstat} \
     --flagstat !{flagstat} \
