@@ -20,7 +20,7 @@ process alignReads {
     shell:
 
     '''
-    genome=$(ls *fa)
+    genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
 
     get_nreads_from_fastq() {
         zcat -f $1 | grep -c "^+$" \
@@ -226,17 +226,17 @@ process bwa_index {
 
     script:
     """
-    real_genome_file="\$(basename ${params.genome})"
-    ln -sf "\$(dirname ${params.genome})/\${real_genome_file}"* .    
+    real_genome_file="\$(basename ${params.path_to_genome_fasta})"
+    ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* .    
 
     if [ ! -f "\${real_genome_file}.bwt" ]; then
         # if the reference .fa file is a url, not a local path
         if [ ! -f "\${real_genome_file}" ]; then
             echo "Trying to download the reference"
-            filename=\$(basename ${params.genome})
+            filename=\$(basename ${params.path_to_genome_fasta})
 
-            if ! curl -f -o \$filename ${params.genome}; then
-                echo "Error: Failed to download \${params.genome}" >&2
+            if ! curl -f -o \$filename ${params.path_to_genome_fasta}; then
+                echo "Error: Failed to download \${params.path_to_genome_fasta}" >&2
                 exit 1
             fi
         fi

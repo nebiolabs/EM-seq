@@ -110,7 +110,7 @@ process aggregate_emseq {
     --contact_email !{params.email} \
     --project !{params.project} \
     --sample !{params.sample} \
-    --genome $(basename !{params.genome}) \
+    --genome $(basename !{params.path_to_genome_fasta}) \
     --gc !{gc_metrics} \
     --idx_stats !{idxstat} \
     --flagstat !{flagstat} \
