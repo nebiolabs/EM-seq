@@ -1,3 +1,4 @@
 .nextflow*
 work
 output
+ngs-agg_revision.yaml
