@@ -116,7 +116,7 @@ workflow {
        
         // channel for multiqc analysis
         all_results = grouped_email_library
-         .join(insertsize.for_agg.groupTuple(by: [0, 1]), by: [0, 1])
+         .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
          .map { items -> [items[0], items[7..-1]] }
          .groupTuple()
          .flatten()
