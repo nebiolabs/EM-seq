@@ -181,7 +181,7 @@ process picard_metrics {
 
     shell:
     '''
-    genome=$(ls *fa)
+    genome=$(ls *.fa 2>/dev/null || ls *.fasta 2>/dev/null)
     picard -Xmx!{task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
         --VALIDATION_STRINGENCY SILENT -BS true -R ${genome} \
         -I !{bam} -O !{library}.alignment_summary_metrics.txt

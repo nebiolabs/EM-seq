@@ -229,7 +229,7 @@ process bwa_index {
     real_genome_file="\$(basename ${params.path_to_genome_fasta})"
     ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* .    
 
-    if [ ! -f "\${real_genome_file}.bwt" ]; then
+    if [ ! -f "\${real_genome_file}.bwameth.c2t.bwt" ]; then
         # if the reference .fa file is a url, not a local path
         if [ ! -f "\${real_genome_file}" ]; then
             echo "Trying to download the reference"
