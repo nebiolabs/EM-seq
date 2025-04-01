@@ -78,8 +78,8 @@ process aggregate_emseq {
 
     shell:
     '''
-    revision=$(cat !{workflow.projectDir}/ngs-agg_revision.yaml)
-    path_to_ngs_agg="/mnt/bioinfo/prg/ngs-aggregate_results/releases/${revision}/" # current/"
+    revision=$(cat !{params.revision})
+    path_to_ngs_agg="!{params.path_to_ngs_agg}${revision}/"
 
     # bc = barcode1 + barcode2 if exists.
     if echo !{barcodes} | grep -q "+" 
