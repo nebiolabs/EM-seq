@@ -13,7 +13,7 @@ process gc_bias {
 
     shell:
     '''
-    genome=$(ls *fa)
+    genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
     samtools view -H !{bam} | grep "^@SQ" \
     | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" \
     | awk -F":|\\t" '{print $3"\\t"0"\\t"$5}' > include_regions.bed
@@ -205,7 +205,7 @@ process tasmanian {
     '''
     set +e
     set +o pipefail
-    genome=$(ls *fa)
+    genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
     samtools view -q 30 -F 3840 !{bam} | head -n 2000000 | run_tasmanian -r ${genome} > !{library}.csv
     '''
 
