@@ -219,7 +219,7 @@ process bwa_index {
     label 'low_cpu'
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
-    publishDir "bwameth_index"
+    storeDir "bwameth_index"
 
     output:
     path "*.{fa,fai,amb,ann,bwt,pac,sa,c2t}"
