@@ -78,8 +78,7 @@ process aggregate_emseq {
 
     shell:
     '''
-    revision=$(cat !{params.revision})
-    path_to_ngs_agg="!{params.path_to_ngs_agg}${revision}/"
+    path_to_ngs_agg="!{params.path_to_ngs_agg}!{params.revision}/"
 
     # bc = barcode1 + barcode2 if exists.
     if echo !{barcodes} | grep -q "+" 
