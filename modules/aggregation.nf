@@ -97,7 +97,7 @@ process aggregate_emseq {
 
     cat !{nonconverted_counts_tsv} | awk -v l=!{library} '{print l"\t"$0}' > !{library}.nonconverted_counts.for_agg.tsv
     
-    metadata=$(echo "!{fq_or_bam}" | awk '{if ($1~/fastq/) {metad="fq"} else if ($1~/bam/) {metad="bam"}; print "--metadata_"metad"_file "$1}')
+    metadata=$(echo "!{fq_or_bam}" | awk '{if ($1~/fastq/) {metad="fq"} else if ($1~/bam/) {metad="_bam"}; print "--metadata"metad"_file "$1}')
 
     export RBENV_VERSION=$(cat ${path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production ${path_to_ngs_agg}/bin/bundle exec ${path_to_ngs_agg}/aggregate_results.rb \
