@@ -7,12 +7,13 @@ process gc_bias {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-
+        path(genome_path)
     output:
         tuple val(params.email), val(library), path('*gc_metrics'), emit: for_agg
 
     shell:
     '''
+    genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
     samtools view -H !{bam} | grep "^@SQ" \
     | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" \
     | awk -F":|\\t" '{print $3"\\t"0"\\t"$5}' > include_regions.bed
@@ -21,7 +22,7 @@ process gc_bias {
     picard -Xmx!{task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O !{library}.gc_metrics -S !{library}.gc_summary_metrics \
-        --CHART !{library}.gc.pdf -R !{params.genome}
+        --CHART !{library}.gc.pdf -R ${genome}
     '''
 }
 
@@ -104,7 +105,7 @@ process insert_size_metrics {
     samtools view -h -q 20 -U "$bad_mapq" !{bam} > "$good_mapq" &
     samtools_pid=$!
     picard -Xmx!{task.memory.toGiga()}g CollectInsertSizeMetrics \
-	--INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
+    --INCLUDE_DUPLICATES --VALIDATION_STRINGENCY SILENT -I "$good_mapq" -O good_mapq.out.txt \
         --MINIMUM_PCT 0 -H /dev/null &
     picard_good_mapq_pid=$!
 
@@ -118,28 +119,47 @@ process insert_size_metrics {
     wait $picard_good_mapq_pid
     wait $picard_bad_mapq_pid
 
-
     # extract the leading lines from the "good" mapq file
-    grep -B 1000 '^insert_size' good_mapq.out.txt > !{library}_insertsize_metrics
-    # add a column for the mapq category to the hisogram header
-    sed -i 's/count$/count\\tcategory/' !{library}_insertsize_metrics
-    grep '^[0-9][^A-Z]*$' good_mapq.out.txt | awk '{print $0"\\t>=20"}' >> !{library}_insertsize_metrics
-    grep '^[0-9][^A-Z]*$' bad_mapq.out.txt | awk '{print $0"\\t<20"}' >> !{library}_insertsize_metrics
+    grep -B 1000 '^insert_size' good_mapq.out.txt | grep -v "insert_size" > !{library}_insertsize_metrics
+    echo -e "insert_size\tAll_Reads.fr_count\tAll_Reads.rf_count\tAll_Reads.tandem_count\tcategory" >> !{library}_insertsize_metrics
 
-    # make sure we have 5 columns not 4 (if tandem_counts = 0 )
-    cat !{library}_insertsize_metrics | awk '{
-        if (header_seen==1) {
-            if (add_tandem==1) {
-                print $1"\t"$2"\t"$3"\t"0"\t"$4
-            }
-            else {print $0}
-        } 
-        else {print $0}
+    grep -h -A1000 '^insert_size' good_mapq.out.txt bad_mapq.out.txt | awk 'BEGIN{flag=0} {
+        if (! \$2) {if ($2!=0) {next}}
         if ($1~/^insert_size/) {
-            header_seen=1; 
-            if (NF==4) {add_tandem=1;}
+            if (flag==0) { category = ">=20"}
+            else {category = "<20"}
+            flag++;
+
+            # set header with indices of arr to keep order in good and bad mapq files.
+            for (i=1; i<=5; i++){
+                no_cols[i] = 0
+                if      ($i ~ /insert_size/) {isize=i}
+                else if ($i ~ /rf_count/)    {rf=i}
+                else if ($i ~ /fr_count/)    {fr=i}
+                else if ($i ~ /tandem/)      {tandem=i}
+                else                         {no_cols[i]++}
+            }
+            # columns that are not present still need to be printed (with 0 value)
+            for (i in no_cols) {
+                if (no_cols[i] > 0) {
+                    if      (! isize )  { isize = i}
+                    else if (! rf )     { rf = i}
+                    else if (! fr )     { fr = i}
+                    else if (! tandem ) { tandem = i}
+                }
+            }
         }
-    }' > tmp && mv tmp !{library}_insertsize_metrics
+        else {
+            # get values
+            for (n=1; n<=4;n++) { 
+                arr[n]=0
+                if ($n) { arr[n] = $n }
+            }
+
+            # sort values on header index and print
+            print arr[isize]"\\t"arr[rf]"\\t"arr[fr]"\\t"arr[tandem]"\\t"category
+        }
+    }' >> !{library}_insertsize_metrics
 
     # for multiqc channel
     mv good_mapq.out.txt !{library}.good_mapq.insert_size_metrics.txt
@@ -154,14 +174,16 @@ process picard_metrics {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
+        path(genome_path)
 
     output:
         tuple val(params.email), val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
 
     shell:
     '''
+    genome=$(ls *.fa 2>/dev/null || ls *.fasta 2>/dev/null)
     picard -Xmx!{task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
-        --VALIDATION_STRINGENCY SILENT -BS true -R !{params.genome} \
+        --VALIDATION_STRINGENCY SILENT -BS true -R ${genome} \
         -I !{bam} -O !{library}.alignment_summary_metrics.txt
     '''
 }
@@ -174,6 +196,7 @@ process tasmanian {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
+        path(genome_path)
 
     output:
         tuple val(params.email), val(library), path('*.csv'), emit: for_agg
@@ -182,8 +205,8 @@ process tasmanian {
     '''
     set +e
     set +o pipefail
-
-    samtools view -q 30 -F 3840 !{bam} | head -n 2000000 | run_tasmanian -r !{params.genome} > !{library}.csv
+    genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
+    samtools view -q 30 -F 3840 !{bam} | head -n 2000000 | run_tasmanian -r ${genome} > !{library}.csv
     '''
 
 }
