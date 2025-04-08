@@ -5,21 +5,22 @@ process alignReads {
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
     publishDir "${params.outputDir}/bwameth_align"
     input:
-        tuple path(input_file1),
-              path(input_file2),
-	      val(genome),
-              val(fileType)
+        tuple val(email),
+          val(library),
+          path(input_file1),
+          path(input_file2),
+          val(fileType)
+        path(genome)
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), val(fileType), path(input_file1), path(input_file2), emit: for_agg
+        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
 
     shell:
 
-    library = input_file1.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|.1$/,"")
     '''
-
+    genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
 
     get_nreads_from_fastq() {
         zcat -f $1 | grep -c "^+$" \
@@ -61,6 +62,8 @@ process alignReads {
     }    
     
     get_barcodes_and_rg_line() {
+    set +o pipefail
+
         local file=$1
         local type=$2
         if [ "$type" == "bam" ]; then
@@ -70,6 +73,8 @@ process alignReads {
             barcodes=($(barcodes_from_fastq $file))
             rg_line="@RG\\tID:${barcodes}\\tSM:!{library}\\tBC:${barcodes}"
         fi
+    
+    set -o pipefail
     }
 
     get_frac_reads() {
@@ -90,6 +95,31 @@ process alignReads {
             fi 
         fi
     }
+
+
+    reheader_sam() {
+      local input_file="$1"
+
+      cat "$input_file" | \
+      awk 'BEGIN{
+        header_ids = "@HD @SQ @RG @CO" # exclude @pg
+        split(header_ids, headers_arr, " ")
+        flag=0;
+      } {
+        if ($1~/^@/) {gsub(/\\\\t/,"\\t",$0); id = substr($1,1,3); arr[id] = arr[id]"\\n"$0}
+        else {
+          if (flag==0) {
+        for (id in headers_arr){
+          printf "%s", arr[headers_arr[id]]
+        }
+        flag=1;
+        print ""
+          }
+          print $0
+        }
+      }' | tail -n +2
+    }
+
 
     case !{fileType} in 
         "fastq_paired_end")
@@ -124,7 +154,10 @@ process alignReads {
 
     base_outputname="!{library}_${barcodes}_${flowcell}"
    
+    set +o pipefail
     inst_name=$(samtools view !{input_file1} | head -n 1 | cut -d ":" -f 1)
+    set -o pipefail
+
     trim_polyg=$(echo "${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo ${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
@@ -132,8 +165,8 @@ process alignReads {
      
     eval ${stream_reads} ${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q ${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${base_outputname}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference !{genome} /dev/stdin 2> "${base_outputname}.log.bwamem" \
-    | mark-nonconverted-reads.py --reference !{genome} 2> "${base_outputname}.nonconverted.tsv" \
+    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "${rg_line}" --reference ${genome} /dev/stdin 2> "${base_outputname}.log.bwamem" | reheader_sam /dev/stdin \
+    | mark-nonconverted-reads.py --reference ${genome} 2> "${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus.intdiv(8))} -m !{(task.memory.toGiga()*3).intdiv(4)}GB -o "${base_outputname}.aln.bam" /dev/stdin
     '''
@@ -177,38 +210,38 @@ process mergeAndMarkDuplicates {
 }
 
 process bwa_index {
-    /* This pipeline is for internal AND external use. StoreDir is not a good
-     * option for external use. Instead, we link or make the genome and 
-     * output the genome file as it was previously given in the parameters.
+    /* This pipeline is for internal AND external use.
+     * Attempts to link the reference index. If there is no index
+     * we download it from the provided URL.
+     * If no index and no URL, User will have to debug.
      */
+
     label 'low_cpu'
     tag { genome }
     conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
-    publishDir "bwameth_index" 
+    storeDir "bwameth_index"
 
     output:
-        path("genome_path")
+    path "*.{fa,fai,amb,ann,bwt,pac,sa,c2t}"
 
+    script:
+    """
+    real_genome_file="\$(basename ${params.path_to_genome_fasta})"
+    ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* .    
 
-    shell:
-    '''
-    genomePath=!{params.genome}
-    genomeDir=$(dirname ${genomePath})
-    genomeBase=$(basename ${genomePath})
+    if [ ! -f "\${real_genome_file}.bwameth.c2t.bwt" ]; then
+        # if the reference .fa file is a url, not a local path
+        if [ ! -f "\${real_genome_file}" ]; then
+            echo "Trying to download the reference"
+            filename=\$(basename ${params.path_to_genome_fasta})
 
-    mkdir -p genome_path
-
-    bwt_file="$(ls ${genomePath}*.bwt 2>/dev/null)"
-
-    if [ -n "${bwt_file}" ]; then
-        echo "Genome index files already exist. Creating links"
-        ln -s ${genomeDir}/${genomeBase}* genome_path/
+            if ! curl -f -o \$filename ${params.path_to_genome_fasta}; then
+                echo "Error: Failed to download \${params.path_to_genome_fasta}" >&2
+                exit 1
+            fi
+        fi
+        bwameth.py index \${real_genome_file}
     else
-        echo "Genome index files do not exist. Creating index files."
-        ln -s !{params.genome} genome_path/
-        bwameth.py index genome_path/${genomeBase}
-        samtools faidx genome_path/${genomeBase}
+        echo "Index files already exist for \${real_genome_file}"
     fi
-
-    '''
 }

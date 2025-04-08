@@ -1,3 +1,5 @@
+ 
+
 process multiqc {
     label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
@@ -58,8 +60,9 @@ process aggregate_emseq {
     conda "bioconda::samtools=1.9"
     publishDir "${params.outputDir}/ngs-agg"
 
-    input:
-         tuple val(email), val(library), val(barcodes), path(nonconverted_counts_tsv), path(fastp), val(fq_or_uBam), path(fq1_or_uBam), path(fq2_or_nothing),
+    input:         
+	tuple  val(email), val(library), path(fq_or_bam), path(_read2), val(fileType),
+	       val(barcodes), path(nonconverted_counts_tsv), path(fastp),
                path(bam), path(bai), 
                path(gc_metrics),
                path(idxstat),
@@ -75,8 +78,7 @@ process aggregate_emseq {
 
     shell:
     '''
-
-    genome_name=$(echo !{params.genome} | awk -F"/" '{print $NF}' | sed 's/.fa|.fasta//')
+    path_to_ngs_agg="!{params.path_to_ngs_agg}!{params.revision}/"
 
     # bc = barcode1 + barcode2 if exists.
     if echo !{barcodes} | grep -q "+" 
@@ -86,19 +88,19 @@ process aggregate_emseq {
         bc=$(echo !{barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
     fi
 
-        # Validate barcodes
-    if [[ ! ${barcodes} =~ ^[-ACGT]+$ ]]; then
-        echo "Warning: Invalid barcode format: ${barcodes}" >&2
+    # Validate barcodes
+    if [[ ! !{barcodes} =~ ^[+-ACGT]+$ ]]; then
+        echo "Warning: Invalid barcode format: !{barcodes}" >&2
     fi
 
     unzip *fastqc.zip
 
     cat !{nonconverted_counts_tsv} | awk -v l=!{library} '{print l"\t"$0}' > !{library}.nonconverted_counts.for_agg.tsv
     
-    metadata=$(echo "!{fq_or_bam}" | awk '{if ($1~/fastq/) {metad="fq"} else if ($1~/bam/) {metad="bam"}; print "--metadata_"metad"_file "$1}} }')
+    metadata=$(echo "!{fq_or_bam}" | awk '{if ($1~/fastq/) {metad="fq"} else if ($1~/bam/) {metad="_bam"}; print "--metadata"metad"_file "$1}')
 
-    export RBENV_VERSION=$(cat !{path_to_ngs_agg}/.ruby-version)
-    RAILS_ENV=production !{path_to_ngs_agg}/bin/bundle exec !{path_to_ngs_agg}/aggregate_results.rb \
+    export RBENV_VERSION=$(cat ${path_to_ngs_agg}/.ruby-version)
+    RAILS_ENV=production ${path_to_ngs_agg}/bin/bundle exec ${path_to_ngs_agg}/aggregate_results.rb \
     --bam !{bam} \
     --bai !{bai} \
     --name !{library} \
@@ -107,7 +109,7 @@ process aggregate_emseq {
     --contact_email !{params.email} \
     --project !{params.project} \
     --sample !{params.sample} \
-    --genome !{params.genome} \
+    --genome $(basename !{params.path_to_genome_fasta}) \
     --gc !{gc_metrics} \
     --idx_stats !{idxstat} \
     --flagstat !{flagstat} \
