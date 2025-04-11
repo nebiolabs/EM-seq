@@ -3,7 +3,7 @@
 process multiqc {
     label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
-    publishDir "${params.outputDir}"
+    publishDir "${params.outputDir}", mode: copy
 
     input:
         tuple val(email), path('*')
