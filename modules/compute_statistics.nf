@@ -157,7 +157,7 @@ process insert_size_metrics {
             }
 
             # sort values on header index and print
-            print arr[isize]"\\t"arr[rf]"\\t"arr[fr]"\\t"arr[tandem]"\\t"category
+            print arr[isize]"\\t"arr[fr]"\\t"arr[rf]"\\t"arr[tandem]"\\t"category
         }
     }' >> !{library}_insertsize_metrics
 
