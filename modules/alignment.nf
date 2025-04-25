@@ -227,7 +227,7 @@ process bwa_index {
     script:
     """
     real_genome_file="\$(basename ${params.path_to_genome_fasta})"
-    ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* .
+    ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* . 
 
     if [ ! -f "\${real_genome_file}.bwameth.c2t.bwt" ]; then
         # if the reference .fa file is a url, not a local path
@@ -244,4 +244,5 @@ process bwa_index {
     else
         echo "Index files already exist for \${real_genome_file}"
     fi
+    """
 }
