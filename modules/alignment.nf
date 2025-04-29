@@ -25,6 +25,10 @@ process alignReads {
     shell:
 
     '''
+    echo "memory used in this task = ${task.memory} GB"
+    echo "input file size = ${fileSizeGB} GB"
+
+
     genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
 
     get_nreads_from_fastq() {
