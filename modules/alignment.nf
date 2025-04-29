@@ -10,7 +10,7 @@ process alignReads {
           path(input_file1),
           path(input_file2),
           val(fileType)
-        path(genome)
+          path(genome)
     output:
         tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
         path "*.aln.bam", emit: aligned_bams
@@ -18,15 +18,15 @@ process alignReads {
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
 
     // Set memory, dynamically, based on input file size
-    def fileSizeGB = ${input_file1}.size() / (1024 * 1024 * 1024)
+    def fileSizeGB = input_file1.size() / (1024 * 1024 * 1024)
     def memoryGB = Math.max(task.memory, Math.ceil(fileSizeGB * 0.5))
     task.memory = "${memoryGB} GB"
 
     shell:
 
     '''
-    echo "memory used in this task = ${task.memory} GB"
-    echo "input file size = ${fileSizeGB} GB"
+    echo "memory used in this task = !{task.memory} GB"
+    echo "input file size = !{fileSizeGB} GB"
 
 
     genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
