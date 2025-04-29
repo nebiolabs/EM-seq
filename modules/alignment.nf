@@ -27,8 +27,12 @@ process alignReads {
     shell:
 
     '''
-    echo "memory used in this task = !{task.memory} GB"
-    echo "input file size = !{fileSizeGB} GB"
+    file_size_bytes=$(stat -c%s "!{input_file1}")
+    file_size_gb=$(echo "scale=2; ${file_size_bytes} / (1024 * 1024 * 1024)" | bc)
+
+    echo "Input file size: ${file_size_gb} GB"
+    echo "Memory allocated for this task: !{task.memory}"
+    
 
 
     genome=$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
