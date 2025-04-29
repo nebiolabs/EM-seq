@@ -18,7 +18,7 @@ process alignReads {
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
 
     // Set memory, dynamically, based on input file size
-    def fileSizeGB = input_file.size() / (1024 * 1024 * 1024)
+    def fileSizeGB = input_file1.size() / (1024 * 1024 * 1024)
     def memoryGB = Math.max(task.memory, Math.ceil(fileSizeGB * 0.5))
     task.memory = "${memoryGB} GB"
 
