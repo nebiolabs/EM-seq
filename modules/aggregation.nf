@@ -76,51 +76,51 @@ process aggregate_emseq {
     output:
         path('ngs_agg.*')
 
-    shell:
-    '''
-    path_to_ngs_agg="!{params.path_to_ngs_agg}!{params.revision}/"
+    script:
+    """
+    path_to_ngs_agg="${params.path_to_ngs_agg}${params.revision}/"
 
     # bc = barcode1 + barcode2 if exists.
-    if echo !{barcodes} | grep -q "+" 
+    if echo ${barcodes} | grep -q "+" 
     then
-        bc=$(echo !{barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
+        bc=\$(echo ${barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
     else
-        bc=$(echo !{barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length($2)==length($1)) {bc2="--barcode2 "$2}; print $1" "bc2;}')
+        bc=\$(echo ${barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
     fi
 
     # Validate barcodes
-    if [[ ! !{barcodes} =~ ^[+-ACGT]+$ ]]; then
-        echo "Warning: Invalid barcode format: !{barcodes}" >&2
+    if [[ ! ${barcodes} =~ ^[+-ACGT]+\$ ]]; then
+        echo "Warning: Invalid barcode format: ${barcodes}" >&2
     fi
 
     unzip *fastqc.zip
 
-    cat !{nonconverted_counts_tsv} | awk -v l=!{library} '{print l"\t"$0}' > !{library}.nonconverted_counts.for_agg.tsv
+    cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
     
-    metadata=$(echo "!{fq_or_bam}" | awk '{if ($1~/fastq/) {metad="fq"} else if ($1~/bam/) {metad="_bam"}; print "--metadata"metad"_file "$1}')
+    metadata=\$(echo "${fq_or_bam}" | awk '{if (\$1~/fastq/) {metad="fq"} else if (\$1~/bam/) {metad="_bam"}; print "--metadata"metad"_file "\$1}')
 
-    export RBENV_VERSION=$(cat ${path_to_ngs_agg}/.ruby-version)
-    RAILS_ENV=production ${path_to_ngs_agg}/bin/bundle exec ${path_to_ngs_agg}/aggregate_results.rb \
-    --bam !{bam} \
-    --bai !{bai} \
-    --name !{library} \
-    --barcode1 ${bc} \
-    --lane !{params.lane} \
-    --contact_email !{params.email} \
-    --project !{params.project} \
-    --sample !{params.sample} \
-    --genome $(basename !{params.path_to_genome_fasta}) \
-    --gc !{gc_metrics} \
-    --idx_stats !{idxstat} \
-    --flagstat !{flagstat} \
-    --nonconverted_read_counts !{library}.nonconverted_counts.for_agg.tsv \
-    --combined_mbias_records !{mbias} \
+    export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
+    RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
+    --bam ${bam} \
+    --bai ${bai} \
+    --name ${library} \
+    --barcode1 \${bc} \
+    --lane ${params.lane} \
+    --contact_email ${params.email} \
+    --project ${params.project} \
+    --sample ${params.sample} \
+    --genome \$(basename ${params.path_to_genome_fasta}) \
+    --gc ${gc_metrics} \
+    --idx_stats ${idxstat} \
+    --flagstat ${flagstat} \
+    --nonconverted_read_counts ${library}.nonconverted_counts.for_agg.tsv \
+    --combined_mbias_records ${mbias} \
     --fastqc *_fastqc/fastqc_data.txt \
-    --insert !{insertsize_metrics} \
-    --tasmanian !{tasmanian} \
-    --aln !{alignment_summary_metrics_txt} \
-    --fastp !{fastp} \
-    ${metadata}  \
-    --workflow !{params.workflow} 2> ngs_agg.!{library}.err 1> ngs_agg.!{library}.out
-    '''
+    --insert ${insertsize_metrics} \
+    --tasmanian ${tasmanian} \
+    --aln ${alignment_summary_metrics_txt} \
+    --fastp ${fastp} \
+    \${metadata}  \
+    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
+    """
 }
