@@ -16,43 +16,42 @@ process methylDackel_mbias {
         path('*.tsv'), emit: mbias_output_tsv
         tuple val(params.email), val(library), path('*.tsv'), emit: for_agg
 
-    shell:
-    '''
-    genome=$(ls *fa)
-    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > !{library}_!{barcodes}_combined_mbias.tsv
-    chrs=(`samtools view -H !{md_bam} | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
+    script:
+    """
+    genome=\$(ls *fa)
+    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}_${barcodes}_combined_mbias.tsv
+    chrs=(`samtools view -H ${md_bam} | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
 
-    for chr in ${chrs[*]}; do
+    for chr in \${chrs[*]}; do
         for context in CHH CHG CpG; do
             arg=''
-            if [ $context = 'CHH' ]; then
+            if [ "\$context" = 'CHH' ]; then
             arg='--CHH --noCpG'
-            elif [ $context = 'CHG' ]; then
+            elif [ "\$context" = 'CHG' ]; then
             arg='--CHG --noCpG'
             fi
             # need two calls to add columns containing the counts without filtering duplicate reads (for rrEM-seq where start/end is constrained)
             # not sure why we need both --keepDupes and -F, probably a bug in mbias
-            join -t $'\t' -j1 -o 1.2,1.3,1.4,1.5,1.6,2.5,2.6 -a 1 -e 0 \
+            join -t \$'\t' -j1 -o 1.2,1.3,1.4,1.5,1.6,2.5,2.6 -a 1 -e 0 \
             <( \
-                MethylDackel mbias --noSVG $arg -@ !{task.cpus} -r $chr ${genome} !{md_bam} | \
-                tail -n +2 | awk '{print $1"-"$2"-"$3"\t"$0}' | sort -k 1b,1
+                MethylDackel mbias --noSVG \$arg -@ ${task.cpus} -r \$chr \${genome} ${md_bam} | \
+                tail -n +2 | awk '{print \$1"-"\$2"-"\$3"\t"\$0}' | sort -k 1b,1
             ) \
             <( \
-                MethylDackel mbias --noSVG --keepDupes -F 2816 $arg -@ !{task.cpus} -r $chr ${genome} !{md_bam} | \
-                tail -n +2 | awk '{print $1"-"$2"-"$3"\t"$0}' | sort -k 1b,1
+                MethylDackel mbias --noSVG --keepDupes -F 2816 \$arg -@ ${task.cpus} -r \$chr \${genome} ${md_bam} | \
+                tail -n +2 | awk '{print \$1"-"\$2"-"\$3"\t"\$0}' | sort -k 1b,1
             ) \
-            | sed "s/^/${chr}\t${context}\t/" \
-            >> !{library}_!{barcodes}_combined_mbias.tsv
+            | sed "s/^/\${chr}\t\${context}\t/" \
+            >> ${library}_${barcodes}_combined_mbias.tsv
         done
     done
     # makes the svg files for trimming checks
-    MethylDackel mbias -@ !{task.cpus} --noCpG --CHH --CHG -r ${chrs[0]} ${genome} !{md_bam} !{library}_chn
-    for f in *chn*.svg; do sed -i "s/Strand<\\/text>/Strand $f ${chrs[0]} CHN <\\/text>/" $f; done;
+    MethylDackel mbias -@ ${task.cpus} --noCpG --CHH --CHG -r \${chrs[0]} \${genome} ${md_bam} ${library}_chn
+    for f in *chn*.svg; do sed -i "s/Strand<\\/text>/Strand \$f \${chrs[0]} CHN <\\/text>/" \$f; done;
 
-    MethylDackel mbias -@ !{task.cpus} -r ${chrs[0]} ${genome} !{md_bam} !{library}_cpg
-    for f in *cpg*.svg; do sed -i "s/Strand<\\/text>/Strand $f ${chrs[0]} CpG<\\/text>/" $f; done;
-
-    '''
+    MethylDackel mbias -@ ${task.cpus} -r \${chrs[0]} \${genome} ${md_bam} ${library}_cpg
+    for f in *cpg*.svg; do sed -i "s/Strand<\\/text>/Strand \$f \${chrs[0]} CpG<\\/text>/" \$f; done;
+    """
 }
 
 
@@ -69,11 +68,11 @@ process methylDackel_extract {
     output:
         tuple val(library), file('*.methylKit.gz'), emit: extract_output 
 
-    shell:
-    '''
-    genome=$(ls *fa)
-    MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ !{task.cpus} \
-        --CHH --CHG -o !{library}.!{barcodes} ${genome} !{md_bam} 
-    pigz -p !{task.cpus} *.methylKit 
-    '''
+    script:
+    """
+    genome=\$(ls *fa)
+    MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ ${task.cpus} \
+        --CHH --CHG -o ${library}.${barcodes} \${genome} ${md_bam} 
+    pigz -p ${task.cpus} *.methylKit 
+    """
 }

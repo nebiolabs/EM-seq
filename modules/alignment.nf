@@ -9,8 +9,8 @@ process alignReads {
               val(library),
               path(input_file1),
               path(input_file2),
-              val(fileType),
-              path(genome)
+              val(fileType)
+        path(genome)
 
     output:
         tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
@@ -36,9 +36,9 @@ process alignReads {
 
     # Define helper functions
     get_nreads_from_fastq() {
-        zcat -f \$1 | grep -c "^+$" \
+        zcat -f \$1 | grep -c "^+\$" \
         | awk '{
-            frac=!{params.max_input_reads}/\$1; 
+            frac=${params.max_input_reads}/\$1; 
             if (frac>=1) {frac=0.999}; 
             split(frac, numParts, "."); print numParts[2]
         }'
@@ -79,7 +79,7 @@ process alignReads {
             rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g')
         else
             barcodes=(\$(barcodes_from_fastq \$file))
-            rg_line="@RG\\tID:\${barcodes}\\tSM:!{library}\\tBC:\${barcodes}"
+            rg_line="@RG\\tID:\${barcodes}\\tSM:${library}\\tBC:\${barcodes}"
         fi
         set -o pipefail
     }
@@ -87,18 +87,18 @@ process alignReads {
     get_frac_reads() {
         local file=\$1
         local type=\$2
-        if [ "!{params.max_input_reads}" == "all_reads" ]; then
+        if [ "${params.max_input_reads}" == "all_reads" ]; then
             frac_reads=1
         else
             if [ "\$type" == "bam" ]; then
-                n_reads=$(samtools view -c -F 2304 \$file)
+                n_reads=\$(samtools view -c -F 2304 \$file)
             else
-                n_reads=$(get_nreads_from_fastq \$file)
+                n_reads=\$(get_nreads_from_fastq \$file)
             fi
-            if [ \$n_reads -le !{params.max_input_reads} ]; then
+            if [ \$n_reads -le ${params.max_input_reads} ]; then
                 frac_reads=1
             else
-                frac_reads=$(echo \$n_reads | awk '{!{params.max_input_reads}/\$1}')
+                frac_reads=\$(echo \$n_reads | awk '{${params.max_input_reads}/\$1}')
             fi 
         fi
     }
@@ -128,7 +128,7 @@ process alignReads {
     }
 
 
-    case !{fileType} in 
+    case ${fileType} in 
         "fastq_paired_end")
             get_barcodes_and_rg_line ${input_file1} "fastq"
             get_frac_reads ${input_file1} "fastq"
@@ -155,27 +155,29 @@ process alignReads {
     fi
 
     if [ \${frac_reads} -lt 1 ]; then
-        downsample_seed_frac=$(awk -v seed=!{params.downsample_seed} -v frac=\${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
+        downsample_seed_frac=\$(awk -v seed=${params.downsample_seed} -v frac=\${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
         stream_reads="\${stream_reads} | samtools view -u -s \${downsample_seed_frac}"
     fi
 
-    base_outputname="!{library}_\${barcodes}_\${flowcell}"
+    base_outputname="${library}_\${barcodes}_\${flowcell}"
    
     set +o pipefail
-    inst_name=\$(samtools view !{input_file1} | head -n 1 | cut -d ":" -f 1)
+    inst_name=\$(samtools view ${input_file1} | head -n 1 | cut -d ":" -f 1)
     set -o pipefail
 
-    trim_polyg=$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
+    trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
-     
+ 
     eval \${stream_reads} \${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "\${base_outputname}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t !{Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference \${genome} /dev/stdin 2> "\${base_outputname}.log.bwamem" | reheader_sam /dev/stdin \
+    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference \${genome} /dev/stdin 2> "\${base_outputname}.log.bwamem" | reheader_sam /dev/stdin \
     | mark-nonconverted-reads.py --reference \${genome} 2> "\${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
-    | sambamba sort -l 3 --tmpdir=!{params.tmp_dir} -t !{Math.max(1,task.cpus.intdiv(8))} -m !{(task.memory.toGiga()*3).intdiv(4)}GB -o "\${base_outputname}.aln.bam" /dev/stdin
+    | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*3).intdiv(4)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
+
+
     """
 }
 
@@ -196,22 +198,22 @@ process mergeAndMarkDuplicates {
     script:
     """
     set +o pipefail
-    inst_name=$(samtools view !{bam} | head -n1 | cut -d ":" -f1);
+    inst_name=\$(samtools view ${bam} | head -n1 | cut -d ":" -f1);
     set -o pipefail
     
-    optical_distance=$(echo \${inst_name} | awk '{if ($1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
+    optical_distance=\$(echo \${inst_name} | awk '{if (\$1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
 
     picard -Xmx${task.memory.toGiga()}g MarkDuplicates \
         --TAGGING_POLICY All \
         --OPTICAL_DUPLICATE_PIXEL_DISTANCE \${optical_distance} \
-        --TMP_DIR !{params.tmp_dir} \
+        --TMP_DIR ${params.tmp_dir} \
         --CREATE_INDEX true \
         --MAX_RECORDS_IN_RAM 5000000 \
         --BARCODE_TAG "RX" \
         --ASSUME_SORT_ORDER coordinate \
         --VALIDATION_STRINGENCY SILENT \
         -I ${bam} \
-        -O ${library}_!{barcodes}.md.bam \
+        -O ${library}_${barcodes}.md.bam \
         -M ${library}.markdups_log
     """
 }
