@@ -28,7 +28,9 @@ jobs:
         with:
           environment-name: nextflow-emseq
           create-args: nextflow=${{ matrix.NXF_VER }} samtools
-          channels: conda-forge,bioconda
+          channels: 
+            - conda-forge
+            - bioconda
 
       - name: Run test script
         run: |
