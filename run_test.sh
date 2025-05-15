@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
+set -x
 
 cp nextflow.config.example nextflow.config
 
@@ -145,5 +145,6 @@ tail -n2 em-seq_output/stats/picard_alignment_metrics/emseq-test_76.alignment_su
 
 rm -r ${tmp} ${pwd}/nextflow.config 
 
+cat ${pwd}/test.log.out
 echo "FINISHED"
 
