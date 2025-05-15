@@ -27,9 +27,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: nextflow.emseq
-          create-args: >-
-              -c conda-forge -c bioconda
-              nextflow=${{ matrix.NXF_VER }} samtools
+          create-args: -c conda-forge -c bioconda nextflow=${{ matrix.NXF_VER }} samtools
 
           nextflow=23.10.0 samtools=1.19
           channels: |
