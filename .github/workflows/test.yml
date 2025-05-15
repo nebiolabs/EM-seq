@@ -27,7 +27,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: nextflow-emseq
-          create-args: nextflow=${{ matrix.NXF_VER }} samtools=1.21
+          create-args: nextflow=23.10.0 samtools=1.19
           channels: |
             - conda-forge
             - bioconda
@@ -36,7 +36,5 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libxml2-utils
-          eval "$(micromamba shell hook --shell=bash)"
-          micromamba activate nextflow-emseq
           bash run_test.sh
 
