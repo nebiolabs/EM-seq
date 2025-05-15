@@ -9,14 +9,16 @@ pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
 [ -d "${tmp}" ] || mkdir -p "${tmp}"
 
-if [ ! "${GITHUB_ACTIONS:-}" == "true" ]; then
-#    exec $SHELL
-#else
+if [ "${GITHUB_ACTIONS:-}" == "true" ]; then
+    #exec $SHELL
+    echo "gh actions..."
+else
     micromamba create --name nextflow.emseq --yes python=3
+fi
     micromamba install --name nextflow.emseq --yes bioconda:nextflow bioconda::samtools
     eval "$(micromamba shell hook --shell bash)"
     micromamba activate nextflow.emseq
-fi
+#fi
 
 # make 151 nt-long bam and fastq files WITH simulated conversions #
 # --------------------------------------------------------------- #
