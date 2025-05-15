@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        NXF_VER: ["23.04.1"]
+        NXF_VER: ["25.04.2"]
     defaults:
       run:
         shell: bash
@@ -27,7 +27,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: nextflow-emseq
-          create-args: nextflow=${{ matrix.NXF_VER }} samtools
+          create-args: nextflow=${{ matrix.NXF_VER }} samtools=1.21
           channels: |
             - conda-forge
             - bioconda
