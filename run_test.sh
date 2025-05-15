@@ -9,11 +9,11 @@ pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
 [ -d "${tmp}" ] || mkdir -p "${tmp}"
 
-if [ "${GITHUB_ACTIONS:-}" == "true" ]; then
-    exec $SHELL
-else
-#    micromamba create --name nextflow.emseq --yes python=3
-#    micromamba install --name nextflow.emseq --yes bioconda:nextflow bioconda::samtools
+if [ ! "${GITHUB_ACTIONS:-}" == "true" ]; then
+#    exec $SHELL
+#else
+    micromamba create --name nextflow.emseq --yes python=3
+    micromamba install --name nextflow.emseq --yes bioconda:nextflow bioconda::samtools
     eval "$(micromamba shell hook --shell bash)"
     micromamba activate nextflow.emseq
 fi
