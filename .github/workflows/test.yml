@@ -27,17 +27,32 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
     steps:
-      - name: Setup miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          channels: conda-forge, bioconda, defaults
-          auto-activate-base: true
       - name: Checkout code
         uses: actions/checkout@v4
+
+       -name: install micromamba
+        run: |
+          curl -L https://micro.mamba.pm/install.sh | bash
+          source ~/.bashrc
+
+      - name: Setup micromamba
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          channels: conda-forge, bioconda
+          auto-activate-base: true
+
+      - name: Create environment and install dependencies
+        run: |
+          micromamba create -n nextflow.emseq
+          micromamba activate nextflow.emseq
+          micromamba install -y -n nextflow.emseq nextflow samtools
+
+       # Not sure if I need this step
       - name: Setup Nextflow
         uses: nf-core/setup-nextflow@v2.0.0
+
       - name: Run test script
         run: |
           sudo apt-get install -y libxml2-utils samtools

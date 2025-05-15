@@ -1,4 +1,5 @@
 conda.enabled = true
+conda.useMicromamba = true
 report.enabled = true
 timeline.enabled = true
 dag.enabled = true
@@ -16,12 +17,12 @@ process {
     executor = 'local' // 'sge'. 'slurm', etc... 
 
     withLabel: high_cpu {
-	    cpus = { Math.min(task.requested_cpus ?: 16, Runtime.availableProcessors()) }
+	    cpus = { Math.min(task.requested_cpus ?: 16, Runtime.runtime.availableProcessors()) }
 	    memory = { "${Math.min(64, Math.max(8, (availableMemoryGB as Integer)))} GB" }
     }
 
     withLabel: medium_cpu {
-        cpus = { Math.min(task.requested_cpus ?: 4, Runtime.availableProcessors()) }
+        cpus = { Math.min(task.requested_cpus ?: 4, Runtime.runtime.availableProcessors()) }
         memory = { "${Math.min(8, Math.max(4, (availableMemoryGB as Integer)))} GB" }
     }
 

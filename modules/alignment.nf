@@ -177,7 +177,6 @@ process alignReads {
     | samtools view -u /dev/stdin \
     | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*3).intdiv(4)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
 
-
     """
 }
 
