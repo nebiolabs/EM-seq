@@ -120,7 +120,7 @@ ls -ltr
 echo "finished listing files"
 
 nextflow run ${pwd}/main.nf \
-  --input_glob "*1.fastq.gz" \
+  --input_glob "emseq-test*1.fastq.gz" \
   --path_to_genome_fasta ${genome_path} \
   --email "aerijman@neb.com" \
   --max_input_reads 10000 \
