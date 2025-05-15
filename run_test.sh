@@ -115,7 +115,9 @@ genome_path=${tmp}/reference.fa
 pushd ${tmp}
 # loop for different type of files, fastq, fastq.gz and bam
 
-realpath "*1.fastq.gz"
+echo "check if files are in here"
+ls -ltr 
+echo "finished listing files"
 
 nextflow run ${pwd}/main.nf \
   --input_glob "*1.fastq.gz" \
