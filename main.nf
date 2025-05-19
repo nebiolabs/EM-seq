@@ -22,6 +22,16 @@ include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_me
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
 
 
+// custom fx
+def replaceReadNumber(inputString) {
+    return inputString.replace('_R1.', '_R2.')
+                      .replace('_1.fastq', '_2.fastq')
+                      .replace('_R1_', '_R2_')
+                      .replace('.R1.', '.R2.')
+                      .replace('_1.', '_2.')
+                      .replace('.1.fastq', '.2.fastq')
+}
+
 // detect bam or fastq (or fastq.gz)
 def detectFileType(file) {
     def file_str = file.toString()
@@ -29,7 +39,7 @@ def detectFileType(file) {
         return 'bam'
     } else if (file_str.endsWith('.fastq.gz') || file_str.endsWith('.fastq')) {
         // read2 exists for paired-end FASTQ?
-        def read2File = file_str.replace('_R1.fastq', '_R2.fastq').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.")
+        def read2File = replaceReadNumber(file_str)
         if (new File(read2File).exists()) {
             return 'fastq_paired_end'
         } else {
@@ -51,11 +61,6 @@ workflow {
             println "Workflow failed: Genome file does not exist."
             System.exit(1)  // Exit with a custom status code
         }
-        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-            
-        }
-
-
         genome_index_ch = bwa_index()
 
         reads = Channel
@@ -65,13 +70,13 @@ workflow {
             def read1File = input_file
             def read2File = placeholder_r2.toString()
             if (fileType == 'fastq_paired_end') {
-                read2File = input_file.toString().replace('_R1.', '_R2.').replace('_1.fastq', '_2.fastq').replace("_R1_","_R2_").replace(".R1.",".R2.").replace('_1.', '_2.')
+                read2File = replaceReadNumber(input_file.toString())
            }
             if (read1File.toString() == read2File) {
                 log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
-	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_R1$|_1$|\.1$/,"")
+	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
             return [params.email, library, read1File, read2File, fileType]
           }
           //.join(genome_index_ch)
