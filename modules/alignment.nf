@@ -1,3 +1,47 @@
+process enough_reads {
+    label 'low_cpu'
+    tag {library}
+    conda "bioconda::samtools=1.19"
+    
+    input:
+        tuple val(email), 
+              val(library), 
+              path(input_file1), 
+              path(input_file2), 
+              val(fileType)
+
+        output:
+            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), emit: reads
+            path("passes_or_fails.txt"), emit: check
+
+        script:
+        """
+        passes_or_fails="pass"
+        if grep -q "fastq" <<< "${fileType}"; then
+            [ \$(zcat -f ${input_file1} | grep -c "^+\$") -lt 1000 ] && passes_or_fails="fail"
+            [ \$(zcat -f ${input_file2} | grep -c "^+\$") -lt 1000 ] && passes_or_fails="fail"
+        elif grep -q "bam" <<< "${fileType}"; then
+            [ \$(samtools view -c -F 2304 ${input_file1}) -lt 1000 ] && passes_or_fails="fail"
+        fi 
+
+        echo "\${passes_or_fails}" > passes_or_fails.txt
+
+        msg="Input files check for library=${library}"
+        sendmail -t <<EOF
+        To: ${email}
+        Subject: "File Read Check"
+        Content-Type: text/html
+
+        <html>
+            <body>r
+            <p>The file <strong>\${msg}</strong>.<span style="color:red;">\${passes_or_fails}</span></p>
+            </body>
+        </html>
+        EOF
+        """
+} 
+
+
 process alignReads {
     label 'high_cpu'
     tag { library }
