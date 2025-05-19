@@ -20,89 +20,89 @@ fi
     micromamba activate nextflow.emseq
 #fi
 
-# make 151 nt-long bam and fastq files WITH simulated conversions #
-# --------------------------------------------------------------- #
-echo "generating reads and genome reference data..."
-
-
-ln -sf ${pwd}/test_data/emseq-test_R*.fastq ${tmp}/
-
-mkfifo tmp_fq
-paste -d "\n" <(samtools sort ${tmp}/emseq-test_R1.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=77; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') <(samtools sort ${tmp}/emseq-test_R2.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=141; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') > tmp_fq &
-tmp_fq_pid=$!
-
-cat <(echo -e "@HD\tVN:1.6\tSO:unsorted\n@RG\tID:test1\tSM:testsample1") <(cat tmp_fq | \
-awk '
-    function modify_base(base, next_base) {
-        if (base == "C") {
-            if (next_base == "G") {
-                return (rand() < 0.2) ? "T" : "C";
-            } else {
-                return "T";
-            }
-        } return base;} 
-        BEGIN { srand() } {
-        modified_seq ="" 
-        for (i = 1; i <= length($10); i++) {
-            base = substr($10, i, 1);
-            next_base = (i < length($10)) ? substr($10, i + 1, 1) : "";
-            modified_seq = modified_seq modify_base(base, next_base);
-        }
-        $10 = modified_seq
-        print $0; }' | tr " " "\t") | \
-     samtools view -h -o ${tmp}/emseq-test.u.bam
-
-wait $tmp_fq_pid
-rm tmp_fq
-
-
-# make genome and index #
-# ---------------------
-echo ">chr_Human_autosome_chr1" > ${tmp}/reference.fa
-
-gen_rand_seq() {
-    length=$1
-    LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
-} 
-revcomp() {
-    echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
-} 
-export -f gen_rand_seq revcomp
-
-samtools view ${tmp}/emseq-test.u.bam | \
-    cut -f10 | paste - - | \
-    awk -v gen_rand_seq="gen_rand_seq" -v revcomp="revcomp" 'BEGIN{srand()}{
-        min=20; 
-        max=700;
-        random_number = int(min + rand() * (max - min + 1)); 
-        cmd1 = "gen_rand_seq "random_number 
-        cmd1 | getline r;
-        close(cmd1)
-        cmd2 = "revcomp " $2 
-        cmd2 | getline read2;
-        close(cmd2)
-        print $1""r""read2
-    }' | tr -d "\n" | fold -w60 >> ${tmp}/reference.fa
-    #| shuf | tr -d "\n" | fold -w60 >> ${tmp}/reference.fa
-
-
-
-# make 76 nt-long fastq and bam files INCLUDING simulated conversions #
-# ------------------------------------------------------------------- #
-
-cat <(samtools view -H ${tmp}/emseq-test.u.bam) <(samtools view ${tmp}/emseq-test.u.bam | awk 'BEGIN{OFS="\t"}{$10=substr($10,1,76); $11=substr($11,1,76); print $0}') > ${tmp}/emseq-test_76.u.bam
-
-BARCODE=$(samtools view -f 77 ${tmp}/emseq-test.u.bam | grep -o "BC:Z:[A-Z,+,-]*" | sort | uniq -c | head | awk '{gsub("BC:Z","N:0",$2); print $2}' )
-samtools view -f 77 ${tmp}/emseq-test_76.u.bam | samtools fastq | sed "s/\/1$/ 1:$BARCODE/"  > ${tmp}/emseq-test_76.R1.fastq
-samtools view -f 141 ${tmp}/emseq-test_76.u.bam | samtools fastq | sed "s/\/2$/ 2:$BARCODE/" > ${tmp}/emseq-test_76.R2.fastq
-
-
-# make gzip fastq files. #
-# ---------------------- #
-
-gzip -c ${tmp}/emseq-test_76.R1.fastq > ${tmp}/emseq-test_76.R1.fastq.gz
-gzip -c ${tmp}/emseq-test_76.R2.fastq > ${tmp}/emseq-test_76.R2.fastq.gz
-
+# # make 151 nt-long bam and fastq files WITH simulated conversions #
+# # --------------------------------------------------------------- #
+# echo "generating reads and genome reference data..."
+# 
+# 
+# ln -sf ${pwd}/test_data/emseq-test_R*.fastq ${tmp}/
+# 
+# mkfifo tmp_fq
+# paste -d "\n" <(samtools sort ${tmp}/emseq-test_R1.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=77; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') <(samtools sort ${tmp}/emseq-test_R2.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=141; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') > tmp_fq &
+# tmp_fq_pid=$!
+# 
+# cat <(echo -e "@HD\tVN:1.6\tSO:unsorted\n@RG\tID:test1\tSM:testsample1") <(cat tmp_fq | \
+# awk '
+#     function modify_base(base, next_base) {
+#         if (base == "C") {
+#             if (next_base == "G") {
+#                 return (rand() < 0.2) ? "T" : "C";
+#             } else {
+#                 return "T";
+#             }
+#         } return base;} 
+#         BEGIN { srand() } {
+#         modified_seq ="" 
+#         for (i = 1; i <= length($10); i++) {
+#             base = substr($10, i, 1);
+#             next_base = (i < length($10)) ? substr($10, i + 1, 1) : "";
+#             modified_seq = modified_seq modify_base(base, next_base);
+#         }
+#         $10 = modified_seq
+#         print $0; }' | tr " " "\t") | \
+#      samtools view -h -o ${tmp}/emseq-test.u.bam
+# 
+# wait $tmp_fq_pid
+# rm tmp_fq
+# 
+# 
+# # make genome and index #
+# # ---------------------
+# echo ">chr_Human_autosome_chr1" > ${tmp}/reference.fa
+# 
+# gen_rand_seq() {
+#     length=$1
+#     LC_CTYPE=C tr -dc 'ACGT' < /dev/urandom | head -c ${length}
+# } 
+# revcomp() {
+#     echo $1 | rev | tr "[ATCGNatcgn]" "[TAGCNtagcn]"
+# } 
+# export -f gen_rand_seq revcomp
+# 
+# samtools view ${tmp}/emseq-test.u.bam | \
+#     cut -f10 | paste - - | \
+#     awk -v gen_rand_seq="gen_rand_seq" -v revcomp="revcomp" 'BEGIN{srand()}{
+#         min=20; 
+#         max=700;
+#         random_number = int(min + rand() * (max - min + 1)); 
+#         cmd1 = "gen_rand_seq "random_number 
+#         cmd1 | getline r;
+#         close(cmd1)
+#         cmd2 = "revcomp " $2 
+#         cmd2 | getline read2;
+#         close(cmd2)
+#         print $1""r""read2
+#     }' | tr -d "\n" | fold -w60 >> ${tmp}/reference.fa
+#     #| shuf | tr -d "\n" | fold -w60 >> ${tmp}/reference.fa
+# 
+# 
+# 
+# # make 76 nt-long fastq and bam files INCLUDING simulated conversions #
+# # ------------------------------------------------------------------- #
+# 
+# cat <(samtools view -H ${tmp}/emseq-test.u.bam) <(samtools view ${tmp}/emseq-test.u.bam | awk 'BEGIN{OFS="\t"}{$10=substr($10,1,76); $11=substr($11,1,76); print $0}') > ${tmp}/emseq-test_76.u.bam
+# 
+# BARCODE=$(samtools view -f 77 ${tmp}/emseq-test.u.bam | grep -o "BC:Z:[A-Z,+,-]*" | sort | uniq -c | head | awk '{gsub("BC:Z","N:0",$2); print $2}' )
+# samtools view -f 77 ${tmp}/emseq-test_76.u.bam | samtools fastq | sed "s/\/1$/ 1:$BARCODE/"  > ${tmp}/emseq-test_76.R1.fastq
+# samtools view -f 141 ${tmp}/emseq-test_76.u.bam | samtools fastq | sed "s/\/2$/ 2:$BARCODE/" > ${tmp}/emseq-test_76.R2.fastq
+# 
+# 
+# # make gzip fastq files. #
+# # ---------------------- #
+# 
+# gzip -c ${tmp}/emseq-test_76.R1.fastq > ${tmp}/emseq-test_76.R1.fastq.gz
+# gzip -c ${tmp}/emseq-test_76.R2.fastq > ${tmp}/emseq-test_76.R2.fastq.gz
+# 
 
 
 # run tests #
