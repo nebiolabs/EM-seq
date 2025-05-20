@@ -54,6 +54,7 @@ def detectFileType(file) {
 workflow {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
+        // create the FILE here so it actually exists (touch)
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
 
         // if reference is not indexed, index it.

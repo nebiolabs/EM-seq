@@ -49,7 +49,7 @@ process send_email {
 
     <html>
       <body>
-        <p>The following libraries:<br> <strong>\${libs}</strong> do not have nenough reads <span style="color:red;">! </span></p>
+        <p>The following libraries:<br> <strong>\${libs}</strong> do not have enough reads. <br> Continuing with other libraries. </p>
       </body>
     </html>
     EOF
@@ -236,7 +236,7 @@ process alignReads {
     | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference \${genome} /dev/stdin 2> "\${base_outputname}.log.bwamem" | reheader_sam /dev/stdin \
     | mark-nonconverted-reads.py --reference \${genome} 2> "\${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
-    | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*3).intdiv(4)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
+    | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*5).intdiv(8)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
 
 
     """
