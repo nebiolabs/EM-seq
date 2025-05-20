@@ -321,7 +321,7 @@ process touchFile {
     input:
         val filename
     output:
-        path filename
+        path(filename), emit: touched_file
 
     script:
     """

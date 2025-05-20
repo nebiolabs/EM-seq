@@ -55,7 +55,7 @@ workflow {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         placeholder_r2 = Channel.value("placeholder.r2.fastq")
-        placeholder_r2_ch = touchFile(placeholder_r2)
+        placeholder_r2_ch = touchFile(placeholder_r2).touched_file.broadcast()
 
 
         // if reference is not indexed, index it.
@@ -66,8 +66,8 @@ workflow {
 
         genome_index_ch = bwa_index()
 
-        reads = placeholder_r2_ch.out.touched_file.combine( Channel.fromPath(params.input_glob)) { 
-            placeholder, input_file ->
+        reads = Channel.fromPath(params.input_glob).join(placeholder_r2_ch) { 
+            input_file, placeholder ->
                 def fileType = detectFileType(input_file)
                 def read1File = input_file
                 def read2File = placeholder
