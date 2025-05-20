@@ -54,10 +54,10 @@ def detectFileType(file) {
 workflow {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
-        placeholder_r2 = Channel.value("placeholder.r2.fastq")
-        placeholder_r2_ch = touchFile(placeholder_r2).touched_file.broadcast()
-
-
+        // create the FILE here so it actually exists (touch)
+        touchFile("${workflow.workDir}/placeholder.r2.fastq")
+        placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
+        
         // if reference is not indexed, index it.
         if (!file(params.path_to_genome_fasta).exists()) {
             println "Workflow failed: Genome file does not exist."
@@ -66,20 +66,21 @@ workflow {
 
         genome_index_ch = bwa_index()
 
-        reads = Channel.fromPath(params.input_glob).join(placeholder_r2_ch) { 
-            input_file, placeholder ->
-                def fileType = detectFileType(input_file)
-                def read1File = input_file
-                def read2File = placeholder
-                if (fileType == 'fastq_paired_end') {
-                    read2File = replaceReadNumber(input_file.toString())
+        reads = Channel
+          .fromPath(params.input_glob)
+          .map { input_file ->
+            def fileType = detectFileType(input_file)
+            def read1File = input_file
+            def read2File = placeholder_r2.toString()
+            if (fileType == 'fastq_paired_end') {
+                read2File = replaceReadNumber(input_file.toString())
+           }
+            if (read1File.toString() == read2File) {
+                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
+                throw new IllegalStateException("Invalid paired-end file configuration")
             }
-                if (read1File.toString() == read2File) {
-                    log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
-                    throw new IllegalStateException("Invalid paired-end file configuration")
-                }
-                def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
-                return [params.email, library, read1File, read2File, fileType]
+	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
+            return [params.email, library, read1File, read2File, fileType]
           }
           //.join(genome_index_ch)
         

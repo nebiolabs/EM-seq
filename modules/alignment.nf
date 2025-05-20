@@ -320,8 +320,6 @@ process bwa_index {
 process touchFile {   
     input:
         val filename
-    output:
-        path(filename), emit: touched_file
 
     script:
     """
