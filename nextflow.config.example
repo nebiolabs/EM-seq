@@ -10,7 +10,7 @@ def availableCpus = { java.lang.Runtime.getRuntime().availableProcessors() }()
 def availableMemoryGB = {
     def osBean = java.lang.management.ManagementFactory.getOperatingSystemMXBean() as com.sun.management.OperatingSystemMXBean
     def totalMemoryGB = (osBean.getTotalPhysicalMemorySize() / (1024 * 1024 * 1024)) as float
-    return Math.max(totalMemoryGB * 0.3, 1) // Reserve 4 GB for OS
+    return Math.max(totalMemoryGB * 0.3, 1) // Reserve memory for OS
 }()
 
 process {
