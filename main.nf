@@ -61,6 +61,7 @@ workflow {
             println "Workflow failed: Genome file does not exist."
             System.exit(1)  // Exit with a custom status code
         }
+
         genome_index_ch = bwa_index()
 
         reads = Channel

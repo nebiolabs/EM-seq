@@ -9,6 +9,8 @@ pwd=$(pwd)
 tmp="${pwd}/test_data/tmp"
 [ -d "${tmp}" ] || mkdir -p "${tmp}"
 
+cp ${pwd}/test_data/emseq-test*.fastq.gz ${pwd}/test_data/reference.fa ${tmp}
+
 if [ "${GITHUB_ACTIONS:-}" == "true" ]; then
     #exec $SHELL
     echo "gh actions..."
@@ -130,8 +132,7 @@ nextflow run ${pwd}/main.nf \
   -with-dag "emseq_metadata_dag.html" \
   -w "${tmp}/work" \
   --read_length 151 \
-  --enable_neb_agg "false" \
-  -resume 2>&1 > ${pwd}/test.log.out
+  --enable_neb_agg "false" 2>&1 > ${pwd}/test.log.out
 
 # Check if Nextflow run was successful
 if [ $? -ne 0 ]; then
