@@ -11,8 +11,7 @@ process enough_reads {
               val(fileType)
 
         output:
-            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), emit: reads
-            path("passes_or_fails.txt"), emit: check
+            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), path("*passes_or_fails.txt") 
 
         script:
         """
@@ -24,22 +23,38 @@ process enough_reads {
             [ \$(samtools view -c -F 2304 ${input_file1}) -lt 1000 ] && passes_or_fails="fail"
         fi 
 
-        echo "\${passes_or_fails}" > passes_or_fails.txt
-
-        msg="Input files check for library=${library}"
-        sendmail -t <<EOF
-        To: ${email}
-        Subject: "File Read Check"
-        Content-Type: text/html
-
-        <html>
-            <body>r
-            <p>The file <strong>\${msg}</strong>.<span style="color:red;">\${passes_or_fails}</span></p>
-            </body>
-        </html>
-        EOF
+        echo -e "$library\\t\${passes_or_fails}" > ${library}_passes_or_fails.txt
         """
 } 
+
+process send_email {
+    label 'low_cpu'
+    
+    input:
+        file libraries
+
+    script:
+    """
+    touch tmp
+    for f in ${libraries}
+    do
+        cat \$f | awk '{print \$1"<br>"}' >> tmp 
+    done
+    libs=\$(cat tmp)
+    
+    sendmail -t <<EOF
+    To: ${params.email}
+    Subject: File Read Check
+    Content-Type: text/html
+
+    <html>
+      <body>
+        <p>The following libraries:<br> <strong>\${libs}</strong> do not have nenough reads <span style="color:red;">! </span></p>
+      </body>
+    </html>
+    EOF
+    """
+}
 
 
 process alignReads {
@@ -93,6 +108,7 @@ process alignReads {
         zcat -f \$1 | head -n1 | cut -d ":" -f3
         set -o pipefail
     }
+
 
     flowcell_from_bam() {
         set +o pipefail
@@ -163,7 +179,7 @@ process alignReads {
         for (id in headers_arr){
           printf "%s", arr[headers_arr[id]]
         }
-        flag=1;
+        flag=1; 
         print ""
           }
           print \$0
@@ -172,7 +188,7 @@ process alignReads {
     }
 
 
-    case ${fileType} in 
+   case ${fileType} in 
         "fastq_paired_end")
             get_barcodes_and_rg_line ${input_file1} "fastq"
             get_frac_reads ${input_file1} "fastq"
@@ -213,6 +229,7 @@ process alignReads {
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
+
  
     eval \${stream_reads} \${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "\${base_outputname}.fastp.json" 2> fastp.stderr \
