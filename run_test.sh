@@ -30,13 +30,13 @@ fi
  echo "generating reads"
  
  # fastq (perhaps make 76bp long in future test)
- gunzip -c emseq-testg_R1.fastq.gz > emseq-test_R1.fastq
- gunzip -c emseq-testg_R2.fastq.gz > emseq-test_R2.fastq
+ gunzip -c ${tmp}/emseq-testg_R1.fastq.gz > ${tmp}/emseq-test_R1.fastq
+ gunzip -c ${tmp}/emseq-testg_R2.fastq.gz > ${tmp}/emseq-test_R2.fastq
 
  # bam
  paste -d "\n" <(samtools sort ${tmp}/emseq-test_R1.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=77; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') \
 	 		   <(samtools sort ${tmp}/emseq-test_R2.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=141; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') \
-| samtools view -u -o emseq-test.u.bam
+| samtools view -u -o ${tmp}/emseq-test.u.bam
 
 
 
