@@ -50,6 +50,7 @@ echo "running nextflow pipeline..."
 genome_path=${tmp}/reference.fa
 
 pushd ${tmp}
+rm ${pwd}/test.log.out
 # loop for different type of files, fastq, fastq.gz and bam
 
 echo "check if files are in here"
@@ -71,7 +72,7 @@ function test_pipeline {
         -with-dag "emseq_metadata_dag.html" \
         -w "${tmp}/work" \
         --read_length 151 \
-        --enable_neb_agg "false" 2>&1 > ${pwd}/test.log.out
+        --enable_neb_agg "false" 2>&1 >> ${pwd}/test.log.out
 
         # Check if Nextflow run was successful
         if [ $? -ne 0 ]; then
@@ -92,6 +93,8 @@ function test_pipeline {
 
 test_pipeline "emseq-test*1.fastq.gz"
 test_pipeline "emseq-test*1.fastq"
+test_pipeline "emseq-test*bam"
+
 
 rm -r ${tmp}
 
