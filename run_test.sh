@@ -145,9 +145,9 @@ fi
 
 # Check results
 echo "checking results..."
-cat em-seq_output/stats/flagstats/emseq-test_76.flagstat |\
+cat em-seq_output/stats/flagstats/emseq-testg.flagstat |\
     grep -q "5000 + 0 properly paired" && echo "flagstats OK" >> ${pwd}/test.log.out || echo "flagstats not OK" >> ${pwd}/test.log.out
-tail -n2 em-seq_output/stats/picard_alignment_metrics/emseq-test_76.alignment_summary_metrics.txt |\
+tail -n2 em-seq_output/stats/picard_alignment_metrics/emseq-testg.alignment_summary_metrics.txt |\
     awk 'BEGIN{result="alignment metrics not OK"}{if ($1==76 && $2>4996) {result="alignment metrics OK"}}END{print result}' >> ${pwd}/test.log.out
 
 rm -r ${tmp} ${pwd}/nextflow.config 
