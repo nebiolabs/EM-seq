@@ -50,7 +50,7 @@ echo "running nextflow pipeline..."
 genome_path=${tmp}/reference.fa
 
 pushd ${tmp}
-rm ${pwd}/test.log.out
+rm -f ${pwd}/test.log.out
 # loop for different type of files, fastq, fastq.gz and bam
 
 echo "check if files are in here"
