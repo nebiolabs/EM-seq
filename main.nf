@@ -55,7 +55,7 @@ workflow {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         // create the FILE here so it actually exists (touch)
-        placeholder_r2 = touchFile("${workflow.workDir}/placeholder.r2.fastq")
+//        placeholder_r2 = touchFile("placeholder.r2.fastq")
 
         // if reference is not indexed, index it.
         if (!file(params.path_to_genome_fasta).exists()) {
@@ -70,7 +70,7 @@ workflow {
           .map { input_file ->
             def fileType = detectFileType(input_file)
             def read1File = input_file
-            def read2File = placeholder_r2.toString()
+            def read2File = touchFile("placeholder.r2.fastq").toString()
             if (fileType == 'fastq_paired_end') {
                 read2File = replaceReadNumber(input_file.toString())
            }
