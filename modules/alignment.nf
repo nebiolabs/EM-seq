@@ -316,3 +316,15 @@ process bwa_index {
     fi
     """
 }
+
+process touchFile {   
+    input:
+        val filename
+    output:
+        path filename
+
+    script:
+    """
+    touch ${filename}
+    """
+}

@@ -16,7 +16,7 @@ params.max_input_reads           = "all_reads" // default is not downsampling , 
 params.downsample_seed           = 42
 params.enable_neb_agg            = 'True'
 
-include { alignReads; mergeAndMarkDuplicates; bwa_index; enough_reads; send_email }                     from './modules/alignment'
+include { alignReads; mergeAndMarkDuplicates; bwa_index; enough_reads; send_email, touchFile }          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
@@ -55,7 +55,7 @@ workflow {
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         // create the FILE here so it actually exists (touch)
-        placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
+        placeholder_r2 = touchFile("${workflow.workDir}/placeholder.r2.fastq")
 
         // if reference is not indexed, index it.
         if (!file(params.path_to_genome_fasta).exists()) {
