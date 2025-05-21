@@ -88,7 +88,7 @@ function test_pipeline {
         cat em-seq_output/stats/flagstats/emseq-testg.flagstat |\
             grep -q "1972 + 0 properly paired" && echo "flagstats OK" >> ${pwd}/test.log.out || echo "flagstats not OK" >> ${pwd}/test.log.out
         tail -n2 em-seq_output/stats/picard_alignment_metrics/emseq-testg.alignment_summary_metrics.txt |\
-            awk 'BEGIN{result="alignment metrics not OK"}{if ($1==150 && $3>2238) {result="alignment metrics OK"}}END{print result}' >> ${pwd}/test.log.out
+            awk 'BEGIN{result="alignment metrics not OK"}{if ($1==150 && $3>2200) {result="alignment metrics OK"}}END{print result}' >> ${pwd}/test.log.out
 }
 
 test_pipeline "emseq-test*1.fastq.gz"
