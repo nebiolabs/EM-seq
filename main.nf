@@ -72,6 +72,7 @@ workflow {
 
         reads = Channel
           .fromPath(params.input_glob)
+          .filter { !(it.name ==~ /^.*2\.fastq.*$/) }
           .map { input_file ->
             def fileType = detectFileType(input_file)
             def read1File = input_file
@@ -88,6 +89,10 @@ workflow {
           }
           //.join(genome_index_ch)
         
+
+        reads.view()
+
+
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 

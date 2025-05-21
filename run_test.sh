@@ -96,7 +96,7 @@ test_pipeline "emseq-test*1.fastq"
 test_pipeline "emseq-test*bam"
 
 
-rm -r ${tmp}
+# rm -r ${tmp}
 
 cat ${pwd}/test.log.out
 echo "FINISHED"
