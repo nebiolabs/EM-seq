@@ -15,13 +15,15 @@ process enough_reads {
 
         script:
         """
+        in1=\$(realpath ${input_file1})
         passes_or_fails="pass"
+        
         if grep -q "fastq.gz" <<< "${fileType}"; then
-            [ \$(stat -c%s ${input_file1}) -lt 54 ] && passes_or_fails="fail"
+            [ \$(stat -c%s \${in1}) -lt 54 ] && passes_or_fails="fail"
         elif grep -q "fastq" <<< "${fileType}"; then 
-            [ \$(stat -c%s ${input_file1}) -lt 240 ] && passes_or_fails="fail"
+            [ \$(stat -c%s \${in1}) -lt 240 ] && passes_or_fails="fail"
         elif grep -q "bam" <<< "${fileType}"; then
-            [ \$(stat -c%s ${input_file1}) -lt 100 ] && passes_or_fails="fail"
+            [ \$(stat -c%s \${in1}) -lt 100 ] && passes_or_fails="fail"
         fi 
 
         echo -e "$library\\t\${passes_or_fails}" > ${library}_passes_or_fails.txt
