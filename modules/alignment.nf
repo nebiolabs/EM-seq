@@ -16,11 +16,12 @@ process enough_reads {
         script:
         """
         passes_or_fails="pass"
-        if grep -q "fastq" <<< "${fileType}"; then
-            [ \$(zcat -f ${input_file1} | grep -c "^+\$") -lt 1000 ] && passes_or_fails="fail"
-            [ \$(zcat -f ${input_file2} | grep -c "^+\$") -lt 1000 ] && passes_or_fails="fail"
+        if grep -q "fastq.gz" <<< "${fileType}"; then
+            [ \$(stat -c%s ${input_file1}) -lt 54 ] && passes_or_fails="fail"
+        elif grep -q "fastq" <<< "${fileType}"; then 
+            [ \$(stat -c%s ${input_file1}) -lt 240 ] && passes_or_fails="fail"
         elif grep -q "bam" <<< "${fileType}"; then
-            [ \$(samtools view -c -F 2304 ${input_file1}) -lt 1000 ] && passes_or_fails="fail"
+            [ \$(stat -c%s ${input_file1}) -lt 100 ] && passes_or_fails="fail"
         fi 
 
         echo -e "$library\\t\${passes_or_fails}" > ${library}_passes_or_fails.txt
