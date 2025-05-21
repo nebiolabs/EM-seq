@@ -15,7 +15,7 @@ def availableMemoryGB = {
 
 process {
     executor = 'local' // 'sge'. 'slurm', etc... 
-
+    
     withLabel: high_cpu {
 	    cpus = { Math.min(task.requested_cpus ?: 16, Runtime.runtime.availableProcessors()) }
 	    memory = { "${Math.min(64, Math.max(8, (availableMemoryGB as Integer)))} GB" }
@@ -30,6 +30,4 @@ process {
         cpus = 1
         memory = '4 GB' 
     }
-
-    //clusterOptions= { "-V -S /bin/bash -R y -l m_mem_free=${task.memory ? task.memory.toGiga() / task.cpus : task.cpus*7}G" }
 }
