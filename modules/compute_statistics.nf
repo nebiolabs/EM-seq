@@ -194,6 +194,10 @@ process tasmanian {
     publishDir "${params.outputDir}/stats/tasmanian"
     conda "bioconda::samtools=1.9 bioconda::tasmanian-mismatch=1.0.7"
 
+    errorStrategy { retry < 1 ? 'retry' : 'terminate' }
+    maxRetries 1
+    memory { retry > 0 ? '8 GB' : '4 GB' }
+
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
         path(genome_path)
