@@ -1,3 +1,65 @@
+process enough_reads {
+    label 'low_cpu'
+    tag {library}
+    conda "bioconda::samtools=1.19"
+    
+    input:
+        tuple val(email), 
+              val(library), 
+              path(input_file1), 
+              path(input_file2), 
+              val(fileType)
+
+        output:
+            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), path("*passes_or_fails.txt") 
+
+        script:
+        """
+        in1=\$(realpath ${input_file1})
+        passes_or_fails="pass"
+        
+        if grep -q "fastq.gz" <<< "${fileType}"; then
+            [ \$(stat -c%s \${in1}) -lt 54 ] && passes_or_fails="fail"
+        elif grep -q "fastq" <<< "${fileType}"; then 
+            [ \$(stat -c%s \${in1}) -lt 240 ] && passes_or_fails="fail"
+        elif grep -q "bam" <<< "${fileType}"; then
+            [ \$(stat -c%s \${in1}) -lt 100 ] && passes_or_fails="fail"
+        fi 
+
+        echo -e "$library\\t\${passes_or_fails}" > ${library}_passes_or_fails.txt
+        """
+} 
+
+process send_email {
+    label 'low_cpu'
+    
+    input:
+        file libraries
+
+    script:
+    """
+    touch tmp
+    for f in ${libraries}
+    do
+        cat \$f | awk '{print \$1"<br>"}' >> tmp 
+    done
+    libs=\$(cat tmp)
+    
+    sendmail -t <<EOF
+    To: ${params.email}
+    Subject: File Read Check
+    Content-Type: text/html
+
+    <html>
+      <body>
+        <p>The following libraries:<br> <strong>\${libs}</strong> do not have enough reads. <br> Continuing with other libraries. </p>
+      </body>
+    </html>
+    EOF
+    """
+}
+
+
 process alignReads {
     label 'high_cpu'
     tag { library }
@@ -50,6 +112,7 @@ process alignReads {
         set -o pipefail
     }
 
+
     flowcell_from_bam() {
         set +o pipefail
         samtools view \$1 | head -n1 | cut -d":" -f3
@@ -76,7 +139,7 @@ process alignReads {
         local type=\$2
         if [ "\$type" == "bam" ]; then
             barcodes=\$(samtools view -H \$file | grep @RG | awk '{for (i=1;i<=NF;i++) {if (\$i~/BC:/) {print substr(\$i,4,length(\$i))} } }' | head -n1)
-            rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g')
+            rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
         else
             barcodes=(\$(barcodes_from_fastq \$file))
             rg_line="@RG\\tID:\${barcodes}\\tSM:${library}\\tBC:\${barcodes}"
@@ -119,7 +182,7 @@ process alignReads {
         for (id in headers_arr){
           printf "%s", arr[headers_arr[id]]
         }
-        flag=1;
+        flag=1; 
         print ""
           }
           print \$0
@@ -128,7 +191,7 @@ process alignReads {
     }
 
 
-    case ${fileType} in 
+   case ${fileType} in 
         "fastq_paired_end")
             get_barcodes_and_rg_line ${input_file1} "fastq"
             get_frac_reads ${input_file1} "fastq"
@@ -169,13 +232,14 @@ process alignReads {
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
+
  
     eval \${stream_reads} \${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "\${base_outputname}.fastp.json" 2> fastp.stderr \
     | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference \${genome} /dev/stdin 2> "\${base_outputname}.log.bwamem" | reheader_sam /dev/stdin \
     | mark-nonconverted-reads.py --reference \${genome} 2> "\${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
-    | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*3).intdiv(4)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
+    | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*5).intdiv(8)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
 
 
     """
@@ -253,5 +317,15 @@ process bwa_index {
     else
         echo "Index files already exist for \${real_genome_file}"
     fi
+    """
+}
+
+process touchFile {   
+    input:
+        val filename
+
+    script:
+    """
+    touch ${filename}
     """
 }

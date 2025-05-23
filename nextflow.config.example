@@ -1,4 +1,5 @@
 conda.enabled = true
+conda.useMicromamba = true
 report.enabled = true
 timeline.enabled = true
 dag.enabled = true
@@ -9,19 +10,19 @@ def availableCpus = { java.lang.Runtime.getRuntime().availableProcessors() }()
 def availableMemoryGB = {
     def osBean = java.lang.management.ManagementFactory.getOperatingSystemMXBean() as com.sun.management.OperatingSystemMXBean
     def totalMemoryGB = (osBean.getTotalPhysicalMemorySize() / (1024 * 1024 * 1024)) as float
-    return Math.max(totalMemoryGB * 0.3, 1) // Reserve 4 GB for OS
+    return Math.max(totalMemoryGB * 0.3, 1) // Reserve memory for OS
 }()
 
 process {
     executor = 'local' // 'sge'. 'slurm', etc... 
-
+    
     withLabel: high_cpu {
-	    cpus = { Math.min(task.requested_cpus ?: 16, Runtime.availableProcessors()) }
+	    cpus = { Math.min(task.requested_cpus ?: 16, Runtime.runtime.availableProcessors()) }
 	    memory = { "${Math.min(64, Math.max(8, (availableMemoryGB as Integer)))} GB" }
     }
 
     withLabel: medium_cpu {
-        cpus = { Math.min(task.requested_cpus ?: 4, Runtime.availableProcessors()) }
+        cpus = { Math.min(task.requested_cpus ?: 4, Runtime.runtime.availableProcessors()) }
         memory = { "${Math.min(8, Math.max(4, (availableMemoryGB as Integer)))} GB" }
     }
 
@@ -29,6 +30,4 @@ process {
         cpus = 1
         memory = '4 GB' 
     }
-
-    //clusterOptions= { "-V -S /bin/bash -R y -l m_mem_free=${task.memory ? task.memory.toGiga() / task.cpus : task.cpus*7}G" }
 }
