@@ -196,7 +196,7 @@ process tasmanian {
 
     errorStrategy { retry < 1 ? 'retry' : 'terminate' }
     maxRetries 1
-    memory { retry > 0 ? '8 GB' : '4 GB' }
+    memory { retry > 0 ? '16 GB' : '8 GB' }
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
