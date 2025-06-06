@@ -112,12 +112,18 @@ process alignReads {
         set -o pipefail
     }
 
-
-    flowcell_from_bam() {
+    flowcell_from_bam(){
         set +o pipefail
-        samtools view \$1 | head -n1 | cut -d":" -f3
+        # check this is NOT mgi:
+        fc=$(samtools view $1 | head -n1 | cut -f1)
+        if echo $fc | grep -q ":"; then
+            echo "$fc" | cut -d":" -f3
+        elif echo $fc | grep -q "L"; then
+            echo "$fc" | cut -d "L" -f1
+        fi
         set -o pipefail
     }
+
 
     barcodes_from_fastq() {
         set +o pipefail
