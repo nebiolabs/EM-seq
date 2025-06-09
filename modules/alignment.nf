@@ -72,7 +72,7 @@ process alignReads {
             else if (fileSize < 6.5) return '128 GB'
             else return '256 GB'
         }
-        catch (Exception e) {
+        catch (Exception _e) {
             return '128 GB'  // Default memory if size cannot be determined
         }
     }
