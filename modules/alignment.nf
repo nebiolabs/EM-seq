@@ -83,9 +83,21 @@ process alignReads {
     script:
 
     // Set memory, dynamically, based on input file size
-    def fileSizeGB = input_file1.size() / (1024 * 1024 * 1024) // Convert bytes to GB
-    def currentMemoryGB = task.memory.toGiga() // Convert task.memory to GB
-    def memoryGB = Math.max(currentMemoryGB, Math.ceil(fileSizeGB * 0.5)) // Minimum memory is currentMemoryGB
+    def fileSize = input_file1.size() 
+    def fileSizeGB = fileSize / (1024 * 1024 * 1024) // Convert bytes to GB
+    //def currentMemoryGB = task.memory.toGiga() // Convert task.memory to GB
+    //def memoryGB = Math.max(currentMemoryGB, Math.ceil(fileSizeGB * 0.5)) // Minimum memory is currentMemoryGB
+    def memoryGB = 256
+    switch (memoryGB) {
+        case { fileSizeGB < 1.8 }:
+            memoryGB = 64
+            break
+        case { fileSizeGB < 6.5 }:
+            memoryGB = 128
+            break
+        default:
+            memoryGB = 256 // For larger files, allocate more memory
+    }
     task.memory = "${memoryGB} GB"
 
     """
