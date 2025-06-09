@@ -118,11 +118,11 @@ process alignReads {
     flowcell_from_bam(){
         set +o pipefail
         # check this is NOT mgi:
-        fc=$(samtools view $1 | head -n1 | cut -f1)
-        if echo $fc | grep -q ":"; then
-            echo "$fc" | cut -d":" -f3
-        elif echo $fc | grep -q "L"; then
-            echo "$fc" | cut -d "L" -f1
+        fc=\$(samtools view \$1 | head -n1 | cut -f1)
+        if echo \$fc | grep -q ":"; then
+            echo "\$fc" | cut -d":" -f3
+        elif echo \$fc | grep -q "L"; then
+            echo "\$fc" | cut -d "L" -f1
         fi
         set -o pipefail
     }
