@@ -65,6 +65,17 @@ process alignReads {
     tag { library }
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
     publishDir "${params.outputDir}/bwameth_align"
+    memory {
+        try { 
+            def fileSize = input_file1.size() / (1024 * 1024 * 1024)
+            if (fileSize < 1.8) return '64 GB'
+            else if (fileSize < 6.5) return '128 GB'
+            else return '256 GB'
+        }
+        catch (Exception e) {
+            return '128 GB'  // Default memory if size cannot be determined
+        }
+    }
 
     input:
         tuple val(email),
@@ -81,29 +92,9 @@ process alignReads {
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
 
     script:
-
-    // Set memory, dynamically, based on input file size
-    def fileSize = input_file1.size() 
-    def fileSizeGB = fileSize / (1024 * 1024 * 1024) // Convert bytes to GB
-    //def currentMemoryGB = task.memory.toGiga() // Convert task.memory to GB
-    //def memoryGB = Math.max(currentMemoryGB, Math.ceil(fileSizeGB * 0.5)) // Minimum memory is currentMemoryGB
-    def memoryGB = 256
-    switch (memoryGB) {
-        case { fileSizeGB < 1.8 }:
-            memoryGB = 64
-            break
-        case { fileSizeGB < 6.5 }:
-            memoryGB = 128
-            break
-        default:
-            memoryGB = 256 // For larger files, allocate more memory
-    }
-    task.memory = "${memoryGB} GB"
-
     """
-
-    echo "Input file size: ${fileSizeGB} GB"
-    echo "Memory allocated for this task: ${task.memory}"
+    echo "Input file size: ${input_file1.size() / (1024 * 1024 * 1024)} GB"
+    echo "Memory allocated: ${task.memory}" 
 
     # Determine the genome index
     genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
@@ -259,7 +250,7 @@ process alignReads {
     | samtools view -u /dev/stdin \
     | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*5).intdiv(8)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
 
-
+    export barcodes
     """
 }
 
