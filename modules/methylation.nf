@@ -150,7 +150,8 @@ process intersect_beds {
     methylkit_basename=\$(basename "${methylkit_bed}" .bed)
     target_basename=\$(basename "${target_bed_prepared}" _slop_sorted.bed)
     
-    # Use bedtools intersect with -wa -wb to keep both annotations
+    # Uses bedtools intersect with -wa -wb to keep both annotations
+    # nonamecheck since control contigs don't conform
     bedtools intersect -nonamecheck \\
         -a "${target_bed_prepared}" \\
         -b "${methylkit_bed}" \\
