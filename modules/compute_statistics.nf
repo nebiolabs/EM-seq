@@ -2,7 +2,7 @@
 process gc_bias {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    conda "bioconda::picard-slim=3.3.0 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
@@ -82,7 +82,7 @@ process fastqc {
 process insert_size_metrics {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    conda "bioconda::picard-slim=3.3.0 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/insert_size"
 
     input:
@@ -168,7 +168,7 @@ process insert_size_metrics {
 process picard_metrics {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    conda "bioconda::picard-slim=3.3.0 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:

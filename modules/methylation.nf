@@ -16,7 +16,8 @@ process methylDackel_mbias {
 
     script:
     """
-    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}_combined_mbias.tsv
+    genome=\$(ls *fa)
+    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}_${barcodes}_combined_mbias.tsv
     chrs=(`samtools view -H "${md_bam}" | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
 
     for chr in \${chrs[*]}; do
@@ -104,3 +105,4 @@ process convert_methylkit_to_bed {
     > "\${methylkit_basename}.bed"
     """
 }
+

@@ -1,7 +1,69 @@
+process enough_reads {
+    label 'low_cpu'
+    tag {library}
+    conda "bioconda::samtools=1.22"
+    
+    input:
+        tuple val(email), 
+              val(library), 
+              path(input_file1), 
+              path(input_file2), 
+              val(fileType)
+
+        output:
+            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), path("*passes_or_fails.txt") 
+
+        script:
+        """
+        in1=\$(realpath ${input_file1})
+        passes_or_fails="pass"
+        
+        if grep -q "fastq.gz" <<< "${fileType}"; then
+            [ \$(stat -c%s \${in1}) -lt 54 ] && passes_or_fails="fail"
+        elif grep -q "fastq" <<< "${fileType}"; then 
+            [ \$(stat -c%s \${in1}) -lt 240 ] && passes_or_fails="fail"
+        elif grep -q "bam" <<< "${fileType}"; then
+            [ \$(stat -c%s \${in1}) -lt 100 ] && passes_or_fails="fail"
+        fi 
+
+        echo -e "$library\\t\${passes_or_fails}" > ${library}_passes_or_fails.txt
+        """
+} 
+
+process send_email {
+    label 'low_cpu'
+    
+    input:
+        file libraries
+
+    script:
+    """
+    touch tmp
+    for f in ${libraries}
+    do
+        cat \$f | awk '{print \$1"<br>"}' >> tmp 
+    done
+    libs=\$(cat tmp)
+    
+    sendmail -t <<EOF
+    To: ${params.email}
+    Subject: File Read Check
+    Content-Type: text/html
+
+    <html>
+      <body>
+        <p>The following libraries:<br> <strong>\${libs}</strong> do not have enough reads. <br> Continuing with other libraries. </p>
+      </body>
+    </html>
+    EOF
+    """
+}
+
+
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4 bioconda::gatk4=4.6.2.0 conda-forge::gawk=5.3.1"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4 bioconda::gatk4=4.6.2.0 conda-forge::kawk=5.3.1"
     publishDir "${params.outputDir}/bwameth_align"
     memory {
         try { 
@@ -37,6 +99,15 @@ process alignReads {
     genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
 
     # Define helper functions
+    get_nreads_from_fastq() {
+        zcat -f "\$1" | grep -c "^+\$" \
+        | awk '{
+            frac=${params.max_input_reads}/\$1; 
+            if (frac>=1) {frac=0.999}; 
+            split(frac, numParts, "."); print numParts[2]
+        }'
+    }
+
     flowcell_from_fastq() {
         set +o pipefail
         zcat -f "\$1" | head -n1 | cut -d ":" -f3
@@ -58,10 +129,12 @@ process alignReads {
     # assumes that the barcodes are in the last part of the read name 
     # extracts the most frequent barcode in the first 10k reads
     barcodes_from_fastq() {
+        set +o pipefail
         zcat -f "\$1" | awk 'NR%4==1' | head -n10000 | \
         grep -o '[GCATN+-]\{6,\}' | \
         sort | uniq -c | sort -nr | head -n1 | \
         awk '{gsub(/N+/, "-", \$2); print \$2}'
+        set -o pipefail
     }
 
     # Determine barcodes and read group line
@@ -185,7 +258,7 @@ process mergeAndMarkDuplicates {
     label 'high_cpu'
     tag { library }
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    conda "bioconda::picard-slim=3.3 bioconda::samtools=1.22"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -227,9 +300,10 @@ process genome_index {
      */
 
     label 'low_cpu'
-    tag { genome_basename }
+    tag { genome }
     conda "bioconda::samtools=1.22 bioconda::bwameth=0.2.7"
-    
+    storeDir "bwameth_index"
+
     output:
     path "bwameth_index/*.{fa,fai,amb,ann,bwt,pac,sa,c2t}", emit: aligner_files
     tuple path("genome_index/*.fa"), path("genome_index/*.fai"), emit: genome_index
@@ -293,9 +367,45 @@ process genome_index {
     """
 }
 
+
+   
+process samtools_faidx {
+    label 'low_cpu'
+    tag "${genome_file.baseName}"
+    conda "bioconda::samtools=1.22"
+    storeDir "genome_index"
+
+    input:
+        path(genome_file)
+
+    output:
+        path("*.fai"), emit: genome_index
+
+    script:
+    """
+    genome=\$(basename ${genome_file})
+    
+    # Check if index exists adjacent to the original FASTA file (using the full path parameter)
+    if [ -f "${params.path_to_genome_fasta}.fai" ]; then
+        echo "Found existing genome index: ${params.path_to_genome_fasta}.fai"
+        ln -sf "${params.path_to_genome_fasta}.fai" "\${genome}.fai"
+    else
+        echo "No existing genome index found. Creating new index for \${genome}"
+        samtools faidx ${genome_file}
+    fi
+    
+    # Verify the index file exists and is not empty
+    if [ ! -s "\${genome}.fai" ]; then
+        echo "Error: Failed to create or link genome index file"
+        exit 1
+    fi
+    
+    echo "Genome index ready: \${genome}.fai"
+    """
+}
+
 process touchFile {
     publishDir "${params.outputDir}", mode: 'copy'
-   
     input:
         val filename
 
