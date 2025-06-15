@@ -40,3 +40,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libxml2-utils
           bash run_test.sh
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.NXF_VER }}
+          path: |
+            test.log.out
+          retention-days: 30
+
+      - name: Upload test temporary files on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-tmp-files-${{ matrix.NXF_VER }}
+          path: |
+            test_data/tmp/
+          retention-days: 30
+
