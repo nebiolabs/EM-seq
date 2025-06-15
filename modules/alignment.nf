@@ -354,7 +354,7 @@ process samtools_faidx {
         ln -sf "${params.path_to_genome_fasta}.fai" "\${genome}.fai"
     else
         echo "No existing genome index found. Creating new index for \${genome}"
-        samtools faidx ${genome_file}
+        samtools faidx "${genome_file}"
     fi
     
     # Verify the index file exists and is not empty
