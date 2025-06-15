@@ -1,7 +1,7 @@
 process enough_reads {
     label 'low_cpu'
     tag {library}
-    conda "bioconda::samtools=1.19"
+    conda "bioconda::samtools=1.22"
     
     input:
         tuple val(email), 
@@ -63,7 +63,7 @@ process send_email {
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.23.4 bioconda::mark-nonconverted-reads=1.2 bioconda::sambamba=1.0 bioconda::samtools=1.19 bioconda::seqtk=1.4"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4"
     publishDir "${params.outputDir}/bwameth_align"
     memory {
         try { 
@@ -101,7 +101,7 @@ process alignReads {
 
     # Define helper functions
     get_nreads_from_fastq() {
-        zcat -f \$1 | grep -c "^+\$" \
+        zcat -f "\$1" | grep -c "^+\$" \
         | awk '{
             frac=${params.max_input_reads}/\$1; 
             if (frac>=1) {frac=0.999}; 
@@ -111,7 +111,7 @@ process alignReads {
 
     flowcell_from_fastq() {
         set +o pipefail
-        zcat -f \$1 | head -n1 | cut -d ":" -f3
+        zcat -f "\$1" | head -n1 | cut -d ":" -f3
         set -o pipefail
     }
 
@@ -130,7 +130,7 @@ process alignReads {
 
     barcodes_from_fastq() {
         set +o pipefail
-        zcat -f \$1 \
+        zcat -f "\$1" \
         | head -n10000 \
         | awk '{
             if (NR%4==1) {
@@ -248,7 +248,9 @@ process alignReads {
     | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference \${genome} /dev/stdin 2> "\${base_outputname}.log.bwamem" | reheader_sam /dev/stdin \
     | mark-nonconverted-reads.py --reference \${genome} 2> "\${base_outputname}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
-    | sambamba sort -l 3 --tmpdir=${params.tmp_dir} -t ${Math.max(1,task.cpus.intdiv(8))} -m ${(task.memory.toGiga()*5).intdiv(8)}GB -o "\${base_outputname}.aln.bam" /dev/stdin 
+    | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
+       -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
+       -o "\${base_outputname}.aln.bam##idx##\${base_outputname}.aln.bam.bai" /dev/stdin 
 
     export barcodes
     """
@@ -258,7 +260,7 @@ process mergeAndMarkDuplicates {
     label 'high_cpu'
     tag { library }
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
-    conda "bioconda::picard=3.1 bioconda::samtools=1.19"
+    conda "bioconda::picard-slim=3.3 bioconda::samtools=1.22"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes) 
@@ -285,6 +287,7 @@ process mergeAndMarkDuplicates {
         --BARCODE_TAG "RX" \
         --ASSUME_SORT_ORDER coordinate \
         --VALIDATION_STRINGENCY SILENT \
+        --ADD_PG_TAG_TO_READS false \
         -I ${bam} \
         -O ${library}_${barcodes}.md.bam \
         -M ${library}.markdups_log
@@ -300,7 +303,7 @@ process bwa_index {
 
     label 'low_cpu'
     tag { genome }
-    conda "bioconda::samtools=1.19 bioconda::bwameth=0.2.7"
+    conda "bioconda::samtools=1.22 bioconda::bwameth=0.2.7"
     storeDir "bwameth_index"
 
     output:
@@ -326,6 +329,41 @@ process bwa_index {
     else
         echo "Index files already exist for \${real_genome_file}"
     fi
+    """
+}
+
+process samtools_faidx {
+    label 'low_cpu'
+    tag "${genome_file.baseName}"
+    conda "bioconda::samtools=1.22"
+    storeDir "genome_index"
+
+    input:
+        path(genome_file)
+
+    output:
+        path("*.fai"), emit: genome_index
+
+    script:
+    """
+    genome=\$(basename ${genome_file})
+    
+    # Check if index exists adjacent to the original FASTA file (using the full path parameter)
+    if [ -f "${params.path_to_genome_fasta}.fai" ]; then
+        echo "Found existing genome index: ${params.path_to_genome_fasta}.fai"
+        ln -sf "${params.path_to_genome_fasta}.fai" "\${genome}.fai"
+    else
+        echo "No existing genome index found. Creating new index for \${genome}"
+        samtools faidx ${genome_file}
+    fi
+    
+    # Verify the index file exists and is not empty
+    if [ ! -s "\${genome}.fai" ]; then
+        echo "Error: Failed to create or link genome index file"
+        exit 1
+    fi
+    
+    echo "Genome index ready: \${genome}.fai"
     """
 }
 
