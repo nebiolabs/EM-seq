@@ -35,14 +35,14 @@ nextflow run main.nf \
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--path_to_genome_fasta` | Path to reference genome FASTA file | Required |
-| `--input_glob` | Glob pattern for input files (FASTQ/BAM) | `*_R1.fastq*` |
+| `--input_glob` | Glob pattern for input files (FASTQ/BAM) | `*_R1.fastq*`/`*.bam` |
 | `--email` | Email for notifications | Required |
-| `--flowcell` | Flowcell identifier | Required |
+| `--flowcell` | Flowcell identifier | Optional |
 | `--outputDir` | Output directory | `em-seq_output` |
 | `--project` | Project name | `project_undefined` |
 | `--max_input_reads` | Max reads to process (or "all_reads") | `all_reads` |
 | `--target_bed` | BED file for targeted analysis | Optional |
-| `--enable_neb_agg` | Enable NEB aggregation reporting | `True` |
+| `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
 | `--min_mapq` | Minimum mapping quality | `20` |
 
 ### Advanced Options
