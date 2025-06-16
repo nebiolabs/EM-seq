@@ -14,7 +14,7 @@ params.tmp_dir                   = '/tmp'
 params.min_mapq                  = 20 // for methylation assessment.
 params.max_input_reads           = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
 params.downsample_seed           = 42
-params.enable_neb_agg            = 'True'
+params.enable_neb_agg            = 'False'
 
 include { alignReads; mergeAndMarkDuplicates; bwa_index; enough_reads; send_email; touchFile }          from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
