@@ -1,3 +1,17 @@
+/*
+ * BED Processing Module
+ * 
+ * This module standardizes BED files to BED6 format (chr, start, end, name, score, strand)
+ * to simplify downstream processing and avoid dynamic column detection issues.
+ * 
+ * Input BED files are validated and standardized as follows:
+ * - Minimum 3 columns required (chr, start, end)
+ * - Column 4 (name): uses existing value or generates chr:start-end
+ * - Column 5 (score): uses existing value or defaults to "0"
+ * - Column 6 (strand): uses existing value or defaults to "."
+ * - Validates coordinates and strand values
+ */
+
 process prepare_target_bed {
     label 'low_cpu'
     tag "${target_bed.baseName}"
@@ -16,9 +30,54 @@ process prepare_target_bed {
     slop_len=50
     target_basename=\$(basename "${target_bed}" .bed)
     
-    echo "Applying \${slop_len} bp slop to \${target_basename}..."
-    bedtools slop -i <(grep -v '^#' "${target_bed}") -g "${genome_fai}" -b \${slop_len} \\
-        | sort -k1,1 -k2,2n > \${target_basename}_slop_sorted.bed
+    echo "Standardizing and applying \${slop_len} bp slop to \${target_basename}..."
+    
+    # First, standardize to BED6 format (chr, start, end, name, score, strand)
+    awk 'BEGIN { OFS="\\t" } 
+    !/^#/ {
+        # Validate minimum required columns (chr, start, end)
+        if (NF < 3) {
+            print "Error: BED file must have at least 3 columns (chr, start, end)" > "/dev/stderr"
+            exit 1
+        }
+        
+        # Validate coordinates
+        if (\$2 !~ /^[0-9]+\$/ || \$3 !~ /^[0-9]+\$/) {
+            print "Error: Invalid coordinates in line: " \$0 > "/dev/stderr"
+            exit 1
+        }
+        
+        if (\$2 >= \$3) {
+            print "Error: Start coordinate must be less than end coordinate in line: " \$0 > "/dev/stderr"
+            exit 1
+        }
+        
+        # Build BED6 format
+        chr = \$1
+        start = \$2
+        end = \$3
+        name = (NF >= 4 && \$4 != "") ? \$4 : chr ":" start "-" end
+        score = (NF >= 5 && \$5 != "") ? \$5 : "0"
+        strand = (NF >= 6 && \$6 != "") ? \$6 : "."
+        
+        # Validate strand
+        if (strand != "+" && strand != "-" && strand != ".") {
+            print "Error: Invalid strand value: " strand > "/dev/stderr"
+            exit 1
+        }
+        
+        print chr, start, end, name, score, strand
+    }' "${target_bed}" | \\
+    bedtools slop -g "${genome_fai}" -b \${slop_len} | \\
+    sort -k1,1 -k2,2n > \${target_basename}_slop_sorted.bed
+    
+    # Verify output is not empty
+    if [ ! -s \${target_basename}_slop_sorted.bed ]; then
+        echo "Error: No valid regions found after processing ${target_bed}" >&2
+        exit 1
+    fi
+    
+    echo "Successfully processed \$(wc -l < \${target_basename}_slop_sorted.bed) regions"
     """
 }
 
@@ -78,6 +137,8 @@ process process_intersections {
     methylkit_basename=\$(echo "\${intersect_basename}" | cut -d'_' -f1)
 
     # Process intersection results with awk
+    # Target BED is standardized above to 6 columns: chr, start, end, name, score, strand
+    # MethylKit BED has 5 columns: chr, start, end, context, methylation_value
     if [ -s "${intersect_file}" ]; then
         awk -v methylkit_basename="\${methylkit_basename}" \\
             -v output_file="\${output_file}" \\
@@ -86,30 +147,20 @@ process process_intersections {
             OFS="\\t"
         }
         !/^#/ {
-            # Extract target info (first part from BED)
+            # Target BED columns (always 6 columns)
             target_chr = \$1
             target_start = \$2
             target_end = \$3
             target_name = \$4
+            target_score = \$5
+            target_strand = \$6
             
-            # Extract methylkit info (second part after intersection)
-            # Assuming target BED has 4+ columns, methylkit data starts after that
-            num_target_cols = 4
-            if (NF > num_target_cols + 4) {
-                # Try to detect actual number of target columns
-                for (i = 5; i <= NF-4; i++) {
-                    if (\$i ~ /^chr/ && \$(i+1) ~ /^[0-9]+\$/ && \$(i+2) ~ /^[0-9]+\$/) {
-                        num_target_cols = i - 1
-                        break
-                    }
-                }
-            }
-            
-            meth_chr = \$(num_target_cols + 1)
-            meth_start = \$(num_target_cols + 2)
-            meth_end = \$(num_target_cols + 3)
-            meth_context = \$(num_target_cols + 4)
-            meth_value = \$(num_target_cols + 5)
+            # MethylKit BED columns (starting at column 7)
+            meth_chr = \$7
+            meth_start = \$8
+            meth_end = \$9
+            meth_context = \$10
+            meth_value = \$11
             
             # Create locus string (convert 0-based BED to 1-based for display)
             locus = target_chr ":" (target_start + 1) "-" target_end
