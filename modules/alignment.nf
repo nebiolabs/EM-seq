@@ -258,7 +258,7 @@ process mergeAndMarkDuplicates {
     label 'high_cpu'
     tag { library }
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
-    conda "bioconda::picard-slim=3.3 bioconda::samtools=1.22"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -300,10 +300,9 @@ process genome_index {
      */
 
     label 'low_cpu'
-    tag { genome }
+    tag { genome_basename }
     conda "bioconda::samtools=1.22 bioconda::bwameth=0.2.7"
-    storeDir "bwameth_index"
-
+    
     output:
     path "bwameth_index/*.{fa,fai,amb,ann,bwt,pac,sa,c2t}", emit: aligner_files
     tuple path("genome_index/*.fa"), path("genome_index/*.fai"), emit: genome_index
@@ -388,19 +387,21 @@ process samtools_faidx {
     # Check if index exists adjacent to the original FASTA file (using the full path parameter)
     if [ -f "${params.path_to_genome_fasta}.fai" ]; then
         echo "Found existing genome index: ${params.path_to_genome_fasta}.fai"
-        ln -sf "${params.path_to_genome_fasta}.fai" "\${genome}.fai"
+        ln -sf "${params.path_to_genome_fasta}.fai" "\${real_genome_file}.fai"
     else
-        echo "No existing genome index found. Creating new index for \${genome}"
-        samtools faidx ${genome_file}
+        echo "No existing genome index found. Creating new index for \${real_genome_file}"
+        samtools faidx "\${real_genome_file}"
     fi
     
     # Verify the index file exists and is not empty
-    if [ ! -s "\${genome}.fai" ]; then
+    if [ ! -s "\${real_genome_file}.fai" ]; then
         echo "Error: Failed to create or link genome index file"
         exit 1
     fi
     
-    echo "Genome index ready: \${genome}.fai"
+    echo "Genome indices ready:"
+    echo "  - Bwameth index: bwameth_index/\${real_genome_file}.bwameth.c2t.*"
+    echo "  - Samtools index: genome_index/\${real_genome_file}.fai"
     """
 }
 
