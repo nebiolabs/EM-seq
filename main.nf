@@ -17,8 +17,9 @@ params.downsample_seed           = 42
 params.enable_neb_agg            = 'False'
 params.target_bed                = 'undefined' // BED file to intersect with methylKit output
 
-include { alignReads; mergeAndMarkDuplicates; bwa_index; enough_reads; send_email; touchFile; samtools_faidx }     from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed; prepare_target_bed; intersect_beds; process_intersections; concatenate_intersections } from './modules/methylation'
+include { alignReads; mergeAndMarkDuplicates; genome_index; enough_reads; send_email; touchFile }       from './modules/alignment'
+include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
+include { prepare_target_bed; intersect_beds; process_intersections; concatenate_intersections }        from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
 
@@ -69,8 +70,9 @@ workflow {
             System.exit(1)  // Exit with a custom status code
         }
 
-        genome_index_ch = bwa_index()
-        genome_fai_ch = samtools_faidx(Channel.fromPath(params.path_to_genome_fasta))
+        genome_indices = genome_index()
+        bwa_index_ch = genome_indices.aligner_files
+        genome_ch = genome_indices.genome_index
 
         reads = Channel
           .fromPath(params.input_glob)
@@ -89,7 +91,6 @@ workflow {
 	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
             return [params.email, library, read1File, read2File, fileType]
           }
-          //.join(genome_index_ch)
         
 
         reads.view()
@@ -109,20 +110,20 @@ workflow {
         
 
         // align and mark duplicates
-        alignedReads = alignReads( passed_reads, genome_index_ch )
+        alignedReads = alignReads( passed_reads, bwa_index_ch )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams, genome_index_ch )
-        mbias        = methylDackel_mbias( markDup.md_bams, genome_index_ch )
+        extract      = methylDackel_extract( markDup.md_bams, genome_ch )
+        mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
 
         // intersect methylKit files with target BED file if provided
         if (params.target_bed != 'undefined') {
             target_bed_ch = Channel.fromPath(params.target_bed)
             
-            methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_fai_ch) )
+            methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
             
-            prepared_bed = prepare_target_bed( target_bed_ch, genome_fai_ch )
+            prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
             
-            intersections = intersect_beds( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_fai_ch )
+            intersections = intersect_beds( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
             
             intersection_results = process_intersections( intersections.intersections )
             
@@ -133,13 +134,13 @@ workflow {
         }
 
         // collect statistics
-        gcbias       = gc_bias( markDup.md_bams, genome_index_ch )
+        gcbias       = gc_bias( markDup.md_bams, genome_ch )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
         fastqc       = fastqc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams, genome_index_ch )
-        mismatches   = tasmanian( markDup.md_bams, genome_index_ch )
+        metrics      = picard_metrics( markDup.md_bams, genome_ch )
+        mismatches   = tasmanian( markDup.md_bams, genome_ch )
 
         // Channels and processes that summarize all results
 
