@@ -12,6 +12,7 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       matrix:
         NXF_VER: ["25.04.2"]
@@ -36,7 +37,28 @@ jobs:
             - bioconda
 
       - name: Run test script
+        timeout-minutes: 45
         run: |
           sudo apt-get update
           sudo apt-get install -y libxml2-utils
-          bash run_test.sh
+          timeout 15m bash run_test.sh
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.NXF_VER }}
+          path: |
+            test.log.out
+            test-data/tmp/.nextflow.log
+          retention-days: 30
+
+      - name: Upload test temporary files on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-tmp-files-${{ matrix.NXF_VER }}
+          path: |
+            test_data/tmp/em-seq_output
+          retention-days: 30
+
