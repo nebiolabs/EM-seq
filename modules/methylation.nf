@@ -7,7 +7,7 @@ process methylDackel_mbias {
 
     input:
         tuple val(library), path(md_bam), path(md_bai), val(barcodes)
-        path(genome_path)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         path('*.svg'), emit: mbias_output_svg
@@ -16,7 +16,6 @@ process methylDackel_mbias {
 
     script:
     """
-    genome=\$(ls *fa)
     echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}_${barcodes}_combined_mbias.tsv
     chrs=(`samtools view -H "${md_bam}" | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
 
@@ -32,11 +31,11 @@ process methylDackel_mbias {
             # not sure why we need both --keepDupes and -F, probably a bug in mbias
             join -t \$'\t' -j1 -o 1.2,1.3,1.4,1.5,1.6,2.5,2.6 -a 1 -e 0 \
             <( \
-                MethylDackel mbias --noSVG \$arg -@ ${task.cpus} -r \$chr \${genome} "${md_bam}" | \
+                MethylDackel mbias --noSVG \$arg -@ ${task.cpus} -r \$chr ${genome_fa} "${md_bam}" | \
                 tail -n +2 | awk '{print \$1"-"\$2"-"\$3"\t"\$0}' | sort -k 1b,1
             ) \
             <( \
-                MethylDackel mbias --noSVG --keepDupes -F 2816 \$arg -@ ${task.cpus} -r \$chr \${genome} "${md_bam}" | \
+                MethylDackel mbias --noSVG --keepDupes -F 2816 \$arg -@ ${task.cpus} -r \$chr ${genome_fa} "${md_bam}" | \
                 tail -n +2 | awk '{print \$1"-"\$2"-"\$3"\t"\$0}' | sort -k 1b,1
             ) \
             | sed "s/^/\${chr}\t\${context}\t/" \
@@ -44,10 +43,10 @@ process methylDackel_mbias {
         done
     done
     # makes the svg files for trimming checks
-    MethylDackel mbias -@ ${task.cpus} --noCpG --CHH --CHG -r \${chrs[0]} \${genome} "${md_bam}" ${library}_chn
+    MethylDackel mbias -@ ${task.cpus} --noCpG --CHH --CHG -r \${chrs[0]} ${genome_fa} "${md_bam}" ${library}_chn
     for f in *chn*.svg; do sed -i "s/Strand<\\/text>/Strand \$f \${chrs[0]} CHN <\\/text>/" \$f; done;
 
-    MethylDackel mbias -@ ${task.cpus} -r \${chrs[0]} \${genome} "${md_bam}" ${library}_cpg
+    MethylDackel mbias -@ ${task.cpus} -r \${chrs[0]} ${genome_fa} "${md_bam}" ${library}_cpg
     for f in *cpg*.svg; do sed -i "s/Strand<\\/text>/Strand \$f \${chrs[0]} CpG<\\/text>/" \$f; done;
     """
 }
@@ -61,16 +60,15 @@ process methylDackel_extract {
 
     input:
         tuple val(library), path(md_bam), path(md_bai), val(barcodes) 
-        path(genome_path)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz'), emit: extract_output 
 
     script:
     """
-    genome=\$(ls *fa)
     MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ ${task.cpus} \
-        --CHH --CHG -o ${library}.${barcodes} \${genome} "${md_bam}" 
+        --CHH --CHG -o ${library}.${barcodes} ${genome_fa} "${md_bam}" 
     pigz -p ${task.cpus} *.methylKit 
     """
 }
@@ -82,7 +80,7 @@ process convert_methylkit_to_bed {
     conda "conda-forge::pigz=2.8 conda-forge::gawk=5.3.1 conda-forge::sed=4.9"
 
     input:
-        tuple val(library), path(methylkit_CHH_gz),path(methylkit_CHG_gz),path(methylkit_CpG_gz),path(genome_index)
+        tuple val(library), path(methylkit_CHH_gz),path(methylkit_CHG_gz),path(methylkit_CpG_gz),path(genome_fa),path(genome_fai)
 
     output:
         tuple val(library), path('*.bed'), emit: methylkit_bed
@@ -92,8 +90,8 @@ process convert_methylkit_to_bed {
     methylkit_basename=\$(basename "${methylkit_CpG_gz}" _CpG.methylKit.gz)
     
     # create sed scripts to interconvert chr names from genome index with line numbers for efficient sorting
-    awk '{print "s/\\t"\$1"\\t/\\t"NR-1"\\t/"}' "${genome_index}" > convert_chr_to_num.sed
-    awk '{print "s/^"NR-1"\\t/"\$1"\\t/"}' "${genome_index}" > revert_num_to_chr.sed 
+    awk '{print "s/\\t"\$1"\\t/\\t"NR-1"\\t/"}' "${genome_fai}" > convert_chr_to_num.sed
+    awk '{print "s/^"NR-1"\\t/"\$1"\\t/"}' "${genome_fai}" > revert_num_to_chr.sed 
     # merge initial methylkit files into a single BED format
     # Convert methylKit to BED format (0-based coordinates)
     # methylKit format: chr.base\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT
@@ -115,7 +113,7 @@ process prepare_target_bed {
 
     input:
         path(target_bed)
-        path(genome_index)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         path('*_slop_sorted.bed'), emit: prepared_bed
@@ -127,7 +125,7 @@ process prepare_target_bed {
     target_basename=\$(basename "${target_bed}" .bed)
     
     echo "Applying \${slop_len} bp slop to \${target_basename}..."
-    bedtools slop -i <(grep -v '^#' "${target_bed}") -g "${genome_index}" -b \${slop_len} \\
+    bedtools slop -i <(grep -v '^#' "${target_bed}") -g "${genome_fai}" -b \${slop_len} \\
         | sort -k1,1 -k2,2n > \${target_basename}_slop_sorted.bed
     """
 }
@@ -140,7 +138,7 @@ process intersect_beds {
     input:
         tuple val(library), path(methylkit_bed)
         path(target_bed_prepared)
-        path(genome_index)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         tuple val(library), path('*_intersect.tsv'), emit: intersections
@@ -155,7 +153,7 @@ process intersect_beds {
     bedtools intersect -nonamecheck \\
         -a "${target_bed_prepared}" \\
         -b "${methylkit_bed}" \\
-        -wa -wb -sorted -g "${genome_index}" > \${methylkit_basename}_vs_\${target_basename}_intersect.tsv
+        -wa -wb -sorted -g "${genome_fai}" > \${methylkit_basename}_vs_\${target_basename}_intersect.tsv
     """
 }
 

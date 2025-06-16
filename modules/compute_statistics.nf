@@ -2,18 +2,17 @@
 process gc_bias {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard-slim=3.3.0 bioconda::samtools=1.22"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        path(genome_path)
+        tuple path(genome_fa), path(genome_fai)
     output:
         tuple val(params.email), val(library), path('*gc_metrics'), emit: for_agg
 
     script:
     """
-    genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
     samtools view -H ${bam} | grep "^@SQ" \
     | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" \
     | awk -F":|\\t" '{print \$3"\\t"0"\\t"\$5}' > include_regions.bed
@@ -22,7 +21,7 @@ process gc_bias {
     picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \
-        -R \${genome}
+        -R ${genome_fa} --CHART /dev/null
     """
 }
 
@@ -83,7 +82,7 @@ process fastqc {
 process insert_size_metrics {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard-slim=3.3.0 bioconda::samtools=1.22"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/insert_size"
 
     input:
@@ -169,21 +168,20 @@ process insert_size_metrics {
 process picard_metrics {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard-slim=3.3.0 bioconda::samtools=1.22"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        path(genome_path)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         tuple val(params.email), val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
 
     script:
     """
-    genome=\$(ls *.fa 2>/dev/null || ls *.fasta 2>/dev/null)
     picard -Xmx${task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
-        --VALIDATION_STRINGENCY SILENT -BS true -R \${genome} \
+        --VALIDATION_STRINGENCY SILENT -BS true -R ${genome_fa} \
         -I ${bam} -O ${library}.alignment_summary_metrics.txt
     """
 }
@@ -200,7 +198,7 @@ process tasmanian {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        path(genome_path)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         tuple val(params.email), val(library), path('*.csv'), emit: for_agg
@@ -209,8 +207,7 @@ process tasmanian {
     """
     set +e
     set +o pipefail
-    genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
-    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r \${genome} > ${library}.csv
+    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_fa} > ${library}.csv
     """
 
 }

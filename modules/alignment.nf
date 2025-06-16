@@ -260,7 +260,7 @@ process mergeAndMarkDuplicates {
     label 'high_cpu'
     tag { library }
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
-    conda "bioconda::picard-slim=3.3 bioconda::samtools=1.22"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes) 
@@ -294,76 +294,78 @@ process mergeAndMarkDuplicates {
     """
 }
 
-process bwa_index {
-    /* This pipeline is for internal AND external use.
-     * Attempts to link the reference index. If there is no index
+process genome_index {
+    /* Combined process for genome indexing.
+     * Creates both bwameth aligner index and samtools faidx index.
+     * Attempts to link existing indices. If there is no index
      * we download it from the provided URL.
      * If no index and no URL, User will have to debug.
      */
 
     label 'low_cpu'
-    tag { genome }
+    tag { genome_basename }
     conda "bioconda::samtools=1.22 bioconda::bwameth=0.2.7"
-    storeDir "bwameth_index"
-
+    
     output:
-    path "*.{fa,fai,amb,ann,bwt,pac,sa,c2t}"
+    path "bwameth_index/*.{fa,fai,amb,ann,bwt,pac,sa,c2t}", emit: aligner_files
+    tuple path("genome_index/*.fa"), path("genome_index/*.fai"), emit: genome_index
 
     script:
+    genome_basename = file(params.path_to_genome_fasta).baseName
     """
+    # Create output directories
+    mkdir -p bwameth_index genome_index
+    
     real_genome_file="\$(basename ${params.path_to_genome_fasta})"
-    ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* . 
-
-    if [ ! -f "\${real_genome_file}.bwameth.c2t.bwt" ]; then
+    
+    # Handle genome file (download if URL or link if local)
+    if [ ! -f "bwameth_index/\${real_genome_file}" ]; then
         # if the reference .fa file is a url, not a local path
-        if [ ! -f "\${real_genome_file}" ]; then
+        if [[ "${params.path_to_genome_fasta}" =~ ^https?:// ]]; then
             echo "Trying to download the reference"
-            filename=\$(basename ${params.path_to_genome_fasta})
-
-            if ! curl -f -o \$filename ${params.path_to_genome_fasta}; then
+            if ! curl -f -o "bwameth_index/\${real_genome_file}" ${params.path_to_genome_fasta}; then
                 echo "Error: Failed to download \${params.path_to_genome_fasta}" >&2
                 exit 1
             fi
+        else
+            # Link local files
+            ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* bwameth_index/
         fi
+    fi
+    
+    # Create bwameth index
+    cd bwameth_index
+    if [ ! -f "\${real_genome_file}.bwameth.c2t.bwt" ]; then
+        echo "Creating bwameth index for \${real_genome_file}"
         bwameth.py index \${real_genome_file}
     else
-        echo "Index files already exist for \${real_genome_file}"
+        echo "Bwameth index files already exist for \${real_genome_file}"
     fi
-    """
-}
-
-process samtools_faidx {
-    label 'low_cpu'
-    tag "${genome_file.baseName}"
-    conda "bioconda::samtools=1.22"
-    storeDir "genome_index"
-
-    input:
-        path(genome_file)
-
-    output:
-        path("*.fai"), emit: genome_index
-
-    script:
-    """
-    genome=\$(basename ${genome_file})
+    cd ..
+    
+    # Create samtools faidx index
+    cd genome_index
+    # Copy the fasta file to genome_index directory
+    cp "../bwameth_index/\${real_genome_file}" "\${real_genome_file}"
     
     # Check if index exists adjacent to the original FASTA file (using the full path parameter)
     if [ -f "${params.path_to_genome_fasta}.fai" ]; then
         echo "Found existing genome index: ${params.path_to_genome_fasta}.fai"
-        ln -sf "${params.path_to_genome_fasta}.fai" "\${genome}.fai"
+        ln -sf "${params.path_to_genome_fasta}.fai" "\${real_genome_file}.fai"
     else
-        echo "No existing genome index found. Creating new index for \${genome}"
-        samtools faidx "${genome_file}"
+        echo "No existing genome index found. Creating new index for \${real_genome_file}"
+        samtools faidx "\${real_genome_file}"
     fi
     
     # Verify the index file exists and is not empty
-    if [ ! -s "\${genome}.fai" ]; then
+    if [ ! -s "\${real_genome_file}.fai" ]; then
         echo "Error: Failed to create or link genome index file"
         exit 1
     fi
     
-    echo "Genome index ready: \${genome}.fai"
+    echo "Genome indices ready:"
+    echo "  - Bwameth index: bwameth_index/\${real_genome_file}.bwameth.c2t.*"
+    echo "  - Samtools index: genome_index/\${real_genome_file}.fai"
     """
 }
 
