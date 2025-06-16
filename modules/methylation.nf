@@ -104,4 +104,3 @@ process convert_methylkit_to_bed {
     > "\${methylkit_basename}.bed"
     """
 }
-
