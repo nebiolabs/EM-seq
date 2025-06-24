@@ -155,7 +155,7 @@ process alignReads {
         else
             if [ "\$type" == "bam" ]; then
                 n_reads=\$(samtools view -c -F 2304 \$file)
-            else [ "\$type" == "fastq" ]; then
+            else
                 n_reads=\$(zcat -f \$file | grep -c "^+$")
             fi
             if [ \$n_reads -le ${params.max_input_reads} ]; then
