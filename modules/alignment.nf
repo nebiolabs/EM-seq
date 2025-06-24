@@ -100,15 +100,6 @@ process alignReads {
     genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
 
     # Define helper functions
-    get_nreads_from_fastq() {
-        zcat -f \$1 | grep -c "^+\$" \
-        | awk '{
-            frac=${params.max_input_reads}/\$1; 
-            if (frac>=1) {frac=0.999}; 
-            split(frac, numParts, "."); print numParts[2]
-        }'
-    }
-
     flowcell_from_fastq() {
         set +o pipefail
         zcat -f \$1 | head -n1 | cut -d ":" -f3
@@ -164,8 +155,11 @@ process alignReads {
         else
             if [ "\$type" == "bam" ]; then
                 n_reads=\$(samtools view -c -F 2304 \$file)
+            elif [ "\$type" == "fastq" ]; then
+                n_reads=\$(zcat -f \$file | grep -c "^+$")
             else
-                n_reads=\$(get_nreads_from_fastq \$file)
+                echo "Error: Unsupported file type \$type"
+                exit 1
             fi
             if [ \$n_reads -le ${params.max_input_reads} ]; then
                 frac_reads=1
