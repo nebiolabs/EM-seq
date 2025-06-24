@@ -155,11 +155,8 @@ process alignReads {
         else
             if [ "\$type" == "bam" ]; then
                 n_reads=\$(samtools view -c -F 2304 \$file)
-            elif [ "\$type" == "fastq" ]; then
+            else [ "\$type" == "fastq" ]; then
                 n_reads=\$(zcat -f \$file | grep -c "^+$")
-            else
-                echo "Error: Unsupported file type \$type"
-                n_reads=${params.max_input_reads}
             fi
             if [ \$n_reads -le ${params.max_input_reads} ]; then
                 frac_reads=1
