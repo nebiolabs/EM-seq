@@ -159,7 +159,7 @@ process alignReads {
                 n_reads=\$(zcat -f \$file | grep -c "^+$")
             else
                 echo "Error: Unsupported file type \$type"
-                exit 1
+                n_reads=${params.max_input_reads}
             fi
             if [ \$n_reads -le ${params.max_input_reads} ]; then
                 frac_reads=1
