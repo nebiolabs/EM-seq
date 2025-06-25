@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
  * --------------- */
 params.email                     = 'undefined'
 params.flowcell                  = 'undefined'
-params.path_to_genome_fasta      = 'undefined' // HAS TO BE THE FULL PATH!! 
+params.path_to_genome_fasta      = 'undefined'   // path to the genome FASTA file, e.g. /path/to/genome.fa 
 params.input_glob                = '*_R1.fastq*' // either the .bam or fastq read 1
 params.project                   = 'project_undefined'
 params.workflow                  = 'EM-seq'
@@ -15,14 +15,17 @@ params.min_mapq                  = 20 // for methylation assessment.
 params.max_input_reads           = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
 params.downsample_seed           = 42
 params.enable_neb_agg            = 'False'
+params.target_bed                = 'undefined' // BED file to intersect with methylKit output
 
-include { alignReads; mergeAndMarkDuplicates; bwa_index; enough_reads; send_email; touchFile }          from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
+include { alignReads; mergeAndMarkDuplicates; genome_index; enough_reads; send_email; touchFile }       from './modules/alignment'
+include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
+include { prepare_target_bed; intersect_beds; process_intersections; concatenate_intersections }        from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
 
 
-// custom fx
+// identify and replace common R1/R2 naming patterns and return the read2 file name
+// e.g. _R1.fastq -> _R2.fastq, _1.fastq -> _2.fastq, .R1. -> .R2., etc.
 def replaceReadNumber(inputString) {
     return inputString.replace('_R1.', '_R2.')
                       .replace('_1.fastq', '_2.fastq')
@@ -57,9 +60,8 @@ workflow create_placeholder { touchFile("${workflow.workDir}/placeholder.r2.fast
 workflow {
     create_placeholder()
     main:
-        // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
+        // placeholder for R2 file, can't be a random file as that breaks nextflow's caching features
         // create the FILE here so it actually exists (touch)
-        //touchFile("${workflow.workDir}/placeholder.r2.fastq")
         placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
         
         // if reference is not indexed, index it.
@@ -68,7 +70,9 @@ workflow {
             System.exit(1)  // Exit with a custom status code
         }
 
-        genome_index_ch = bwa_index()
+        genome_indices = genome_index()
+        bwa_index_ch = genome_indices.aligner_files
+        genome_ch = genome_indices.genome_index
 
         reads = Channel
           .fromPath(params.input_glob)
@@ -87,7 +91,6 @@ workflow {
 	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
             return [params.email, library, read1File, read2File, fileType]
           }
-          //.join(genome_index_ch)
         
 
         reads.view()
@@ -97,7 +100,7 @@ workflow {
         println "Cmd line: $workflow.commandLine"
 
 
-        // files with few reads will be filtered out and used will get an email.
+        // files with few reads will be filtered out and user will get an email.
         checking_reads = enough_reads(reads)
         passed_reads = checking_reads
                        .filter { tuple -> tuple[5].text.contains('pass') }
@@ -107,19 +110,37 @@ workflow {
         
 
         // align and mark duplicates
-        alignedReads = alignReads( passed_reads, genome_index_ch )
+        alignedReads = alignReads( passed_reads, bwa_index_ch )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams, genome_index_ch )
-        mbias        = methylDackel_mbias( markDup.md_bams, genome_index_ch )
+        extract      = methylDackel_extract( markDup.md_bams, genome_ch )
+        mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
+
+        // intersect methylKit files with target BED file if provided
+        if (params.target_bed != 'undefined') {
+            target_bed_ch = Channel.fromPath(params.target_bed)
+            
+            methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
+            
+            prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
+            
+            intersections = intersect_beds( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
+            
+            intersection_results = process_intersections( intersections.intersections )
+            
+            combined_results = concatenate_intersections( 
+                intersection_results.intersection_results.collect(),
+                intersection_results.intersection_summary.collect()
+            )
+        }
 
         // collect statistics
-        gcbias       = gc_bias( markDup.md_bams, genome_index_ch )
+        gcbias       = gc_bias( markDup.md_bams, genome_ch )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
         fastqc       = fastqc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams, genome_index_ch )
-        mismatches   = tasmanian( markDup.md_bams, genome_index_ch )
+        metrics      = picard_metrics( markDup.md_bams, genome_ch )
+        mismatches   = tasmanian( markDup.md_bams, genome_ch )
 
         // Channels and processes that summarize all results
 
