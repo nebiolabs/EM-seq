@@ -29,7 +29,7 @@ nextflow run main.nf \
   --email your.email@example.com \
   --flowcell FLOWCELL_ID
 ```
-`input_globe` should only indicate `read1` for paired-end libraries **if** the input file type is **FASTQ**
+`input_glob` should capture your bam files or `read1` fastq files  (even for paired-end libraries)
 
 ### Key Parameters
 
