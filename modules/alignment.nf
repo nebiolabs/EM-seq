@@ -155,7 +155,7 @@ process alignReads {
         else
             if [ "\$type" == "bam" ]; then
                 n_reads=\$(samtools view -c -F 2304 \$file)
-            elif echo "\$type" | grep -q "fastq\|fastq\.gz\|fq\.gz"; then
+            elif [ "\$file" == "fastq_paired_end" || "\$file" == "fastq_single_end" ]; then
                 n_reads=\$(zcat -f \$file | grep -c "^+\$")
             else
                 echo "Error: Unsupported file type \$type" >&2
