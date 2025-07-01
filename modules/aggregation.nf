@@ -96,8 +96,6 @@ process aggregate_emseq {
     unzip *fastqc.zip
 
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
-    
-    metadata=\$(echo "${fq_or_bam}" | awk '{if (\$1~/fastq/) {metad="fq"} else if (\$1~/bam/) {metad="_bam"}; print "--metadata"metad"_file "\$1}')
 
     export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
@@ -120,7 +118,8 @@ process aggregate_emseq {
     --tasmanian ${tasmanian} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
-    \${metadata}  \
+    --metadata_bam_file ${bam} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }
+
