@@ -86,7 +86,6 @@ process aggregate_emseq {
     unzip -f *fastqc.zip # -f in case we need to re-run
 
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
-    
     export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
     --metadata_bam ${metadata_bam} \
@@ -108,6 +107,7 @@ process aggregate_emseq {
     --tasmanian ${mismatches} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
+    --metadata_bam_file ${metadata_bam} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }
