@@ -1,69 +1,7 @@
-process enough_reads {
-    label 'low_cpu'
-    tag {library}
-    conda "bioconda::samtools=1.22"
-    
-    input:
-        tuple val(email), 
-              val(library), 
-              path(input_file1), 
-              path(input_file2), 
-              val(fileType)
-
-        output:
-            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), path("*passes_or_fails.txt") 
-
-        script:
-        """
-        in1=\$(realpath ${input_file1})
-        passes_or_fails="pass"
-        
-        if grep -q "fastq.gz" <<< "${fileType}"; then
-            [ \$(stat -c%s \${in1}) -lt 54 ] && passes_or_fails="fail"
-        elif grep -q "fastq" <<< "${fileType}"; then 
-            [ \$(stat -c%s \${in1}) -lt 240 ] && passes_or_fails="fail"
-        elif grep -q "bam" <<< "${fileType}"; then
-            [ \$(stat -c%s \${in1}) -lt 100 ] && passes_or_fails="fail"
-        fi 
-
-        echo -e "$library\\t\${passes_or_fails}" > ${library}_passes_or_fails.txt
-        """
-} 
-
-process send_email {
-    label 'low_cpu'
-    
-    input:
-        file libraries
-
-    script:
-    """
-    touch tmp
-    for f in ${libraries}
-    do
-        cat \$f | awk '{print \$1"<br>"}' >> tmp 
-    done
-    libs=\$(cat tmp)
-    
-    sendmail -t <<EOF
-    To: ${params.email}
-    Subject: File Read Check
-    Content-Type: text/html
-
-    <html>
-      <body>
-        <p>The following libraries:<br> <strong>\${libs}</strong> do not have enough reads. <br> Continuing with other libraries. </p>
-      </body>
-    </html>
-    EOF
-    """
-}
-
-
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4 bioconda::gatk4=4.6.2.0 conda-forge::gawk=5.3.1"
     publishDir "${params.outputDir}/bwameth_align"
     memory {
         try { 
@@ -78,18 +16,17 @@ process alignReads {
     }
 
     input:
-        tuple val(email),
-              val(library),
-              path(input_file1),
-              path(input_file2),
-              val(fileType)
+        tuple val(library),
+        path(input_file1),
+        path(input_file2),
+        val(fileType)
         path(genome)
 
     output:
-        tuple val(params.email), val(library), env(barcodes), path("*.nonconverted.tsv"), path("*.fastp.json"), emit: for_agg
-        path "*.aln.bam", emit: aligned_bams
+        tuple val(library), path("*.fastp.json"), emit: fastp_reports
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
-        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), env(barcodes), emit: bam_files
+        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: aligned_bams
+        tuple val(library), path("*.metadata.bam"), emit: metadata_bams
 
     script:
     """
@@ -118,27 +55,21 @@ process alignReads {
         set -o pipefail
     }
 
-
+    # assumes that the barcodes are in the last part of the read name 
+    # extracts the most frequent barcode in the first 10k reads
     barcodes_from_fastq() {
-        set +o pipefail
-        zcat -f "\$1" \
-        | head -n10000 \
-        | awk '{
-            if (NR%4==1) {
-                split(\$0, parts, ":"); 
-                arr[ parts[ length(parts) ] ]++
-            }} END { for (i in arr) {print arr[i]"\\t"i} }' \
-        | sort -k1nr | head -n1 | cut -f2 
-        set -o pipefail
+        zcat -f "\$1" | awk 'NR%4==1' | head -n10000 | \
+        grep -o '[GCATN+-]\{6,\}' | \
+        sort | uniq -c | sort -nr | head -n1 | \
+        awk '{gsub(/N+/, "-", \$2); print \$2}'
     }
 
     # Determine barcodes and read group line
-    get_barcodes_and_rg_line() {
+    get_rg_line() {
         set +o pipefail
         local file=\$1
         local type=\$2
         if [ "\$type" == "bam" ]; then
-            barcodes=\$(samtools view -H \$file | grep @RG | awk '{for (i=1;i<=NF;i++) {if (\$i~/BC:/) {print substr(\$i,4,length(\$i))} } }' | head -n1)
             rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
         else
             barcodes=(\$(barcodes_from_fastq \$file))
@@ -196,19 +127,19 @@ process alignReads {
 
    case ${fileType} in 
         "fastq_paired_end")
-            get_barcodes_and_rg_line ${input_file1} "fastq"
+            get_rg_line ${input_file1} "fastq"
             get_frac_reads ${input_file1} "fastq"
             stream_reads="samtools import -u -1 ${input_file1} -2 ${input_file2}"
             flowcell=\$(flowcell_from_fastq ${input_file1})
             ;;
         "bam")
-            get_barcodes_and_rg_line ${input_file1} "bam"
+            get_rg_line ${input_file1} "bam"
             get_frac_reads ${input_file1} "bam"
             stream_reads="samtools view -u -h ${input_file1}"
             flowcell=\$(flowcell_from_bam ${input_file1})
             ;;
         "fastq_single_end")
-            get_barcodes_and_rg_line ${input_file1} "fastq"
+            get_rg_line ${input_file1} "fastq"
             get_frac_reads ${input_file1} "fastq"
             stream_reads="samtools import -u -s ${input_file1}"
             flowcell=\$(flowcell_from_fastq ${input_file1})
@@ -233,7 +164,11 @@ process alignReads {
 
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
-    bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
+    
+    # hard clips all but the first base to create minimal metadata bam
+    metadata_tee="tee >(gatk ClipReads -I /dev/stdin -O \"\${base_outputname}.metadata.bam\" --clip-representation HARDCLIP_BASES -CT 2-10000)"
+    
+    bam2fastq="| \${metadata_tee} | samtools collate -f -r 100000 -u /dev/stdin | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
  
@@ -246,7 +181,6 @@ process alignReads {
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
        -o "\${base_outputname}.aln.bam##idx##\${base_outputname}.aln.bam.bai" /dev/stdin 
 
-    export barcodes
     """
 }
 
@@ -257,12 +191,11 @@ process mergeAndMarkDuplicates {
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes) 
-
+        tuple val(library), path(bam), path(bai)
     output:
-        tuple val(library), path('*.md.bam'), path('*.md.bai'), val(barcodes), emit: md_bams
-        tuple val( params.email ), val(library), path('*.md.bam'), path('*.md.bai'), emit: for_agg
+        tuple val(library), path('*.md.bam'), path('*.md.bai'), emit: md_bams
         path('*.markdups_log'), emit: log_files
+        tuple val(library), path('*.markdups_log'), emit: for_agg
 
     script:
     """

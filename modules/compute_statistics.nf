@@ -6,10 +6,10 @@ process gc_bias {
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
         tuple path(genome_fa), path(genome_fai)
     output:
-        tuple val(params.email), val(library), path('*gc_metrics'), emit: for_agg
+        tuple val(library), path('*gc_metrics'), emit: for_agg
 
     script:
     """
@@ -32,10 +32,10 @@ process idx_stats {
     publishDir "${params.outputDir}/stats/idxstats"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path("*idxstat"), emit: for_agg
+        tuple val(library), path("*idxstat"), emit: for_agg
 
     script:
     """
@@ -50,10 +50,10 @@ process flag_stats {
     publishDir "${params.outputDir}/stats/flagstats"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path("*flagstat"), emit: for_agg
+        tuple val(library), path("*flagstat"), emit: for_agg
 
     script:
     """
@@ -68,10 +68,10 @@ process fastqc {
     publishDir "${params.outputDir}/stats/fastqc"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path('*_fastqc.zip'), emit: for_agg
+        tuple val(library), path('*_fastqc.zip'), emit: for_agg
 
     shell:
     """
@@ -86,11 +86,11 @@ process insert_size_metrics {
     publishDir "${params.outputDir}/stats/insert_size"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path('*_metrics'), emit: for_agg
-        tuple val(params.email), val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq_insert_size_metrics
+        tuple val(library), path('*_metrics'), emit: for_agg
+        tuple val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq_insert_size_metrics
 
     script:
     """
@@ -172,11 +172,11 @@ process picard_metrics {
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
         tuple path(genome_fa), path(genome_fai)
 
     output:
-        tuple val(params.email), val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
+        tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
 
     script:
     """
@@ -197,11 +197,11 @@ process tasmanian {
     memory { retry > 0 ? '16 GB' : '8 GB' }
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
         tuple path(genome_fa), path(genome_fai)
 
     output:
-        tuple val(params.email), val(library), path('*.csv'), emit: for_agg
+        tuple val(library), path('*.csv'), emit: for_agg
 
     script:
     """

@@ -6,7 +6,7 @@ process multiqc {
     publishDir "${params.outputDir}", mode: 'copy'
 
     input:
-        tuple val(email), path('*')
+        path('*')
 
     output:   
         path("*multiqc_report.html"), emit: multiqc_report
@@ -61,17 +61,20 @@ process aggregate_emseq {
     publishDir "${params.outputDir}/ngs-agg"
 
     input:         
-	tuple  val(email), val(library), path(fq_or_bam), path(_read2), val(fileType),
-	       val(barcodes), path(nonconverted_counts_tsv), path(fastp),
-               path(bam), path(bai), 
-               path(gc_metrics),
-               path(idxstat),
-               path(flagstat),
-               path(fastqc_zip),
-               path(insertsize_metrics),
-               path(tasmanian),
-               path(mbias),
-               path(alignment_summary_metrics_txt)
+	tuple   val(library), 
+            path(aligned_bam), path(aligned_bam_bai),
+            path(metadata_bam)
+            path(fastp), 
+            path(nonconverted_counts_tsv),
+            path(markdups_log),
+            path(gc_metrics),
+            path(idxstat),
+            path(flagstat),
+            path(fastqc_zip),
+            path(mismatches),
+            path(mbias),
+            path(alignment_summary_metrics_txt),
+            path(insertsize_metrics)
 
     output:
         path('ngs_agg.*')
@@ -80,31 +83,16 @@ process aggregate_emseq {
     """
     path_to_ngs_agg="${params.path_to_ngs_agg}${params.revision}/"
 
-    # bc = barcode1 + barcode2 if exists.
-    if echo ${barcodes} | grep -q "+" 
-    then
-        bc=\$(echo ${barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
-    else
-        bc=\$(echo ${barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
-    fi
-
-    # Validate barcodes
-    if [[ ! ${barcodes} =~ ^[+-ACGT]+\$ ]]; then
-        echo "Warning: Invalid barcode format: ${barcodes}" >&2
-    fi
-
-    unzip *fastqc.zip
+    unzip -f *fastqc.zip # -f in case we need to re-run
 
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
     
-    metadata=\$(echo "${fq_or_bam}" | awk '{if (\$1~/fastq/) {metad="fq"} else if (\$1~/bam/) {metad="_bam"}; print "--metadata"metad"_file "\$1}')
-
     export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
-    --bam ${bam} \
-    --bai ${bai} \
+    --metadata_bam ${metadata_bam} \
+    --bam ${aligned_bam} \
+    --bai ${aligned_bam_bai} \
     --name ${library} \
-    --barcode1 \${bc} \
     --lane ${params.lane} \
     --contact_email ${params.email} \
     --project ${params.project} \
@@ -117,10 +105,9 @@ process aggregate_emseq {
     --combined_mbias_records ${mbias} \
     --fastqc *_fastqc/fastqc_data.txt \
     --insert ${insertsize_metrics} \
-    --tasmanian ${tasmanian} \
+    --tasmanian ${mismatches} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
-    \${metadata}  \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }

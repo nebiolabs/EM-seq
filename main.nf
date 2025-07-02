@@ -17,7 +17,7 @@ params.downsample_seed           = 42
 params.enable_neb_agg            = 'False'
 params.target_bed                = 'undefined' // BED file to intersect with methylKit output
 
-include { alignReads; mergeAndMarkDuplicates; genome_index; enough_reads; send_email; touchFile }       from './modules/alignment'
+include { alignReads; mergeAndMarkDuplicates; genome_index; send_email; touchFile }                     from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
 include { prepare_target_bed; intersect_beds; process_intersections; concatenate_intersections }        from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
@@ -89,29 +89,41 @@ workflow {
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
 	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
-            return [params.email, library, read1File, read2File, fileType]
+            return [library, read1File, read2File, fileType]
           }
-        
-
-        reads.view()
-
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
 
-
-        // files with few reads will be filtered out and user will get an email.
-        checking_reads = enough_reads(reads)
-        passed_reads = checking_reads
-                       .filter { tuple -> tuple[5].text.contains('pass') }
-                       .map { tuple -> tuple[0..4] }
-        failed_reads = checking_reads.filter { tuple -> tuple[5].text.contains('fail') }.map { tuple -> tuple[5].text }
-        send_email( failed_reads.collect() )
+        def checkFileSize = { file
+            return file.size() >= 200   // Minimum size in bytes for a read file to be considered valid
+        }
         
+        passed_reads = reads.filter { library, read1File, read2File, fileType -> checkFileSize(read1File) }
+        failed_reads = reads.filter { library, read1File, read2File, fileType -> !checkFileSize(read1File) }
+        failed_library_names = failed_reads.map { library, read1File, read2File, fileType -> library }
+        
+        // Send email if there are failed libraries
+        failed_library_names.collect().subscribe { names ->
+            if (failedLibraries.size() > 0) {
+                def joined_names = names.join('<br>')
+                sendMail {
+                    to params.email
+                    subject 'File Read Check'
+                    body """
+                    <html>
+                      <body>
+                        <p>The following libraries:<br> <strong>${joined_names}</strong> do not have enough reads. <br> Continuing with remaining libraries. </p>
+                      </body>
+                    </html>
+                    """
+                }
+            }
+        }
 
-        // align and mark duplicates
         alignedReads = alignReads( passed_reads, bwa_index_ch )
-        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
+        markDup      = mergeAndMarkDuplicates( alignedReads.aligned_bams )
+        
         extract      = methylDackel_extract( markDup.md_bams, genome_ch )
         mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
 
@@ -120,11 +132,8 @@ workflow {
             target_bed_ch = Channel.fromPath(params.target_bed)
             
             methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
-            
             prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
-            
             intersections = intersect_beds( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
-            
             intersection_results = process_intersections( intersections.intersections )
             
             combined_results = concatenate_intersections( 
@@ -142,33 +151,29 @@ workflow {
         metrics      = picard_metrics( markDup.md_bams, genome_ch )
         mismatches   = tasmanian( markDup.md_bams, genome_ch )
 
-        // Channels and processes that summarize all results
 
         // channel for internal summaries
-        grouped_email_library = reads
-	      .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
-            .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
+        grouped_library_results = markDup.md_bams
+            .join( alignedReads.metadata_bams )
+	        .join( alignedReads.fastp_reports )
+            .join( alignedReads.nonconverted_counts )
+            .join( markDup.for_agg )
+            .join( gcbias.for_agg )
+            .join( idxstats.for_agg )
+            .join( flagstats.for_agg )
+            .join( fastqc.for_agg )
+            .join( mismatches.for_agg )
+            .join( mbias.for_agg )
+            .join( metrics.for_agg )
 
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-            aggregate_emseq( grouped_email_library ) 
+            aggregate_emseq( grouped_library_results.join( insertsize.for_agg ))
         }
        
-        // channel for multiqc analysis
-        all_results = grouped_email_library
-         .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
-         .map { items -> [items[0], items[7..-1]] }
-         .groupTuple()
-         .flatten()
-         .toList()
-         .map { items -> [items[0], items[7..-1]] }
+        // channel for multiqc analysis - 
+        all_results = grouped_library_results
+            .join(insertsize.high_mapq_insert_size_metrics)
+            .map { it[1..-1].flatten() } //multiqc needs all the files (without the library name)
 
         multiqc( all_results )
 }

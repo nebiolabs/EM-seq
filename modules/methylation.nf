@@ -6,17 +6,17 @@ process methylDackel_mbias {
     publishDir "${params.outputDir}/methylDackelExtracts/mbias"
 
     input:
-        tuple val(library), path(md_bam), path(md_bai), val(barcodes)
+        tuple val(library), path(md_bam), path(md_bai)
         tuple path(genome_fa), path(genome_fai)
 
     output:
         path('*.svg'), emit: mbias_output_svg
         path('*.tsv'), emit: mbias_output_tsv
-        tuple val(params.email), val(library), path('*.tsv'), emit: for_agg
+        tuple val(library), path('*.tsv'), emit: for_agg
 
     script:
     """
-    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}_${barcodes}_combined_mbias.tsv
+    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}_combined_mbias.tsv
     chrs=(`samtools view -H "${md_bam}" | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
 
     for chr in \${chrs[*]}; do
@@ -39,7 +39,7 @@ process methylDackel_mbias {
                 tail -n +2 | awk '{print \$1"-"\$2"-"\$3"\t"\$0}' | sort -k 1b,1
             ) \
             | sed "s/^/\${chr}\t\${context}\t/" \
-            >> ${library}_${barcodes}_combined_mbias.tsv
+            >> ${library}_combined_mbias.tsv
         done
     done
     # makes the svg files for trimming checks
@@ -59,7 +59,7 @@ process methylDackel_extract {
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8"
 
     input:
-        tuple val(library), path(md_bam), path(md_bai), val(barcodes) 
+        tuple val(library), path(md_bam), path(md_bai)
         tuple path(genome_fa), path(genome_fai)
 
     output:
@@ -68,7 +68,7 @@ process methylDackel_extract {
     script:
     """
     MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ ${task.cpus} \
-        --CHH --CHG -o ${library}.${barcodes} ${genome_fa} "${md_bam}" 
+        --CHH --CHG -o ${library} ${genome_fa} "${md_bam}" 
     pigz -p ${task.cpus} *.methylKit 
     """
 }
