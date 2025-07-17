@@ -52,9 +52,15 @@ def detectFileType(file) {
 }
 
 
-workflow create_placeholder { touchFile("${workflow.workDir}/placeholder.r2.fastq") }
+workflow create_placeholder { 
+    done_ch = value(true)
+    touchFile("${workflow.workDir}/placeholder.r2.fastq") 
+
+    emit: done_ch
+}
 
 workflow emseq{
+    take: done_ch
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         // create the FILE here so it actually exists (touch)
@@ -153,5 +159,5 @@ workflow emseq{
 
 workflow {
     create_placeholder()
-    emseq()
+    emseq( create_placeholder.out.done_ch )
 }
