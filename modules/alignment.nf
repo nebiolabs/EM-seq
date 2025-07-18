@@ -293,9 +293,14 @@ process genome_index {
     """
 }
 
-process touchFile {   
+process touchFile {
+    publishDir "${params.outputDir}", mode: 'copy'
+   
     input:
         val filename
+
+    output:
+        path(filename)
 
     script:
     """
