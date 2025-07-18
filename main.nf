@@ -52,15 +52,17 @@ def detectFileType(file) {
 }
 
 
-workflow create_placeholder { touchFile("${workflow.workDir}/placeholder.r2.fastq") }
+workflow placeholder { 
+    placeholder_ch = touchFile( "placeholder.r2.fastq" )
+    emit: placeholder_ch
+}
 
-workflow {
-    create_placeholder()
+workflow emseq {
+    take: placeholder_ch
     main:
         // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
         // create the FILE here so it actually exists (touch)
-        //touchFile("${workflow.workDir}/placeholder.r2.fastq")
-        placeholder_r2 = file("${workflow.workDir}/placeholder.r2.fastq")
+        placeholder_r2 = file( "${params.outputDir}/placeholder.r2.fastq" ) 
         
         // if reference is not indexed, index it.
         if (!file(params.path_to_genome_fasta).exists()) {
@@ -150,4 +152,9 @@ workflow {
          .map { items -> [items[0], items[7..-1]] }
 
         multiqc( all_results )
+}
+
+workflow {
+    placeholder()
+    emseq( placeholder.out.placeholder_ch )
 }
