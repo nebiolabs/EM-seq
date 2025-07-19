@@ -52,18 +52,10 @@ def detectFileType(file) {
 }
 
 
-workflow placeholder { 
-    placeholder_ch = touchFile( "placeholder.r2.fastq" )
-    emit: placeholder_ch
-}
-
-workflow emseq {
-    take: placeholder_ch
+workflow {
     main:
-        // placeholder for R2 file, can't be a random file as that would break nextflow's caching features
-        // create the FILE here so it actually exists (touch)
-        placeholder_r2 = file( "${params.outputDir}/placeholder.r2.fastq" ) 
-        
+        placeholder_r2 = touchFile( "placeholder.r2.fastq" )
+
         // if reference is not indexed, index it.
         if (!file(params.path_to_genome_fasta).exists()) {
             println "Workflow failed: Genome file does not exist."
@@ -78,19 +70,17 @@ workflow emseq {
           .map { input_file ->
             def fileType = detectFileType(input_file)
             def read1File = input_file
-            def read2File = placeholder_r2.toString()
+            def read2File = placeholder_r2.val  // val blocks until the value is available
             if (fileType == 'fastq_paired_end') {
                 read2File = replaceReadNumber(input_file.toString())
            }
-            if (read1File.toString() == read2File) {
+            if (read1File.toString() == read2File.toString()) {
                 log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
                 throw new IllegalStateException("Invalid paired-end file configuration")
             }
 	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
             return [params.email, library, read1File, read2File, fileType]
           }
-          //.join(genome_index_ch)
-        
 
         reads.view()
 
@@ -154,7 +144,3 @@ workflow emseq {
         multiqc( all_results )
 }
 
-workflow {
-    placeholder()
-    emseq( placeholder.out.placeholder_ch )
-}
