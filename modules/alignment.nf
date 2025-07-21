@@ -304,7 +304,8 @@ process genome_index {
     label 'medium_cpu'
     tag { genome_basename }
     conda "bioconda::samtools=1.22 bioconda::bwameth=0.2.7"
-    
+    storeDir "genome_and_bwa_indices"
+
     output:
     path "bwameth_index/*.{fa,fai,amb,ann,bwt,pac,sa,c2t}", emit: aligner_files
     tuple path("genome_index/*.fa"), path("genome_index/*.fai"), emit: genome_index
@@ -314,7 +315,7 @@ process genome_index {
     """
     # Create output directories
     mkdir -p bwameth_index genome_index
-    
+
     real_genome_file="\$(basename ${params.path_to_genome_fasta})"
     
     # Handle genome file (download if URL or link if local)
@@ -357,49 +358,11 @@ process genome_index {
         echo "Error: Failed to create or link genome index file"
         exit 1
     fi
-    
+    cd ..
+
     echo "Genome indices ready:"
-    echo "  - Bwameth index: bwameth_index/\${real_genome_file}.bwameth.c2t.*"
-    echo "  - Samtools index: genome_index/\${real_genome_file}.fai"
-    """
-}
-
-
-   
-process samtools_faidx {
-    label 'low_cpu'
-    tag "${genome_file.baseName}"
-    conda "bioconda::samtools=1.22"
-    storeDir "genome_index"
-
-    input:
-        path(genome_file)
-
-    output:
-        path("*.fai"), emit: genome_index
-
-    script:
-    """
-    genome=\$(basename ${genome_file})
-    
-    # Check if index exists adjacent to the original FASTA file (using the full path parameter)
-    if [ -f "${params.path_to_genome_fasta}.fai" ]; then
-        echo "Found existing genome index: ${params.path_to_genome_fasta}.fai"
-        ln -sf "${params.path_to_genome_fasta}.fai" "\${real_genome_file}.fai"
-    else
-        echo "No existing genome index found. Creating new index for \${real_genome_file}"
-        samtools faidx "\${real_genome_file}"
-    fi
-    
-    # Verify the index file exists and is not empty
-    if [ ! -s "\${real_genome_file}.fai" ]; then
-        echo "Error: Failed to create or link genome index file"
-        exit 1
-    fi
-    
-    echo "Genome indices ready:"
-    echo "  - Bwameth index: bwameth_index/\${real_genome_file}.bwameth.c2t.*"
-    echo "  - Samtools index: genome_index/\${real_genome_file}.fai"
+    echo "  - Bwameth index:  genome_and_bwa_indices/bwameth_index/\${real_genome_file}.bwameth.c2t.*"
+    echo "  - Samtools index: genome_and_bwa_indices/genome_index/\${real_genome_file}.fai"
     """
 }
 
