@@ -297,6 +297,8 @@ process genome_index {
      * Attempts to link existing indices. If there is no index
      * we download it from the provided URL.
      * If no index and no URL, User will have to debug.
+     * This expects the prefix of index to contain ".fa" or ".fasta"
+     * and the index files to be named accordingly.
      */
 
     label 'medium_cpu'
@@ -316,7 +318,7 @@ process genome_index {
     real_genome_file="\$(basename ${params.path_to_genome_fasta})"
     
     # Handle genome file (download if URL or link if local)
-    if [ ! -f "bwameth_index/\${real_genome_file}" ]; then
+    if [ ! -f "${params.path_to_genome_fasta}" ]; then
         # if the reference .fa file is a url, not a local path
         if [[ "${params.path_to_genome_fasta}" =~ ^https?:// ]]; then
             echo "Trying to download the reference"
@@ -338,14 +340,10 @@ process genome_index {
     else
         echo "Bwameth index files already exist for \${real_genome_file}"
     fi
-    cd ..
     
     # Create samtools faidx index
-    cd genome_index
-    # Copy the fasta file to genome_index directory
-    cp "../bwameth_index/\${real_genome_file}" "\${real_genome_file}"
-    
-    # Check if index exists adjacent to the original FASTA file (using the full path parameter)
+    cd ../genome_index
+    cp "../bwameth_index/\${real_genome_file}" .
     if [ -f "${params.path_to_genome_fasta}.fai" ]; then
         echo "Found existing genome index: ${params.path_to_genome_fasta}.fai"
         ln -sf "${params.path_to_genome_fasta}.fai" "\${real_genome_file}.fai"
