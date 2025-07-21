@@ -107,7 +107,6 @@ process aggregate_emseq {
     --tasmanian ${mismatches} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
-    --metadata_bam_file ${metadata_bam} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }
