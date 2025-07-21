@@ -137,24 +137,6 @@ workflow {
             )
         }
 
-        // intersect methylKit files with target BED file if provided
-        if (params.target_bed != 'undefined') {
-            target_bed_ch = Channel.fromPath(params.target_bed)
-            
-            methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
-            
-            prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
-            
-            intersections = intersect_beds( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
-            
-            intersection_results = process_intersections( intersections.intersections )
-            
-            combined_results = concatenate_intersections( 
-                intersection_results.intersection_results.collect(),
-                intersection_results.intersection_summary.collect()
-            )
-        }
-
         // collect statistics
         gcbias       = gc_bias( markDup.md_bams, genome_ch )
         idxstats     = idx_stats( markDup.md_bams )

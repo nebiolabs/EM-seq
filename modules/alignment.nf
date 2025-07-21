@@ -299,7 +299,7 @@ process genome_index {
      * If no index and no URL, User will have to debug.
      */
 
-    label 'low_cpu'
+    label 'medium_cpu'
     tag { genome_basename }
     conda "bioconda::samtools=1.22 bioconda::bwameth=0.2.7"
     
@@ -363,7 +363,7 @@ process genome_index {
     echo "Genome indices ready:"
     echo "  - Bwameth index: bwameth_index/\${real_genome_file}.bwameth.c2t.*"
     echo "  - Samtools index: genome_index/\${real_genome_file}.fai"
-    """
+    """lignment
 }
 
 
