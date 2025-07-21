@@ -131,7 +131,7 @@ process alignReads {
     barcodes_from_fastq() {
         set +o pipefail
         zcat -f "\$1" | awk 'NR%4==1' | head -n10000 | \
-        grep -o '[GCATN+-]\{6,\}' | \
+        grep -o "[GCATN+-]\\{6,\\}" | \
         sort | uniq -c | sort -nr | head -n1 | \
         awk '{gsub(/N+/, "-", \$2); print \$2}'
         set -o pipefail
@@ -321,6 +321,8 @@ process genome_index {
     # Handle genome file (download if URL or link if local)
     if [ ! -f "${params.path_to_genome_fasta}" ]; then
         # if the reference .fa file is a url, not a local path
+        echo "could not find reference ${params.path_to_genome_fasta}. Please provide a full path for the reference"
+    else
         if [[ "${params.path_to_genome_fasta}" =~ ^https?:// ]]; then
             echo "Trying to download the reference"
             if ! curl -f -o "bwameth_index/\${real_genome_file}" ${params.path_to_genome_fasta}; then
