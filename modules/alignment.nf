@@ -363,7 +363,7 @@ process genome_index {
     echo "Genome indices ready:"
     echo "  - Bwameth index: bwameth_index/\${real_genome_file}.bwameth.c2t.*"
     echo "  - Samtools index: genome_index/\${real_genome_file}.fai"
-    """lignment
+    """
 }
 
 
