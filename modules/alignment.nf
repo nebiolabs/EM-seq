@@ -63,7 +63,7 @@ process send_email {
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4 bioconda::gatk4=4.6.2.0 conda-forge::kawk=5.3.1"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4 bioconda::gatk4=4.6.2.0" 
     publishDir "${params.outputDir}/bwameth_align"
     memory {
         try { 
@@ -238,7 +238,7 @@ process alignReads {
     # hard clips all but the first base to create minimal metadata bam
     metadata_tee="tee >(gatk ClipReads -I /dev/stdin -O \"\${base_outputname}.metadata.bam\" --clip-representation HARDCLIP_BASES -CT 2-10000)"
     
-    bam2fastq="| \${metadata_tee} | samtools collate -f -r 100000 -u /dev/stdin | samtools fastq -n  /dev/stdin"
+    bam2fastq="| \${metadata_tee} | samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
  

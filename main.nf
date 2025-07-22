@@ -55,6 +55,12 @@ def detectFileType(file) {
 }
 
 
+
+def checkFileSize (path) {
+    return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
+}
+
+
 workflow {
     main:
         placeholder_r2 = touchFile( "placeholder.r2.fastq" )
@@ -89,10 +95,6 @@ workflow {
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
-
-        def checkFileSize = { file
-            return file.size() >= 200   // Minimum size in bytes for a read file to be considered valid
-        }
         
         passed_reads = reads.filter { library, read1File, read2File, fileType -> checkFileSize(read1File) }
         failed_reads = reads.filter { library, read1File, read2File, fileType -> !checkFileSize(read1File) }
