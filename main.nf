@@ -151,7 +151,7 @@ workflow {
 
         // channel for internal summaries
         grouped_library_results = markDup.md_bams
-            .join( alignedReads.metadata_bams )
+            .join( alignedReads.metadata )
 	        .join( alignedReads.fastp_reports )
             .join( alignedReads.nonconverted_counts )
             .join( markDup.for_agg )
@@ -170,7 +170,7 @@ workflow {
         // channel for multiqc analysis - 
         all_results = grouped_library_results
             .join(insertsize.high_mapq_insert_size_metrics)
-            .map { it[1..-1].flatten() } //multiqc needs all the files (without the library name)
+            .map { it[1,2] + it[6..-1].flatten() } //multiqc needs all the files (without the library name)
 
         multiqc( all_results )
 }

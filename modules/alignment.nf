@@ -63,7 +63,7 @@ process send_email {
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::seqtk=1.4 bioconda::gatk4=4.6.2.0" 
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22  bioconda::gatk4=4.6.2.0" 
     publishDir "${params.outputDir}/bwameth_align"
     memory {
         try { 
@@ -88,7 +88,7 @@ process alignReads {
         tuple val(library), path("*.fastp.json"), emit: fastp_reports
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: aligned_bams
-        tuple val(library), path("*.metadata.bam"), emit: metadata_bams
+        tuple val(library), env(barcodes), env(flowcell), env(num_reads_used), emit: metadata
 
     script:
     """
@@ -143,6 +143,7 @@ process alignReads {
         local file=\$1
         local type=\$2
         if [ "\$type" == "bam" ]; then
+            barcodes=\$(samtools view -H \$file | grep @RG | awk '{for (i=1;i<=NF;i++) {if (\$i~/BC:/) {print substr(\$i,4,length(\$i))} } }' | head -n1)
             rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
         else
             barcodes=(\$(barcodes_from_fastq \$file))
@@ -226,7 +227,7 @@ process alignReads {
         stream_reads="\${stream_reads} | samtools view -u -s \${downsample_seed_frac}"
     fi
 
-    base_outputname="${library}_\${barcodes}_\${flowcell}"
+    base_outputname="${library}_\${flowcell}"
    
     set +o pipefail
     inst_name=\$(samtools view ${input_file1} | head -n 1 | cut -d ":" -f 1)
@@ -235,13 +236,9 @@ process alignReads {
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    # hard clips all but the first base to create minimal metadata bam
-    metadata_tee="tee >(gatk ClipReads -I /dev/stdin -O \"\${base_outputname}.metadata.bam\" --clip-representation HARDCLIP_BASES -CT 2-10000)"
-    
-    bam2fastq="| \${metadata_tee} | samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
+    bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
- 
     eval \${stream_reads} \${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "\${base_outputname}.fastp.json" 2> fastp.stderr \
     | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference \${genome} /dev/stdin 2> "\${base_outputname}.log.bwamem" | reheader_sam /dev/stdin \
@@ -250,6 +247,12 @@ process alignReads {
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
        -o "\${base_outputname}.aln.bam##idx##\${base_outputname}.aln.bam.bai" /dev/stdin 
+
+    num_reads_used=\${n_reads}
+
+    export barcodes 
+    export flowcell 
+    export num_reads_used
 
     """
 }
@@ -286,7 +289,7 @@ process mergeAndMarkDuplicates {
         --VALIDATION_STRINGENCY SILENT \
         --ADD_PG_TAG_TO_READS false \
         -I ${bam} \
-        -O ${library}_${barcodes}.md.bam \
+        -O ${library}.md.bam \
         -M ${library}.markdups_log
     """
 }
