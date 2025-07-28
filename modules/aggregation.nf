@@ -119,7 +119,7 @@ process aggregate_emseq {
     --contact_email ${params.email} \
     --project ${params.project} \
     --sample ${params.sample} \
-    --genome \$(basename ${params.path_to_genome_fasta}) \
+    --genome ${params.path_to_genome_fasta} \
     --barcode1 \${bc1} \
     --barcode2 \${bc2} \ 
     --flowcell ${flowcell}
