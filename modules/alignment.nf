@@ -248,7 +248,7 @@ process alignReads {
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
        -o "\${base_outputname}.aln.bam##idx##\${base_outputname}.aln.bam.bai" /dev/stdin 
 
-    num_reads_used=\${n_reads}
+    num_reads_used="\${n_reads}"
 
     export barcodes 
     export flowcell 
