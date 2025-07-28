@@ -121,7 +121,7 @@ process aggregate_emseq {
     --sample ${params.sample} \
     --genome ${params.path_to_genome_fasta} \
     --barcode1 \${bc1} \
-    --barcode2 \${bc2} \ 
+    --barcode2 \${bc2} \
     --flowcell ${flowcell}
     --gc ${gc_metrics} \
     --idx_stats ${idxstat} \
