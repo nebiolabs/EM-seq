@@ -63,7 +63,7 @@ process aggregate_emseq {
     input:         
 	tuple   val(library), 
             path(aligned_bam), path(aligned_bam_bai),
-            path(metadata_bam)
+            val(barcodes), val(flowcell), val(num_reads_used),
             path(fastp), 
             path(nonconverted_counts_tsv),
             path(markdups_log),
@@ -85,10 +85,33 @@ process aggregate_emseq {
 
     unzip -f *fastqc.zip # -f in case we need to re-run
 
+    if echo ${barcodes} | grep -q "+"
+    then
+        bc=\$(echo ${barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
+    else
+        bc=\$(echo ${barcodes} | tr -d "][" | awk -F"-" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
+    fi
+
+    # Validate barcodes
+    if [[ ! ${barcodes} =~ ^[+-ACGT]+\$ ]]; then
+        echo "Warning: Invalid barcode format: ${barcodes}" >&2
+    fi
+
+    echo "task attempt is ${task.attempt}"
+
+    bc1=\$(echo \$bc | sed 's/ \\-\\-barcode2.*//')
+    bc2=\$(echo \$bc | sed 's/.*\\-\\-barcode2 //')
+
+    if [ $task.attempt -eq 2 ] || [ $task.attempt -eq 4 ]; then
+        bc2=\$(echo "\$bc2" | rev | tr "[ATCG]" "[TAGC]")
+    elif [ $task.attempt -eq 3 ] || [ $task.attempt -eq 4 ]; then
+        bc1=\$(echo "\$bc1" | rev | tr "[ATCG]" "[TAGC]")
+    fi
+
+
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
     export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
-    --metadata_bam ${metadata_bam} \
     --bam ${aligned_bam} \
     --bai ${aligned_bam_bai} \
     --name ${library} \
@@ -97,6 +120,9 @@ process aggregate_emseq {
     --project ${params.project} \
     --sample ${params.sample} \
     --genome \$(basename ${params.path_to_genome_fasta}) \
+    --barcode1 \${bc1} \
+    --barcode2 \${bc2} \ 
+    --flowcell ${flowcell}
     --gc ${gc_metrics} \
     --idx_stats ${idxstat} \
     --flagstat ${flagstat} \
@@ -108,5 +134,6 @@ process aggregate_emseq {
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
+    # --num_reads_used ${num_reads_used}
     """
 }

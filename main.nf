@@ -124,7 +124,7 @@ workflow {
         extract      = methylDackel_extract( markDup.md_bams, genome_ch )
         mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
 
-        // intersect methylKit files with target BED file if provided
+        // intersect methylKit files with target BED file if provided //
         if (params.target_bed != 'undefined') {
             target_bed_ch = Channel.fromPath(params.target_bed)
             
