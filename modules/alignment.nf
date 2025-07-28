@@ -373,6 +373,7 @@ process genome_index {
 
 process touchFile {
     publishDir "${params.outputDir}", mode: 'copy'
+
     input:
         val filename
 
