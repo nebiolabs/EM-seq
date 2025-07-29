@@ -155,20 +155,22 @@ process alignReads {
     get_frac_reads() {
         local file=\$1
         local type=\$2
-        if [ "${params.max_input_reads}" == "all_reads" ]; then
+        
+        if [ "\$type" == "bam" ]; then
+            n_reads=\$(samtools view -c -F 2304 \$file)
+        elif [ "\$type" == "fastq" ]; then
+            n_reads=\$(zcat -f \$file | grep -c "^+\$")
+        else
+            echo "Unsupported file type: \$type" >&2
+            exit 1
+        fi
+
+        if [ "${params.max_input_reads}" == "all_reads" ||  \$n_reads -le ${params.max_input_reads} ]; then
             frac_reads=1
         else
-            if [ "\$type" == "bam" ]; then
-                n_reads=\$(samtools view -c -F 2304 \$file)
-            else
-                n_reads=\$(zcat -f \$file | grep -c "^+\$")
-            fi
-            if [ \$n_reads -le ${params.max_input_reads} ]; then
-                frac_reads=1
-            else
-                frac_reads=\$(echo \$n_reads | awk '{print ${params.max_input_reads}/\$1}')
-            fi 
-        fi
+            frac_reads=\$(echo \$n_reads | awk '{print ${params.max_input_reads}/\$1}')
+        fi 
+        
     }
 
 
