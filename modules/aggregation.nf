@@ -75,6 +75,7 @@ process aggregate_emseq {
             path(mbias),
             path(alignment_summary_metrics_txt),
             path(insertsize_metrics)
+            path(file_metadata}
 
     output:
         path('ngs_agg.*')
@@ -108,6 +109,14 @@ process aggregate_emseq {
         bc1=\$(echo "\$bc1" | rev | tr "[ATCG]" "[TAGC]")
     fi
 
+    if [ grep -q "fastq$\|fq$" ${file_metadata} ]; then
+        metadata="--metadatafq_file ${file_metadata}"
+    elsif [ grep -q "bam$" ${file_metadata} ]; then
+        metadata="--metadata_bam_file ${file_metadata}"
+    else
+        echo "Error: Unsupported file type in metadata file: ${file_metadata}" >&2
+        exit 1
+    fi
 
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
     export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
@@ -133,7 +142,8 @@ process aggregate_emseq {
     --tasmanian ${mismatches} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
-    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
+    \${metadata} \
+    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out 
     # --num_reads_used ${num_reads_used}
     """
 }

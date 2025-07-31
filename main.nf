@@ -163,7 +163,10 @@ workflow {
             .join( metrics.for_agg )
 
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-            aggregate_emseq( grouped_library_results.join( insertsize.for_agg ))
+            aggregate_emseq( grouped_library_results
+                                .join( insertsize.for_agg )
+                                .join( alignedReads.file_metadata ) 
+            )
         }
        
         // channel for multiqc analysis - 
