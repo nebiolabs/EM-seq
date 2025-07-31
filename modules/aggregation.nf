@@ -74,8 +74,8 @@ process aggregate_emseq {
             path(mismatches),
             path(mbias),
             path(alignment_summary_metrics_txt),
-            path(insertsize_metrics)
-            path(file_metadata}
+            path(insertsize_metrics),
+            path(file_metadata)
 
     output:
         path('ngs_agg.*')
@@ -109,9 +109,9 @@ process aggregate_emseq {
         bc1=\$(echo "\$bc1" | rev | tr "[ATCG]" "[TAGC]")
     fi
 
-    if [ grep -q "fastq$\|fq$" ${file_metadata} ]; then
+    if echo ${file_metadata} | grep -q "fastq\$\\|fq\$"; then
         metadata="--metadatafq_file ${file_metadata}"
-    elsif [ grep -q "bam$" ${file_metadata} ]; then
+    elif echo ${file_metadata} | grep -q "bam\$" ; then
         metadata="--metadata_bam_file ${file_metadata}"
     else
         echo "Error: Unsupported file type in metadata file: ${file_metadata}" >&2
