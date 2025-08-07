@@ -84,7 +84,7 @@ process aggregate_emseq {
     """
     path_to_ngs_agg="${params.path_to_ngs_agg}${params.revision}/"
 
-    unzip -f *fastqc.zip # -f in case we need to re-run
+    unzip -o *fastqc.zip # -f in case we need to re-run
 
     if echo ${barcodes} | grep -q "+"
     then
@@ -123,11 +123,8 @@ process aggregate_emseq {
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
     --bam ${aligned_bam} \
     --bai ${aligned_bam_bai} \
-    --name ${library} \
     --lane ${params.lane} \
     --contact_email ${params.email} \
-    --project ${params.project} \
-    --sample ${params.sample} \
     --genome ${params.path_to_genome_fasta} \
     --barcode1 \${bc1} \
     --barcode2 \${bc2} \

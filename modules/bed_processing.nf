@@ -68,8 +68,8 @@ process prepare_target_bed {
         
         print chr, start, end, name, score, strand
     }' "${target_bed}" | \\
-    bedtools slop -g "${genome_fai}" -b \${slop_len} | \\
-    sort -k1,1 -k2,2n > \${target_basename}_slop_sorted.bed
+    bedtools sort -g "${genome_fai}" -i /dev/stdin | \\
+    bedtools slop -g "${genome_fai}" -b \${slop_len} > \${target_basename}_slop_sorted.bed
     
     # Verify output is not empty
     if [ ! -s \${target_basename}_slop_sorted.bed ]; then
