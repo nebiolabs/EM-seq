@@ -1,4 +1,4 @@
- 
+
 
 process multiqc {
     label 'medium_cpu'
@@ -8,12 +8,12 @@ process multiqc {
     input:
         tuple val(email), path('*')
 
-    output:   
+    output:
         path("*multiqc_report.html"), emit: multiqc_report
 
     script:
     '''
-    cat <<-CONFIG > multiqc_config.yaml 
+    cat <<-CONFIG > multiqc_config.yaml
     title: EM-seq Alignment Summary - !{flowcell}
     extra_fn_clean_exts:
         - '.md'
@@ -51,7 +51,7 @@ process multiqc {
             total_sequences: False
 CONFIG
 
-    multiqc -ip . 
+    multiqc -ip .
     '''
 }
 
@@ -60,10 +60,10 @@ process aggregate_emseq {
     conda "bioconda::samtools=1.9"
     publishDir "${params.outputDir}/ngs-agg"
 
-    input:         
+    input:
 	tuple  val(email), val(library), path(fq_or_bam), path(_read2), val(fileType),
 	       val(barcodes), path(nonconverted_counts_tsv), path(fastp),
-               path(bam), path(bai), 
+               path(bam), path(bai),
                path(gc_metrics),
                path(idxstat),
                path(flagstat),
@@ -81,7 +81,7 @@ process aggregate_emseq {
     path_to_ngs_agg="${params.path_to_ngs_agg}${params.revision}/"
 
     # bc = barcode1 + barcode2 if exists.
-    if echo ${barcodes} | grep -q "+" 
+    if echo ${barcodes} | grep -q "+"
     then
         bc=\$(echo ${barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
     else
@@ -89,7 +89,7 @@ process aggregate_emseq {
     fi
 
     # Validate barcodes
-    if [[ ! ${barcodes} =~ ^[+-ACGT]+\$ ]]; then
+    if [[ ! ${barcodes} =~ ^[+\-ACGT]+\$ ]]; then
         echo "Warning: Invalid barcode format: ${barcodes}" >&2
     fi
 
@@ -122,4 +122,3 @@ process aggregate_emseq {
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }
-
