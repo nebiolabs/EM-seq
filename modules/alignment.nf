@@ -146,10 +146,13 @@ process alignReads {
             barcodes=\$(samtools view -H \$file | grep @RG | awk '{for (i=1;i<=NF;i++) {if (\$i~/BC:/) {print substr(\$i,4,length(\$i))} } }' | head -n1)
             rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
         else
-            barcodes=(\$(barcodes_from_fastq \$file))
+            barcodes=\$(barcodes_from_fastq \$file)
             rg_line="@RG\\tID:\${barcodes}\\tSM:${library}\\tBC:\${barcodes}"
         fi
         set -o pipefail
+        # Export variables to parent scope
+        export barcodes
+        export rg_line
     }
 
     get_frac_reads() {
@@ -171,6 +174,9 @@ process alignReads {
             frac_reads=\$(echo \$n_reads | awk '{print ${params.max_input_reads}/\$1}')
         fi
 
+        # Export variables to parent scope
+        export n_reads
+        export frac_reads
     }
 
 

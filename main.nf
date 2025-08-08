@@ -19,7 +19,8 @@ params.target_bed                = 'undefined' // BED file to intersect with met
 
 include { alignReads; mergeAndMarkDuplicates; genome_index; send_email; touchFile }                     from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
-include { prepare_target_bed; intersect_beds; process_intersections; concatenate_intersections }        from './modules/bed_processing'
+include { prepare_target_bed; intersect_bed_with_methylkit;
+          group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
 
@@ -101,7 +102,7 @@ workflow {
 
         // Send email if there are failed libraries
         failed_library_names.collect().subscribe { names ->
-            if (failedLibraries.size() > 0) {
+            if (names.size() > 0) {
                 def joined_names = names.join('<br>')
                 sendMail {
                     to params.email
@@ -130,7 +131,7 @@ workflow {
             methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
             prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
             intersections = intersect_bed_with_methylkit( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
-            intersection_results = group_bed_intersections( group_bed_intersections.intersections )
+            intersection_results = group_bed_intersections( intersections.intersections )
 
             combined_results = concatenate_intersections(
                 intersection_results.intersection_results.collect(),

@@ -102,9 +102,9 @@ process aggregate_emseq {
     bc1=\$(echo \$bc | sed 's/ \\-\\-barcode2.*//')
     bc2=\$(echo \$bc | sed 's/.*\\-\\-barcode2 //')
 
-    if [ $task.attempt -eq 2 ] || [ $task.attempt -eq 4 ]; then
+    if [ ${task.attempt} -eq 2 ] || [ ${task.attempt} -eq 4 ]; then
         bc2=\$(echo "\$bc2" | rev | tr "[ATCG]" "[TAGC]")
-    elif [ $task.attempt -eq 3 ] || [ $task.attempt -eq 4 ]; then
+    elif [ ${task.attempt} -eq 3 ] || [ ${task.attempt} -eq 4 ]; then
         bc1=\$(echo "\$bc1" | rev | tr "[ATCG]" "[TAGC]")
     fi
 
