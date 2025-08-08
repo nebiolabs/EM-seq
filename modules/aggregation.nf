@@ -58,7 +58,6 @@ CONFIG
 process aggregate_emseq {
     tag { library }
     conda "bioconda::samtools=1.9"
-    publishDir "${params.outputDir}/ngs-agg"
 
     input:
 	tuple   val(library),

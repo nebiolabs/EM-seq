@@ -3,7 +3,6 @@ process gc_bias {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -29,7 +28,6 @@ process idx_stats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/idxstats"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -47,7 +45,6 @@ process flag_stats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/flagstats"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -65,7 +62,6 @@ process fastqc {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::fastqc=0.11.8"
-    publishDir "${params.outputDir}/stats/fastqc"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -83,7 +79,6 @@ process insert_size_metrics {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/insert_size"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -169,7 +164,6 @@ process picard_metrics {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:
         tuple val(library), path(bam), path(bai)

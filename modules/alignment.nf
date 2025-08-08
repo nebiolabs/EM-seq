@@ -63,8 +63,7 @@ process send_email {
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22  bioconda::gatk4=4.6.2.0" 
-    publishDir "${params.outputDir}/bwameth_align"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22  bioconda::gatk4=4.6.2.0"
     memory {
         try {
             def fileSize = input_file1.size() / (1024 * 1024 * 1024)
@@ -375,7 +374,6 @@ process genome_index {
 }
 
 process touchFile {
-    publishDir "${params.outputDir}", mode: 'copy'
 
     input:
         val filename

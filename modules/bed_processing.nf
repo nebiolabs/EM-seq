@@ -111,7 +111,6 @@ process intersect_bed_with_methylkit {
 process group_bed_intersections {
     label 'low_cpu'
     tag "${library}"
-    publishDir "${params.outputDir}/methylKit_intersections", mode: 'copy'
     conda "conda-forge::gawk=5.3.1"
     input:
         tuple val(library), path(intersect_file)

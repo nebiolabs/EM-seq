@@ -63,13 +63,13 @@ process methylDackel_extract {
         tuple path(genome_fa), path(genome_fai)
 
     output:
-        tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz'), emit: extract_output 
+        tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz'), emit: extract_output
 
     script:
     """
     MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ ${task.cpus} \
-        --CHH --CHG -o ${library} ${genome_fa} "${md_bam}" 
-    pigz -p ${task.cpus} *.methylKit 
+        --CHH --CHG -o ${library} ${genome_fa} "${md_bam}"
+    pigz -p ${task.cpus} *.methylKit
     """
 }
 
