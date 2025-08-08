@@ -129,10 +129,10 @@ workflow {
 
             methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
             prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
-            intersections = intersect_beds( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
-            intersection_results = process_intersections( intersections.intersections )
-            
-            combined_results = concatenate_intersections( 
+            intersections = intersect_bed_with_methylkit( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
+            intersection_results = group_bed_intersections( group_bed_intersections.intersections )
+
+            combined_results = concatenate_intersections(
                 intersection_results.intersection_results.collect(),
                 intersection_results.intersection_summary.collect()
             )

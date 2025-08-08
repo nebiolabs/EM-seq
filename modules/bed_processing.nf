@@ -81,7 +81,7 @@ process prepare_target_bed {
     """
 }
 
-process intersect_beds {
+process intersect_bed_with_methylkit {
     label 'low_cpu'
     tag "${library}"
     conda "bioconda::bedtools=2.31.1"
@@ -108,7 +108,7 @@ process intersect_beds {
     """
 }
 
-process process_intersections {
+process group_bed_intersections {
     label 'low_cpu'
     tag "${library}"
     publishDir "${params.outputDir}/methylKit_intersections", mode: 'copy'
