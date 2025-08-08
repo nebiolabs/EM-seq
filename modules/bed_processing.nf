@@ -133,7 +133,7 @@ process group_bed_intersections {
     echo -e "methylkit_file\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements" > \${summary_file}
 
     # Extract methylkit basename from the intersect filename
-    methylkit_basename=\$(echo "\${intersect_basename}" | cut -d'_' -f1)
+    methylkit_basename=\$(echo "\${intersect_basename}" | sed 's/_vs_.*//')
 
     # Process intersection results with awk
     # Target BED is standardized above to 6 columns: chr, start, end, name, score, strand
