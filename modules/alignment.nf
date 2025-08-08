@@ -2,37 +2,37 @@ process enough_reads {
     label 'low_cpu'
     tag {library}
     conda "bioconda::samtools=1.22"
-    
+
     input:
-        tuple val(email), 
-              val(library), 
-              path(input_file1), 
-              path(input_file2), 
+        tuple val(email),
+              val(library),
+              path(input_file1),
+              path(input_file2),
               val(fileType)
 
         output:
-            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), path("*passes_or_fails.txt") 
+            tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), path("*passes_or_fails.txt")
 
         script:
         """
         in1=\$(realpath ${input_file1})
         passes_or_fails="pass"
-        
+
         if grep -q "fastq.gz" <<< "${fileType}"; then
             [ \$(stat -c%s \${in1}) -lt 54 ] && passes_or_fails="fail"
-        elif grep -q "fastq" <<< "${fileType}"; then 
+        elif grep -q "fastq" <<< "${fileType}"; then
             [ \$(stat -c%s \${in1}) -lt 240 ] && passes_or_fails="fail"
         elif grep -q "bam" <<< "${fileType}"; then
             [ \$(stat -c%s \${in1}) -lt 100 ] && passes_or_fails="fail"
-        fi 
+        fi
 
         echo -e "$library\\t\${passes_or_fails}" > ${library}_passes_or_fails.txt
         """
-} 
+}
 
 process send_email {
     label 'low_cpu'
-    
+
     input:
         file libraries
 
@@ -41,10 +41,10 @@ process send_email {
     touch tmp
     for f in ${libraries}
     do
-        cat \$f | awk '{print \$1"<br>"}' >> tmp 
+        cat \$f | awk '{print \$1"<br>"}' >> tmp
     done
     libs=\$(cat tmp)
-    
+
     sendmail -t <<EOF
     To: ${params.email}
     Subject: File Read Check
@@ -66,7 +66,7 @@ process alignReads {
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22  bioconda::gatk4=4.6.2.0" 
     publishDir "${params.outputDir}/bwameth_align"
     memory {
-        try { 
+        try {
             def fileSize = input_file1.size() / (1024 * 1024 * 1024)
             if (fileSize < 1.8) return '64 GB'
             else if (fileSize < 6.5) return '128 GB'
@@ -94,7 +94,7 @@ process alignReads {
     script:
     """
     echo "Input file size: ${input_file1.size() / (1024 * 1024 * 1024)} GB"
-    echo "Memory allocated: ${task.memory}" 
+    echo "Memory allocated: ${task.memory}"
 
     # Determine the genome index
     genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
@@ -103,8 +103,8 @@ process alignReads {
     get_nreads_from_fastq() {
         zcat -f "\$1" | grep -c "^+\$" \
         | awk '{
-            frac=${params.max_input_reads}/\$1; 
-            if (frac>=1) {frac=0.999}; 
+            frac=${params.max_input_reads}/\$1;
+            if (frac>=1) {frac=0.999};
             split(frac, numParts, "."); print numParts[2]
         }'
     }
@@ -127,7 +127,7 @@ process alignReads {
         set -o pipefail
     }
 
-    # assumes that the barcodes are in the last part of the read name 
+    # assumes that the barcodes are in the last part of the read name
     # extracts the most frequent barcode in the first 10k reads
     barcodes_from_fastq() {
         set +o pipefail
@@ -156,7 +156,7 @@ process alignReads {
     get_frac_reads() {
         local file=\$1
         local type=\$2
-        
+
         if [ "\$type" == "bam" ]; then
             n_reads=\$(samtools view -c -F 2304 \$file)
         elif [ "\$type" == "fastq" ]; then
@@ -170,8 +170,8 @@ process alignReads {
             frac_reads=1
         else
             frac_reads=\$(echo \$n_reads | awk '{print ${params.max_input_reads}/\$1}')
-        fi 
-        
+        fi
+
     }
 
 
@@ -190,7 +190,7 @@ process alignReads {
         for (id in headers_arr){
           printf "%s", arr[headers_arr[id]]
         }
-        flag=1; 
+        flag=1;
         print ""
           }
           print \$0
@@ -199,7 +199,7 @@ process alignReads {
     }
 
 
-   case ${fileType} in 
+   case ${fileType} in
         "fastq_paired_end")
             get_rg_line ${input_file1} "fastq"
             get_frac_reads ${input_file1} "fastq"
@@ -231,14 +231,14 @@ process alignReads {
     fi
 
     base_outputname="${library}_\${flowcell}"
-   
+
     set +o pipefail
     inst_name=\$(samtools view ${input_file1} | head -n 1 | cut -d ":" -f 1)
     set -o pipefail
 
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
-    
+
     bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
     # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
 
@@ -249,12 +249,12 @@ process alignReads {
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
-       -o "\${base_outputname}.aln.bam##idx##\${base_outputname}.aln.bam.bai" /dev/stdin 
+       -o "\${base_outputname}.aln.bam##idx##\${base_outputname}.aln.bam.bai" /dev/stdin
 
     num_reads_used="\${n_reads}"
 
-    export barcodes 
-    export flowcell 
+    export barcodes
+    export flowcell
     export num_reads_used
 
     """
@@ -278,7 +278,7 @@ process mergeAndMarkDuplicates {
     set +o pipefail
     inst_name=\$(samtools view ${bam} | head -n1 | cut -d ":" -f1);
     set -o pipefail
-    
+
     optical_distance=\$(echo \${inst_name} | awk '{if (\$1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
 
     picard -Xmx${task.memory.toGiga()}g MarkDuplicates \
@@ -323,7 +323,7 @@ process genome_index {
     mkdir -p bwameth_index genome_index
 
     real_genome_file="\$(basename ${params.path_to_genome_fasta})"
-    
+
     # Handle genome file (download if URL or link if local)
     if [ ! -f "${params.path_to_genome_fasta}" ]; then
         # if the reference .fa file is a url, not a local path
@@ -340,7 +340,7 @@ process genome_index {
             ln -sf "\$(dirname ${params.path_to_genome_fasta})/\${real_genome_file}"* bwameth_index/
         fi
     fi
-    
+
     # Create bwameth index
     cd bwameth_index
     if [ ! -f "\${real_genome_file}.bwameth.c2t.bwt" ]; then
@@ -349,7 +349,7 @@ process genome_index {
     else
         echo "Bwameth index files already exist for \${real_genome_file}"
     fi
-    
+
     # Create samtools faidx index
     cd ../genome_index
     cp "../bwameth_index/\${real_genome_file}" .
@@ -360,7 +360,7 @@ process genome_index {
         echo "No existing genome index found. Creating new index for \${real_genome_file}"
         samtools faidx "\${real_genome_file}"
     fi
-    
+
     # Verify the index file exists and is not empty
     if [ ! -s "\${real_genome_file}.fai" ]; then
         echo "Error: Failed to create or link genome index file"

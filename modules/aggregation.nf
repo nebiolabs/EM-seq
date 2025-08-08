@@ -1,4 +1,4 @@
- 
+
 
 process multiqc {
     label 'medium_cpu'
@@ -8,12 +8,12 @@ process multiqc {
     input:
         path('*')
 
-    output:   
+    output:
         path("*multiqc_report.html"), emit: multiqc_report
 
     script:
     '''
-    cat <<-CONFIG > multiqc_config.yaml 
+    cat <<-CONFIG > multiqc_config.yaml
     title: EM-seq Alignment Summary - !{flowcell}
     extra_fn_clean_exts:
         - '.md'
@@ -51,7 +51,7 @@ process multiqc {
             total_sequences: False
 CONFIG
 
-    multiqc -ip . 
+    multiqc -ip .
     '''
 }
 
@@ -60,11 +60,11 @@ process aggregate_emseq {
     conda "bioconda::samtools=1.9"
     publishDir "${params.outputDir}/ngs-agg"
 
-    input:         
-	tuple   val(library), 
+    input:
+	tuple   val(library),
             path(aligned_bam), path(aligned_bam_bai),
             val(barcodes), val(flowcell), val(num_reads_used),
-            path(fastp), 
+            path(fastp),
             path(nonconverted_counts_tsv),
             path(markdups_log),
             path(gc_metrics),
@@ -140,8 +140,7 @@ process aggregate_emseq {
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
     \${metadata} \
-    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out 
+    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     # --num_reads_used ${num_reads_used}
     """
 }
-

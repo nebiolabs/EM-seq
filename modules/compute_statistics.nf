@@ -150,7 +150,7 @@ process insert_size_metrics {
         }
         else {
             # get values
-            for (n=1; n<=4;n++) { 
+            for (n=1; n<=4;n++) {
                 arr[n]=0
                 if (\$n) { arr[n] = \$n }
             }

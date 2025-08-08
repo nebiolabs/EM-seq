@@ -87,10 +87,10 @@ process convert_methylkit_to_bed {
     script:
     """
     methylkit_basename=\$(basename "${methylkit_CpG_gz}" _CpG.methylKit.gz)
-    
+
     # create sed scripts to interconvert chr names from genome index with line numbers for efficient sorting
     awk '{print "s/\\t"\$1"\\t/\\t"NR-1"\\t/"}' "${genome_fai}" > convert_chr_to_num.sed
-    awk '{print "s/^"NR-1"\\t/"\$1"\\t/"}' "${genome_fai}" > revert_num_to_chr.sed 
+    awk '{print "s/^"NR-1"\\t/"\$1"\\t/"}' "${genome_fai}" > revert_num_to_chr.sed
     # merge initial methylkit files into a single BED format
     # Convert methylKit to BED format (0-based coordinates)
     # methylKit format: chr.base\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT

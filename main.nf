@@ -5,11 +5,11 @@ nextflow.enable.dsl=2
  * --------------- */
 params.email                     = 'undefined'
 params.flowcell                  = 'undefined'
-params.path_to_genome_fasta      = 'undefined'   // path to the genome FASTA file, e.g. /path/to/genome.fa 
+params.path_to_genome_fasta      = 'undefined'   // path to the genome FASTA file, e.g. /path/to/genome.fa
 params.input_glob                = '*_R1.fastq*' // either the .bam or fastq read 1
 params.project                   = 'project_undefined'
 params.workflow                  = 'EM-seq'
-params.outputDir                 = "em-seq_output" 
+params.outputDir                 = "em-seq_output"
 params.tmp_dir                   = '/tmp'
 params.min_mapq                  = 20 // for methylation assessment.
 params.max_input_reads           = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
@@ -94,11 +94,11 @@ workflow {
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
-        
+
         passed_reads = reads.filter { library, read1File, read2File, fileType -> checkFileSize(read1File) }
         failed_reads = reads.filter { library, read1File, read2File, fileType -> !checkFileSize(read1File) }
         failed_library_names = failed_reads.map { library, read1File, read2File, fileType -> library }
-        
+
         // Send email if there are failed libraries
         failed_library_names.collect().subscribe { names ->
             if (failedLibraries.size() > 0) {
@@ -119,14 +119,14 @@ workflow {
 
         alignedReads = alignReads( passed_reads, bwa_index_ch )
         markDup      = mergeAndMarkDuplicates( alignedReads.aligned_bams )
-        
+
         extract      = methylDackel_extract( markDup.md_bams, genome_ch )
         mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
 
         // intersect methylKit files with target BED file if provided //
         if (params.target_bed != 'undefined') {
             target_bed_ch = Channel.fromPath(params.target_bed)
-            
+
             methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
             prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
             intersections = intersect_beds( methylkit_beds.methylkit_bed, prepared_bed.prepared_bed, genome_ch )
@@ -143,7 +143,7 @@ workflow {
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
         fastqc       = fastqc( markDup.md_bams )
-        insertsize   = insert_size_metrics( markDup.md_bams ) 
+        insertsize   = insert_size_metrics( markDup.md_bams )
         metrics      = picard_metrics( markDup.md_bams, genome_ch )
         mismatches   = tasmanian( markDup.md_bams, genome_ch )
 
@@ -165,15 +165,14 @@ workflow {
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_library_results
                                 .join( insertsize.for_agg )
-                                .join( alignedReads.file_metadata ) 
+                                .join( alignedReads.file_metadata )
             )
         }
-       
-        // channel for multiqc analysis - 
+
+        // channel for multiqc analysis -
         all_results = grouped_library_results
             .join(insertsize.high_mapq_insert_size_metrics)
             .map { it[1,2] + it[6..-1].flatten() } //multiqc needs all the files (without the library name)
 
         multiqc( all_results )
 }
-

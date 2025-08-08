@@ -1,9 +1,9 @@
 /*
  * BED Processing Module
- * 
+ *
  * This module standardizes BED files to BED6 format (chr, start, end, name, score, strand)
  * to simplify downstream processing and avoid dynamic column detection issues.
- * 
+ *
  * Input BED files are validated and standardized as follows:
  * - Minimum 3 columns required (chr, start, end)
  * - Column 4 (name): uses existing value or generates chr:start-end
@@ -29,29 +29,29 @@ process prepare_target_bed {
     # Apply slop to target BED file (50bp on each side)
     slop_len=50
     target_basename=\$(basename "${target_bed}" .bed)
-    
+
     echo "Standardizing and applying \${slop_len} bp slop to \${target_basename}..."
-    
+
     # First, standardize to BED6 format (chr, start, end, name, score, strand)
-    awk 'BEGIN { OFS="\\t" } 
+    awk 'BEGIN { OFS="\\t" }
     !/^#/ {
         # Validate minimum required columns (chr, start, end)
         if (NF < 3) {
             print "Error: BED file must have at least 3 columns (chr, start, end)" > "/dev/stderr"
             exit 1
         }
-        
+
         # Validate coordinates
         if (\$2 !~ /^[0-9]+\$/ || \$3 !~ /^[0-9]+\$/) {
             print "Error: Invalid coordinates in line: " \$0 > "/dev/stderr"
             exit 1
         }
-        
+
         if (\$2 >= \$3) {
             print "Error: Start coordinate must be less than end coordinate in line: " \$0 > "/dev/stderr"
             exit 1
         }
-        
+
         # Build BED6 format
         chr = \$1
         start = \$2
@@ -59,24 +59,24 @@ process prepare_target_bed {
         name = (NF >= 4 && \$4 != "") ? \$4 : chr ":" start "-" end
         score = (NF >= 5 && \$5 != "") ? \$5 : "0"
         strand = (NF >= 6 && \$6 != "") ? \$6 : "."
-        
+
         # Validate strand
         if (strand != "+" && strand != "-" && strand != ".") {
             print "Error: Invalid strand value: " strand > "/dev/stderr"
             exit 1
         }
-        
+
         print chr, start, end, name, score, strand
     }' "${target_bed}" | \\
     bedtools sort -g "${genome_fai}" -i /dev/stdin | \\
     bedtools slop -g "${genome_fai}" -b \${slop_len} > \${target_basename}_slop_sorted.bed
-    
+
     # Verify output is not empty
     if [ ! -s \${target_basename}_slop_sorted.bed ]; then
         echo "Error: No valid regions found after processing ${target_bed}" >&2
         exit 1
     fi
-    
+
     echo "Successfully processed \$(wc -l < \${target_basename}_slop_sorted.bed) regions"
     """
 }
@@ -98,7 +98,7 @@ process intersect_beds {
     """
     methylkit_basename=\$(basename "${methylkit_bed}" .bed)
     target_basename=\$(basename "${target_bed_prepared}" _slop_sorted.bed)
-    
+
     # Uses bedtools intersect with -wa -wb to keep both annotations
     # nonamecheck since control contigs don't conform
     bedtools intersect -nonamecheck \\
@@ -125,10 +125,10 @@ process process_intersections {
     """
     # Extract base names from the intersect file
     intersect_basename=\$(basename "${intersect_file}" _intersect.tsv)
-    
+
     output_file="\${intersect_basename}_intersections.tsv"
     summary_file="\${intersect_basename}_summary.tsv"
-    
+
     # Add headers
     echo -e "methylkit_file\\tchr\\tstart\\tend\\tcontext\\tmethylation\\ttarget_locus\\ttarget_name" > \${output_file}
     echo -e "methylkit_file\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements" > \${summary_file}
@@ -143,7 +143,7 @@ process process_intersections {
         awk -v methylkit_basename="\${methylkit_basename}" \\
             -v output_file="\${output_file}" \\
             -v summary_file="\${summary_file}" '
-        BEGIN { 
+        BEGIN {
             OFS="\\t"
         }
         !/^#/ {
@@ -154,25 +154,25 @@ process process_intersections {
             target_name = \$4
             target_score = \$5
             target_strand = \$6
-            
+
             # MethylKit BED columns (starting at column 7)
             meth_chr = \$7
             meth_start = \$8
             meth_end = \$9
             meth_context = \$10
             meth_value = \$11
-            
+
             # Create locus string (convert 0-based BED to 1-based for display)
             locus = target_chr ":" (target_start + 1) "-" target_end
-            
+
             # Calculate target length and position within target
             target_length = target_end - target_start
             # Position relative to start of target (1-based)
             position_in_target = meth_start - target_start + 1
-            
+
             # Output detailed results
             print methylkit_basename, meth_chr, meth_start, meth_end, meth_context, meth_value, locus, target_name >> output_file
-            
+
             # Collect summary data
             key = methylkit_basename "\\t" target_length "\\t" position_in_target "\\t" meth_context
             sum[key] += meth_value
@@ -184,7 +184,7 @@ process process_intersections {
             for (k in sum) {
                 split(k, parts, "\\t")
                 methylkit_file = parts[1]
-                target_length = parts[2] 
+                target_length = parts[2]
                 position = parts[3]
                 context = parts[4]
                 mean_meth = sum[k] / count[k]
@@ -221,28 +221,28 @@ process concatenate_intersections {
     """
     # Combine all intersection files
     echo -e "methylkit_file\\tchr\\tstart\\tend\\tcontext\\tmethylation\\ttarget_locus\\ttarget_name" > all_intersections_combined.tsv
-    
+
     # Add all intersection data (skip headers from individual files)
     for file in ${intersection_files}; do
         if [ -s "\$file" ]; then
             tail -n +2 "\$file" >> all_intersections_combined.tsv
         fi
     done
-    
+
     # Combine all summary files
     echo -e "methylkit_file\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements" > all_summaries_combined.tsv
-    
+
     # Add all summary data (skip headers from individual files)
     for file in ${summary_files}; do
         if [ -s "\$file" ]; then
             tail -n +2 "\$file" >> all_summaries_combined.tsv
         fi
     done
-    
+
     # Report statistics
     total_intersections=\$(tail -n +2 all_intersections_combined.tsv | wc -l)
     total_summaries=\$(tail -n +2 all_summaries_combined.tsv | wc -l)
-    
+
     echo "Combined \${total_intersections} intersection records from \$(echo ${intersection_files} | wc -w) files"
     echo "Combined \${total_summaries} summary records from \$(echo ${summary_files} | wc -w) files"
     """
