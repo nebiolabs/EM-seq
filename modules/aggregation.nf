@@ -122,7 +122,6 @@ process aggregate_emseq {
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
     --bam ${aligned_bam} \
     --bai ${aligned_bam_bai} \
-    --lane ${params.lane} \
     --contact_email ${params.email} \
     --genome ${params.path_to_genome_fasta} \
     --barcode1 \${bc1} \
