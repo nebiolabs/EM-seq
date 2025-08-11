@@ -82,8 +82,6 @@ workflow {
             return [params.email, library, read1File, read2File, fileType]
           }
 
-        reads.view()
-
 
         println "Processing " + params.flowcell + "... => " + params.outputDir
         println "Cmd line: $workflow.commandLine"
