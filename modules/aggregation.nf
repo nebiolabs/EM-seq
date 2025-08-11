@@ -97,6 +97,8 @@ process aggregate_emseq {
 
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
 
+    deploy_revision=\$(get_capistrano_release.sh) # script extracts currently executing revision of emseq from cap deploy logs
+    
     export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
     --bam ${bam} \
@@ -115,6 +117,6 @@ process aggregate_emseq {
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
     --metadata_bam_file ${fq_or_bam} \
-    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
+    --workflow "${params.workflow} \${deploy_revision}" 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }
