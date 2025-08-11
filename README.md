@@ -16,3 +16,12 @@ NXF_VER=22.10.4 nextflow run em-seq.nf --genome em-seq_ref_files/T2T_chm13v2.0+b
 We hope to upgrade to the NextFlow v2 syntax in the future.
 
 You may also be interested in the [nf-core methylseq project](https://nf-co.re/methylseq/2.5.0)
+
+## Developer documentation
+### Production deploy (NEB internal):
+ - git tag -f current_production
+ - git push -f origin current_production
+ - cap production deploy
+
+### Development deploy: 
+ - cap development deploy
