@@ -93,7 +93,7 @@ process aggregate_emseq {
         echo "Warning: Invalid barcode format: ${barcodes}" >&2
     fi
 
-    unzip *fastqc.zip
+    unzip -o *fastqc.zip
 
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
 
