@@ -71,8 +71,7 @@ process aggregate_emseq {
                path(insertsize_metrics),
                path(tasmanian),
                path(mbias),
-               path(alignment_summary_metrics_txt),
-               path(metadata_bam)
+               path(alignment_summary_metrics_txt)
 
     output:
         path('ngs_agg.*')
@@ -90,7 +89,7 @@ process aggregate_emseq {
     fi
 
     # Validate barcodes
-    if [[ ! ${barcodes} =~ ^[+\-ACGT]+\$ ]]; then
+    if [[ ! "${barcodes}" =~ ^[+\\-ACGT]+\$ ]]; then
         echo "Warning: Invalid barcode format: ${barcodes}" >&2
     fi
 
@@ -103,7 +102,6 @@ process aggregate_emseq {
     --bam ${bam} \
     --bai ${bai} \
     --barcode1 \${bc} \
-    --lane ${params.lane} \
     --contact_email ${params.email} \
     --genome \$(basename ${params.path_to_genome_fasta}) \
     --gc ${gc_metrics} \
@@ -116,7 +114,7 @@ process aggregate_emseq {
     --tasmanian ${tasmanian} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
-    --metadata_bam_file ${metadata_bam} \
+    --metadata_bam_file ${fq_or_bam} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }

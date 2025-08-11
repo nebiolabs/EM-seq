@@ -91,7 +91,7 @@ workflow {
 
         // files with few reads will be filtered out and used will get an email.
         checking_reads = enough_reads(reads)
-        passed_reads = checking_reads.out
+        passed_reads = checking_reads
                        .filter { tuple -> tuple[5].text.contains('pass') }
                        .map { tuple -> tuple[0..4] }
         failed_reads = checking_reads.filter { tuple -> tuple[5].text.contains('fail') }.map { tuple -> tuple[5].text }
@@ -99,7 +99,7 @@ workflow {
         
 
         // align and mark duplicates
-        alignedReads = alignReads( passed_reads.out, genome_index_ch )
+        alignedReads = alignReads( passed_reads, genome_index_ch )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
         extract      = methylDackel_extract( markDup.md_bams, genome_index_ch )
         mbias        = methylDackel_mbias( markDup.md_bams, genome_index_ch )
@@ -130,7 +130,7 @@ workflow {
             .join( passed_reads.metadata.groupTyple(by: [0,1], by: [0,1] )
 
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-            aggregate_emseq( grouped_email_library ) 
+            aggregate_emseq( grouped_email_library )
         }
        
         // channel for multiqc analysis

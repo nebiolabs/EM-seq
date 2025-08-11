@@ -12,7 +12,6 @@ process enough_reads {
 
         output:
             tuple val(email), val(library), path(input_file1), path(input_file2), val(fileType), path("*passes_or_fails.txt"), emit: out 
-            tuple val(email), val(library), path(input_file1), emit: metadata
 
         script:
         """
