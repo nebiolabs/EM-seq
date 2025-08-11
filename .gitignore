@@ -5,3 +5,5 @@ ngs-agg_revision.yaml
 **/.DS_Store
 .vscode/
 test_data/tmp
+.env
+log/
