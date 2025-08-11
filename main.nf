@@ -117,17 +117,16 @@ workflow {
 
         // channel for internal summaries
         grouped_email_library = reads
-	      .join( alignedReads.for_agg.groupTuple(by: [0, 1]), by: [0,1])
-            .join( markDup.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( gcbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( idxstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( flagstats.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( fastqc.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( insertsize.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( mismatches.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( mbias.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( metrics.for_agg.groupTuple(by: [0,1]), by: [0,1] )
-            .join( passed_reads.metadata.groupTyple(by: [0,1], by: [0,1] )
+	      .join( alignedReads.for_agg, by: [0,1])
+            .join( markDup.for_agg, by: [0,1] )
+            .join( gcbias.for_agg, by: [0,1] )
+            .join( idxstats.for_agg, by: [0,1] )
+            .join( flagstats.for_agg, by: [0,1] )
+            .join( fastqc.for_agg, by: [0,1] )
+            .join( insertsize.for_agg, by: [0,1] )
+            .join( mismatches.for_agg, by: [0,1] )
+            .join( mbias.for_agg, by: [0,1] )
+            .join( metrics.for_agg, by: [0,1] )
 
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_email_library )
