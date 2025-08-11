@@ -71,7 +71,8 @@ process aggregate_emseq {
                path(insertsize_metrics),
                path(tasmanian),
                path(mbias),
-               path(alignment_summary_metrics_txt)
+               path(alignment_summary_metrics_txt),
+               path(metadata_bam)
 
     output:
         path('ngs_agg.*')
@@ -101,12 +102,9 @@ process aggregate_emseq {
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
     --bam ${bam} \
     --bai ${bai} \
-    --name ${library} \
     --barcode1 \${bc} \
     --lane ${params.lane} \
     --contact_email ${params.email} \
-    --project ${params.project} \
-    --sample ${params.sample} \
     --genome \$(basename ${params.path_to_genome_fasta}) \
     --gc ${gc_metrics} \
     --idx_stats ${idxstat} \
@@ -118,7 +116,7 @@ process aggregate_emseq {
     --tasmanian ${tasmanian} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
-    --metadata_bam_file ${bam} \
+    --metadata_bam_file ${metadata_bam} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }
