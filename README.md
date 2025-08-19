@@ -70,3 +70,12 @@ Copy `nextflow.config.example` to `nextflow.config` and modify as needed for you
 ## Related Projects
 
 You may also be interested in the [nf-core methylseq project](https://nf-co.re/methylseq/2.5.0)
+
+## Developer documentation
+### Production deploy (NEB internal):
+ - git tag -f current_production
+ - git push -f origin current_production
+ - cap production deploy
+
+### Development deploy: 
+ - cap development deploy
