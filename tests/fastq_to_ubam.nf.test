@@ -1,0 +1,43 @@
+nextflow_pipeline {
+
+    name "Test fastq to uBam"
+    script "fastq_to_ubam.nf"
+    tag "pipeline"
+
+    test("fastq to uBam workflow - paired-end") {
+        when {
+            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test*{_R1,_R2}.fastq.gz"
+        }
+
+        then {
+            def ubam = bam("${launchDir}/ubam/emseq-testg.bam").getStatistics()
+
+            assertAll(
+                { assert workflow.success },
+                { assert snapshot(workflow.trace,
+                    ["ubam", ubam],
+                ).match()
+            }
+        )
+        }
+    }
+
+    test("fastq to uBam workflow - single-end") {
+        when {
+            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test*_R1.fastq.gz"
+            params.read_format = 'single-end'
+        }
+
+        then {
+            def ubam = bam("${launchDir}/ubam/emseq-testg_R1.bam").getStatistics()
+
+            assertAll(
+                { assert workflow.success },
+                { assert snapshot(workflow.trace,
+                    ["ubam", ubam],
+                ).match()
+            }
+        )
+        }
+    }
+}

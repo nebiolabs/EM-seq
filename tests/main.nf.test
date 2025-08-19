@@ -1,0 +1,61 @@
+nextflow_pipeline {
+
+    name "Test EM-seq"
+    script "main.nf"
+    tag "pipeline"
+
+    test("EM-seq workflow uBam") {
+        when {
+            params.ubam_dir = "$projectDir/tests/fixtures/ubam/"
+            params.genome = 'test'
+            params.email = 'foo@example.com'
+            params.max_input_reads = 10000
+            params.flowcell = "test_pipeline"
+            params.read_length = 151
+            params.enable_neb_agg = "false"
+
+        }
+
+        then {
+            def bwameth = bam("${launchDir}/test_output/bwameth_align/emseq-test.aln.bam").getStatistics()
+            def fastqc = path("${launchDir}/test_output/stats/fastqc/emseq-test.md_fastqc.zip").md5
+            def fastp = path("${launchDir}/test_output/bwameth_align/emseq-test.fastp.json").text.tokenize('\n')[1..33]
+            def markdup = bam("${launchDir}/test_output/markduped_bams/emseq-test.md.bam").getStatistics()
+            def insert_sizes = path("${launchDir}/test_output/stats/insert_size/emseq-test.insertsize_metrics").text.tokenize('\n')[5..8]
+            def idxstats = path("${launchDir}/test_output/stats/idxstats/emseq-test.idxstat").text.tokenize('\n')
+            def flagstats = path("${launchDir}/test_output/stats/flagstats/emseq-test.flagstat").text.tokenize('\n')
+            def gc_bias = path("${launchDir}/test_output/stats/gc_bias/emseq-test.gc_metrics").text.tokenize('\n')[5..-1]
+            def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test.alignment_summary_metrics.txt").text.tokenize('\n')[5..8]
+            def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test_CpG.methylKit.gz").md5
+            def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test.combined_mbias.tsv").md5
+            def nonconverted = path("${launchDir}/test_output/bwameth_align/emseq-test.nonconverted.tsv").text.tokenize('\n')
+            def intersection_summaries = path("${launchDir}/test_output/methylKit_intersections/all_summaries_combined.tsv").text.tokenize('\n')
+            def methylkit_intersections = path("${launchDir}/test_output/methylKit_intersections/all_intersections_combined.tsv").text.tokenize('\n')
+            def tasmanian = path("${launchDir}/test_output/stats/tasmanian/emseq-test.csv").text.tokenize('\n')
+            def multiqc = path("${launchDir}/test_output/EM-seq-Alignment-Summary-test_pipeline_multiqc_report.html").md5
+
+            assertAll(
+                { assert workflow.success },
+                { assert snapshot(workflow.trace,
+                    ["bwameth", bwameth],
+                    ["fastqc", fastqc],
+                    ["fastp", fastp],
+                    ["markdup", markdup],
+                    ["insert_sizes", insert_sizes],
+                    ["idxstats", idxstats],
+                    ["flagstats", flagstats],
+                    ["gc_bias", gc_bias],
+                    ["alignment_metrics", alignment_metrics],
+                    ["methyldackel_extract", methyldackel_extract],
+                    ["mbias", mbias],
+                    ["nonconverted", nonconverted],
+                    ["intersection_summaries", intersection_summaries],
+                    ["methylkit_intersections", methylkit_intersections],
+                    ["tasmanian", tasmanian],
+                    ["multiqc", multiqc]
+                ).match()
+            }
+        )
+        }
+    }
+}

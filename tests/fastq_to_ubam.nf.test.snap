@@ -1,0 +1,54 @@
+{
+    "fastq to uBam workflow - single-end": {
+        "content": [
+            {
+                "tasksFailed": 0,
+                "tasksCount": 1,
+                "tasksSucceeded": 1
+            },
+            [
+                "ubam",
+                {
+                    "maxReadLength": 150,
+                    "minReadLength": 150,
+                    "meanReadLength": 150,
+                    "maxQuality": 0,
+                    "minQuality": 0,
+                    "meanQuality": 0,
+                    "readCount": 2500
+                }
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.2"
+        },
+        "timestamp": "2025-08-07T14:20:31.44792517"
+    },
+    "fastq to uBam workflow - paired-end": {
+        "content": [
+            {
+                "tasksFailed": 0,
+                "tasksCount": 1,
+                "tasksSucceeded": 1
+            },
+            [
+                "ubam",
+                {
+                    "maxReadLength": 150,
+                    "minReadLength": 150,
+                    "meanReadLength": 150,
+                    "maxQuality": 0,
+                    "minQuality": 0,
+                    "meanQuality": 0,
+                    "readCount": 5000
+                }
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.2"
+        },
+        "timestamp": "2025-08-07T14:20:12.438069714"
+    }
+}

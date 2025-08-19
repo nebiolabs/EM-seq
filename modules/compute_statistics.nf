@@ -3,10 +3,11 @@ process gc_bias {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
-        tuple val(library), path(bam), path(bai)
-        tuple path(genome_fa), path(genome_fai)
+        tuple val(library), path(bam), path(bai), val(barcodes)
+        val(genome_path)
     output:
         tuple val(library), path('*gc_metrics'), emit: for_agg
 
@@ -20,7 +21,7 @@ process gc_bias {
     picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \
-        -R ${genome_fa} --CHART /dev/null
+        --CHART /dev/null -R ${genome_path}
     """
 }
 
@@ -28,6 +29,7 @@ process idx_stats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
+    publishDir "${params.outputDir}/stats/idxstats"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -45,6 +47,7 @@ process flag_stats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
+    publishDir "${params.outputDir}/stats/flagstats"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -62,6 +65,7 @@ process fastqc {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::fastqc=0.11.8"
+    publishDir "${params.outputDir}/stats/fastqc"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -79,6 +83,7 @@ process insert_size_metrics {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    publishDir "${params.outputDir}/stats/insert_size"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -114,8 +119,8 @@ process insert_size_metrics {
     wait \$picard_bad_mapq_pid
 
     # extract the leading lines from the "good" mapq file
-    grep -B 1000 '^insert_size' good_mapq.out.txt | grep -v "insert_size" > ${library}_insertsize_metrics
-    echo -e "insert_size\tAll_Reads.fr_count\tAll_Reads.rf_count\tAll_Reads.tandem_count\tcategory" >> ${library}_insertsize_metrics
+    grep -B 1000 '^insert_size' good_mapq.out.txt | grep -v "insert_size" > ${library}.insertsize_metrics
+    echo -e "insert_size\tAll_Reads.fr_count\tAll_Reads.rf_count\tAll_Reads.tandem_count\tcategory" >> ${library}.insertsize_metrics
 
     grep -h -A1000 '^insert_size' good_mapq.out.txt bad_mapq.out.txt | awk 'BEGIN{flag=0} {
         if (! \$2) {if (\$2 != 0) {next}}
@@ -153,7 +158,7 @@ process insert_size_metrics {
             # sort values on header index and print
             print arr[isize]"\\t"arr[fr]"\\t"arr[rf]"\\t"arr[tandem]"\\t"category
         }
-    }' >> ${library}_insertsize_metrics
+    }' >> ${library}.insertsize_metrics
 
     # for multiqc channel
     mv good_mapq.out.txt ${library}.good_mapq.insert_size_metrics.txt
@@ -164,10 +169,11 @@ process picard_metrics {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:
-        tuple val(library), path(bam), path(bai)
-        tuple path(genome_fa), path(genome_fai)
+        tuple val(library), path(bam), path(bai), val(barcodes)
+        val(genome_path)
 
     output:
         tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
@@ -175,7 +181,7 @@ process picard_metrics {
     script:
     """
     picard -Xmx${task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
-        --VALIDATION_STRINGENCY SILENT -BS true -R ${genome_fa} \
+        --VALIDATION_STRINGENCY SILENT -BS true -R ${genome_path} \
         -I ${bam} -O ${library}.alignment_summary_metrics.txt
     """
 }
@@ -191,8 +197,8 @@ process tasmanian {
     memory { retry > 0 ? '16 GB' : '8 GB' }
 
     input:
-        tuple val(library), path(bam), path(bai)
-        tuple path(genome_fa), path(genome_fai)
+        tuple val(library), path(bam), path(bai), val(barcodes)
+        val(genome_path)
 
     output:
         tuple val(library), path('*.csv'), emit: for_agg
@@ -201,7 +207,7 @@ process tasmanian {
     """
     set +e
     set +o pipefail
-    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_fa} > ${library}.csv
+    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_path} > ${library}.csv
     """
 
 }

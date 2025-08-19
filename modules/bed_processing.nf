@@ -112,6 +112,7 @@ process group_bed_intersections {
     label 'low_cpu'
     tag "${library}"
     conda "conda-forge::gawk=5.3.1"
+    publishDir "${params.outputDir}/methylKit_intersections", mode: 'symlink'
     input:
         tuple val(library), path(intersect_file)
 
@@ -212,9 +213,6 @@ process concatenate_intersections {
     output:
         path('all_intersections_combined.tsv'), emit: combined_intersections
         path('all_summaries_combined.tsv'), emit: combined_summaries
-
-    when:
-        params.target_bed != 'undefined'
 
     script:
     """

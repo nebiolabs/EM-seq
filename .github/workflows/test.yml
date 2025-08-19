@@ -9,56 +9,29 @@ on:
         - master
 
 jobs:
-  tests:
-    name: Tests
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      matrix:
-        NXF_VER: ["25.04.2"]
-    defaults:
-      run:
-        shell: bash
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install micromamba
+      - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-name: nextflow.emseq
-          create-args: >-
-              -c conda-forge -c bioconda 
-              nextflow=${{ matrix.NXF_VER }} samtools
+          micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
+          post-cleanup: 'all'
 
-          channels: |
-            - conda-forge
-            - bioconda
-
-      - name: Run test script
-        timeout-minutes: 45
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxml2-utils
-          timeout 15m bash run_test.sh
-
-      - name: Upload test logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Setup Nextflow latest-edge
+        uses: nf-core/setup-nextflow@v1
         with:
-          name: test-logs-${{ matrix.NXF_VER }}
-          path: |
-            test.log.out
-            test-data/tmp/.nextflow.log
-          retention-days: 30
+          version: 25.04.2
 
-      - name: Upload test temporary files on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Install nf-test
+        uses: nf-core/setup-nf-test@v1
         with:
-          name: test-tmp-files-${{ matrix.NXF_VER }}
-          path: |
-            test_data/tmp/em-seq_output
-          retention-days: 30
+          version: 0.9.0
 
+      - name: Run Tests
+        run: nf-test test --verbose
