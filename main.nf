@@ -50,8 +50,8 @@ workflow {
         // align and mark duplicates
         alignedReads = alignReads( passed_bams, params.reference_list.bwa_index )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams, params.reference_list.bwa_index )
-        mbias        = methylDackel_mbias( markDup.md_bams, params.reference_list.bwa_index )
+        extract      = methylDackel_extract( markDup.md_bams, genome_ch )
+        mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
         
         // intersect methylKit files with target BED file if provided //
         if (target_bed_ch) {
@@ -73,13 +73,13 @@ workflow {
         }
         
         // collect statistics
-        gcbias       = gc_bias( markDup.md_bams, params.reference_list.bwa_index )
+        gcbias       = gc_bias( markDup.md_bams, genome_ch )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
         fastqc       = fastqc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams, params.reference_list.bwa_index )
-        tasmanian    = tasmanian( markDup.md_bams, params.reference_list.bwa_index )
+        metrics      = picard_metrics( markDup.md_bams, genome_ch )
+        tasmanian    = tasmanian( markDup.md_bams, genome_ch )
 
 
         // channel for internal summaries

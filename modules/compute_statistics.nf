@@ -7,7 +7,7 @@ process gc_bias {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        val(genome_path)
+        tuple path(genome_fa), path(genome_fai)
     output:
         tuple val(library), path('*gc_metrics'), emit: for_agg
 
@@ -21,7 +21,7 @@ process gc_bias {
     picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \
-        --CHART /dev/null -R ${genome_path}
+        --CHART /dev/null -R ${genome_fa}
     """
 }
 
@@ -173,7 +173,7 @@ process picard_metrics {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        val(genome_path)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
@@ -181,7 +181,7 @@ process picard_metrics {
     script:
     """
     picard -Xmx${task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
-        --VALIDATION_STRINGENCY SILENT -BS true -R ${genome_path} \
+        --VALIDATION_STRINGENCY SILENT -BS true -R ${genome_fa} \
         -I ${bam} -O ${library}.alignment_summary_metrics.txt
     """
 }
@@ -198,7 +198,7 @@ process tasmanian {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        val(genome_path)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
         tuple val(library), path('*.csv'), emit: for_agg
@@ -207,7 +207,7 @@ process tasmanian {
     """
     set +e
     set +o pipefail
-    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_path} > ${library}.csv
+    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_fa} > ${library}.csv
     """
 
 }
