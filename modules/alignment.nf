@@ -1,7 +1,7 @@
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.9 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.9 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.21"
     publishDir "${params.outputDir}/bwameth_align", mode: 'symlink'
     memory {
         try { 
