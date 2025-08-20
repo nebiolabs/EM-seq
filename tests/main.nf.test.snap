@@ -3,8 +3,8 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 17,
-                "tasksSucceeded": 17
+                "tasksCount": 31,
+                "tasksSucceeded": 31
             },
             [
                 "bwameth",
@@ -19,7 +19,15 @@
                 }
             ],
             [
+                "bwameth2",
+                true
+            ],
+            [
                 "fastqc",
+                true
+            ],
+            [
+                "fastqc2",
                 true
             ],
             [
@@ -61,6 +69,10 @@
                 ]
             ],
             [
+                "fastp2",
+                true
+            ],
+            [
                 "markdup",
                 {
                     "maxReadLength": 76,
@@ -73,6 +85,10 @@
                 }
             ],
             [
+                "markdup2",
+                true
+            ],
+            [
                 "insert_sizes",
                 [
                     "MEDIAN_INSERT_SIZE\tMODE_INSERT_SIZE\tMEDIAN_ABSOLUTE_DEVIATION\tMIN_INSERT_SIZE\tMAX_INSERT_SIZE\tMEAN_INSERT_SIZE\tSTANDARD_DEVIATION\tREAD_PAIRS\tPAIR_ORIENTATION\tWIDTH_OF_10_PERCENT\tWIDTH_OF_20_PERCENT\tWIDTH_OF_30_PERCENT\tWIDTH_OF_40_PERCENT\tWIDTH_OF_50_PERCENT\tWIDTH_OF_60_PERCENT\tWIDTH_OF_70_PERCENT\tWIDTH_OF_80_PERCENT\tWIDTH_OF_90_PERCENT\tWIDTH_OF_95_PERCENT\tWIDTH_OF_99_PERCENT\tSAMPLE\tLIBRARY\tREAD_GROUP",
@@ -82,11 +98,19 @@
                 ]
             ],
             [
+                "insert_sizes2",
+                true
+            ],
+            [
                 "idxstats",
                 [
                     "chr1\t284940\t1537\t264",
                     "*\t0\t0\t0"
                 ]
+            ],
+            [
+                "idxstats2",
+                true
             ],
             [
                 "flagstats",
@@ -108,6 +132,10 @@
                     "0 + 0 with mate mapped to a different chr",
                     "0 + 0 with mate mapped to a different chr (mapQ>=5)"
                 ]
+            ],
+            [
+                "flagstats2",
+                true
             ],
             [
                 "gc_bias",
@@ -217,6 +245,10 @@
                 ]
             ],
             [
+                "gc_bias2",
+                true
+            ],
+            [
                 "alignment_metrics",
                 [
                     "CATEGORY\tTOTAL_READS\tPF_READS\tPCT_PF_READS\tPF_NOISE_READS\tPF_READS_ALIGNED\tPCT_PF_READS_ALIGNED\tPF_ALIGNED_BASES\tPF_HQ_ALIGNED_READS\tPF_HQ_ALIGNED_BASES\tPF_HQ_ALIGNED_Q20_BASES\tPF_HQ_MEDIAN_MISMATCHES\tPF_MISMATCH_RATE\tPF_HQ_ERROR_RATE\tPF_INDEL_RATE\tMEAN_READ_LENGTH\tSD_READ_LENGTH\tMEDIAN_READ_LENGTH\tMAD_READ_LENGTH\tMIN_READ_LENGTH\tMAX_READ_LENGTH\tMEAN_ALIGNED_READ_LENGTH\tREADS_ALIGNED_IN_PAIRS\tPCT_READS_ALIGNED_IN_PAIRS\tPF_READS_IMPROPER_PAIRS\tPCT_PF_READS_IMPROPER_PAIRS\tBAD_CYCLES\tSTRAND_BALANCE\tPCT_CHIMERAS\tPCT_ADAPTER\tPCT_SOFTCLIP\tPCT_HARDCLIP\tAVG_POS_3PRIME_SOFTCLIP_LENGTH\tSAMPLE\tLIBRARY\tREAD_GROUP",
@@ -226,12 +258,24 @@
                 ]
             ],
             [
+                "alignment_metrics2",
+                true
+            ],
+            [
                 "methyldackel_extract",
                 "50dd8dd2543dba4be3436ac8b4296244"
             ],
             [
+                "methyldackel_extract2",
+                true
+            ],
+            [
                 "mbias",
-                "f7fd54746fa36488e89ac1affc204aab"
+                "6896fcb45d95538f6877a5b88cd9d19a"
+            ],
+            [
+                "mbias2",
+                true
             ],
             [
                 "nonconverted",
@@ -240,49 +284,87 @@
                 ]
             ],
             [
+                "nonconverted2",
+                true
+            ],
+            [
                 "intersection_summaries",
                 [
                     "methylkit_file\ttarget_length\tposition\tcontext\tmean_methylation\tn_loci\tn_measurements",
-                    "emseq-test\t182\t91\tCHG\t0\t1\t1",
-                    "emseq-test\t204\t92\tCHG\t0\t1\t1",
-                    "emseq-test\t182\t83\tCHG\t0\t1\t1",
-                    "emseq-test\t204\t90\tCHG\t0\t1\t1",
-                    "emseq-test\t182\t95\tCHG\t0\t1\t1",
-                    "emseq-test\t182\t81\tCHG\t0\t1\t1",
-                    "emseq-test\t204\t189\tCpG\t14.29\t1\t1",
-                    "emseq-test\t204\t102\tCHG\t0\t1\t1",
-                    "emseq-test\t204\t94\tCHG\t0\t1\t1",
-                    "emseq-test\t204\t80\tCHG\t0\t1\t1",
-                    "emseq-test\t182\t63\tCHG\t0\t1\t1",
-                    "emseq-test\t204\t106\tCHG\t0\t1\t1",
-                    "emseq-test\t151\t142\tCpG\t100\t1\t1",
-                    "emseq-test\t204\t74\tCHG\t0\t1\t1",
-                    "emseq-test\t182\t79\tCHG\t0\t1\t1",
-                    "emseq-test\t182\t178\tCpG\t14.29\t1\t1",
-                    "emseq-test\t182\t69\tCHG\t0\t1\t1"
+                    "emseq-test2\t182\t69\tCHG\t0\t1\t1",
+                    "emseq-test2\t182\t91\tCHG\t0\t1\t1",
+                    "emseq-test2\t182\t83\tCHG\t0\t1\t1",
+                    "emseq-test2\t204\t189\tCpG\t14.29\t1\t1",
+                    "emseq-test2\t204\t102\tCHG\t0\t1\t1",
+                    "emseq-test2\t204\t90\tCHG\t0\t1\t1",
+                    "emseq-test2\t182\t95\tCHG\t0\t1\t1",
+                    "emseq-test2\t182\t81\tCHG\t0\t1\t1",
+                    "emseq-test2\t204\t106\tCHG\t0\t1\t1",
+                    "emseq-test2\t204\t94\tCHG\t0\t1\t1",
+                    "emseq-test2\t204\t80\tCHG\t0\t1\t1",
+                    "emseq-test2\t204\t92\tCHG\t0\t1\t1",
+                    "emseq-test2\t151\t142\tCpG\t100\t1\t1",
+                    "emseq-test2\t182\t63\tCHG\t0\t1\t1",
+                    "emseq-test2\t204\t74\tCHG\t0\t1\t1",
+                    "emseq-test2\t182\t178\tCpG\t14.29\t1\t1",
+                    "emseq-test2\t182\t79\tCHG\t0\t1\t1",
+                    "emseq-test1\t204\t106\tCHG\t0\t1\t1",
+                    "emseq-test1\t182\t69\tCHG\t0\t1\t1",
+                    "emseq-test1\t151\t142\tCpG\t100\t1\t1",
+                    "emseq-test1\t182\t91\tCHG\t0\t1\t1",
+                    "emseq-test1\t182\t178\tCpG\t14.29\t1\t1",
+                    "emseq-test1\t182\t83\tCHG\t0\t1\t1",
+                    "emseq-test1\t204\t90\tCHG\t0\t1\t1",
+                    "emseq-test1\t182\t95\tCHG\t0\t1\t1",
+                    "emseq-test1\t182\t81\tCHG\t0\t1\t1",
+                    "emseq-test1\t204\t94\tCHG\t0\t1\t1",
+                    "emseq-test1\t204\t80\tCHG\t0\t1\t1",
+                    "emseq-test1\t204\t92\tCHG\t0\t1\t1",
+                    "emseq-test1\t182\t63\tCHG\t0\t1\t1",
+                    "emseq-test1\t204\t189\tCpG\t14.29\t1\t1",
+                    "emseq-test1\t204\t102\tCHG\t0\t1\t1",
+                    "emseq-test1\t204\t74\tCHG\t0\t1\t1",
+                    "emseq-test1\t182\t79\tCHG\t0\t1\t1"
                 ]
             ],
             [
                 "methylkit_intersections",
                 [
                     "methylkit_file\tchr\tstart\tend\tcontext\tmethylation\ttarget_locus\ttarget_name",
-                    "emseq-test\tchr1\t31858\t31859\tCpG\t100.00\tchr1:31718-31868\tStemLoop_31767_31817_2mm_18C_0CG",
-                    "emseq-test\tchr1\t140912\t140913\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t140918\t140919\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t140928\t140929\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t140930\t140931\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t140932\t140933\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t140940\t140941\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t140944\t140945\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t141027\t141028\tCpG\t14.29\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test\tchr1\t140912\t140913\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test\tchr1\t140918\t140919\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test\tchr1\t140928\t140929\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test\tchr1\t140930\t140931\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test\tchr1\t140932\t140933\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test\tchr1\t140940\t140941\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test\tchr1\t140944\t140945\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test\tchr1\t141027\t141028\tCpG\t14.29\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG"
+                    "emseq-test2\tchr1\t31858\t31859\tCpG\t100.00\tchr1:31718-31868\tStemLoop_31767_31817_2mm_18C_0CG",
+                    "emseq-test2\tchr1\t140912\t140913\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t140918\t140919\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t140928\t140929\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t140930\t140931\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t140932\t140933\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t140940\t140941\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t140944\t140945\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141027\t141028\tCpG\t14.29\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t140912\t140913\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t140918\t140919\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t140928\t140929\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t140930\t140931\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t140932\t140933\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t140940\t140941\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t140944\t140945\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141027\t141028\tCpG\t14.29\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t31858\t31859\tCpG\t100.00\tchr1:31718-31868\tStemLoop_31767_31817_2mm_18C_0CG",
+                    "emseq-test1\tchr1\t140912\t140913\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t140918\t140919\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t140928\t140929\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t140930\t140931\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t140932\t140933\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t140940\t140941\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t140944\t140945\tCHG\t0.00\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t141027\t141028\tCpG\t14.29\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t140912\t140913\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t140918\t140919\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t140928\t140929\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t140930\t140931\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t140932\t140933\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t140940\t140941\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t140944\t140945\tCHG\t0.00\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t141027\t141028\tCpG\t14.29\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG"
                 ]
             ],
             [
@@ -444,6 +526,10 @@
                 ]
             ],
             [
+                "tasmanian2",
+                true
+            ],
+            [
                 "multiqc",
                 true
             ]
@@ -452,6 +538,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-08-19T14:30:07.350348142"
+        "timestamp": "2025-08-20T10:36:34.332549146"
     }
 }

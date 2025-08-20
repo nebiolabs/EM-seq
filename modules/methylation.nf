@@ -7,7 +7,8 @@ process methylDackel_mbias {
 
     input:
         tuple val(library), path(md_bam), path(md_bai)
-        tuple path(genome_fa), path(genome_fai)
+        val(genome_fa)
+        val(genome_fai)
 
     output:
         path('*.svg'), emit: mbias_output_svg
@@ -16,7 +17,7 @@ process methylDackel_mbias {
 
     script:
     """
-    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}_combined_mbias.tsv
+    echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}.combined_mbias.tsv
     chrs=(`samtools view -H "${md_bam}" | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
 
     for chr in \${chrs[*]}; do
@@ -60,7 +61,8 @@ process methylDackel_extract {
 
     input:
         tuple val(library), path(md_bam), path(md_bai)
-        tuple path(genome_fa), path(genome_fai)
+        val(genome_fa)
+        val(genome_fai)
 
     output:
         tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz'), emit: extract_output
@@ -79,7 +81,9 @@ process convert_methylkit_to_bed {
     conda "conda-forge::pigz=2.8 conda-forge::gawk=5.3.1 conda-forge::sed=4.9"
 
     input:
-        tuple val(library), path(methylkit_CHH_gz), path(methylkit_CHG_gz), path(methylkit_CpG_gz), path(genome_fa), path(genome_fai)
+        tuple val(library), path(methylkit_CHH_gz), path(methylkit_CHG_gz), path(methylkit_CpG_gz)
+        val(genome_fa)
+        val(genome_fai)
 
     output:
         tuple val(library), path('*.bed'), emit: methylkit_bed

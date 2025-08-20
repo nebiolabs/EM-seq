@@ -7,7 +7,8 @@ process gc_bias {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        tuple path(genome_fa), path(genome_fai)
+        val(genome_fa)
+        val(genome_fai)
     output:
         tuple val(library), path('*gc_metrics'), emit: for_agg
 
@@ -173,7 +174,8 @@ process picard_metrics {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        tuple path(genome_fa), path(genome_fai)
+        val(genome_fa)
+        val(genome_fai)
 
     output:
         tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
@@ -198,7 +200,8 @@ process tasmanian {
 
     input:
         tuple val(library), path(bam), path(bai), val(barcodes)
-        tuple path(genome_fa), path(genome_fai)
+        val(genome_fa)
+        val(genome_fai)
 
     output:
         tuple val(library), path('*.csv'), emit: for_agg

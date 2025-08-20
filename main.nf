@@ -10,11 +10,14 @@ include { aggregate_emseq; multiqc }                                            
 if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
   exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
-genome = params.genome
-params.reference_list = params.genomes[genome]
+
 bams = Channel.fromPath(params.ubam_dir + '/*.bam', checkIfExists: true)
        .map{it -> tuple(it.baseName, it)}
-genome_ch = Channel.fromPath(params.reference_list.genome_fa, checkIfExists: true).map{ fa -> tuple(fa, fa+'.fai') }
+
+genome = params.genome
+params.reference_list = params.genomes[genome]
+genome_fa = Channel.value(params.reference_list.genome_fa)
+genome_fai = Channel.value("${params.reference_list.genome_fa}.fai")
 target_bed_ch = params.reference_list.target_bed ? Channel.fromPath(params.reference_list.target_bed, checkIfExists: true) : Channel.empty()
 
 def checkFileSize (path) {
@@ -50,18 +53,19 @@ workflow {
         // align and mark duplicates
         alignedReads = alignReads( passed_bams, params.reference_list.bwa_index )
         markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams, genome_ch )
-        mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
+        extract      = methylDackel_extract( markDup.md_bams, genome_fa, genome_fai )
+        mbias        = methylDackel_mbias( markDup.md_bams, genome_fa, genome_fai )
         
         // intersect methylKit files with target BED file if provided //
         if (target_bed_ch) {
 
-            methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
-            prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
+            methylkit_beds = convert_methylkit_to_bed( extract.extract_output, genome_fa, genome_fai )
+            prepared_bed = prepare_target_bed( target_bed_ch, genome_fa, genome_fai )
             intersections = intersect_bed_with_methylkit(
                 methylkit_beds.methylkit_bed,
                 prepared_bed.prepared_bed.first(),
-                genome_ch
+                genome_fa,
+                genome_fai
             )
 
             intersection_results = group_bed_intersections( intersections.intersections )
@@ -73,13 +77,13 @@ workflow {
         }
         
         // collect statistics
-        gcbias       = gc_bias( markDup.md_bams, genome_ch )
+        gcbias       = gc_bias( markDup.md_bams, genome_fa, genome_fai )
         idxstats     = idx_stats( markDup.md_bams )
         flagstats    = flag_stats( markDup.md_bams )
         fastqc       = fastqc( markDup.md_bams )
         insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams, genome_ch )
-        tasmanian    = tasmanian( markDup.md_bams, genome_ch )
+        metrics      = picard_metrics( markDup.md_bams, genome_fa, genome_fai )
+        tasmanian    = tasmanian( markDup.md_bams, genome_fa, genome_fai )
 
 
         // channel for internal summaries

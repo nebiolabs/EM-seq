@@ -70,9 +70,8 @@ process alignReads {
     }
 
     input:
-        tuple val(library),
-              path(bam)
-        val(genome)
+        tuple val(library), path(bam)
+        val(genome_fa)
 
     output:
         tuple val(library), path("*.fastp.json"), emit: fastp_reports
@@ -175,8 +174,8 @@ process alignReads {
 
     eval \${stream_reads} \${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${library}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome} /dev/stdin 2> "${library}.log.bwamem" | reheader_sam /dev/stdin \
-    | mark-nonconverted-reads.py --reference ${genome} 2> "${library}.nonconverted.tsv" \
+    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} /dev/stdin 2> "${library}.log.bwamem" | reheader_sam /dev/stdin \
+    | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
