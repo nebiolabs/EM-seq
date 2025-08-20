@@ -18,7 +18,6 @@ genome = params.genome
 params.reference_list = params.genomes[genome]
 genome_fa = Channel.value(params.reference_list.genome_fa)
 genome_fai = Channel.value("${params.reference_list.genome_fa}.fai")
-target_bed_ch = Channel.value(params.reference_list.target_bed)
 
 def checkFileSize (path) {
     return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
@@ -58,10 +57,10 @@ workflow {
         methylDackel_mbias( md_bams, genome_fa, genome_fai )
         
         // intersect methylKit files with target BED file if provided //
-        if (target_bed_ch) {
+        if (params.reference_list.target_bed) {
 
             convert_methylkit_to_bed( methylDackel_extract.out, genome_fa, genome_fai )
-            prepare_target_bed( target_bed_ch, genome_fa, genome_fai )
+            prepare_target_bed( params.reference_list.target_bed, genome_fa, genome_fai )
             intersect_bed_with_methylkit(
                 convert_methylkit_to_bed.out.methylkit_bed,
                 prepare_target_bed.out,
