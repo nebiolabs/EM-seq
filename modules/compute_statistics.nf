@@ -6,7 +6,7 @@ process gc_bias {
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
         val(genome_fa)
         val(genome_fai)
     output:
@@ -173,7 +173,7 @@ process picard_metrics {
     publishDir "${params.outputDir}/stats/picard_alignment_metrics"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
         val(genome_fa)
         val(genome_fai)
 
@@ -199,7 +199,7 @@ process tasmanian {
     memory { retry > 0 ? '16 GB' : '8 GB' }
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
         val(genome_fa)
         val(genome_fai)
 
