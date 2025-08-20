@@ -23,7 +23,7 @@ process prepare_target_bed {
         val(genome_fai)
 
     output:
-        path('*_slop_sorted.bed'), emit: prepared_bed
+        path('*_slop_sorted.bed')
 
     script:
     """
@@ -94,7 +94,7 @@ process intersect_bed_with_methylkit {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*_intersect.tsv'), emit: intersections
+        tuple val(library), path('*_intersect.tsv')
 
     script:
     """
@@ -119,8 +119,8 @@ process group_bed_intersections {
         tuple val(library), path(intersect_file)
 
     output:
-        path('*_intersections.tsv'), emit: intersection_results
-        path('*_summary.tsv'), emit: intersection_summary
+        path('*_intersections.tsv'), emit: results
+        path('*_summary.tsv'), emit: summary
         tuple val(library), path('*_intersections.tsv'), path('*_summary.tsv'), emit: for_agg
 
     script:

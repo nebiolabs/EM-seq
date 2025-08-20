@@ -65,7 +65,7 @@ process methylDackel_extract {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz'), emit: extract_output
+        tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz')
 
     script:
     """

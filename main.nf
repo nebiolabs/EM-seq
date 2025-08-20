@@ -18,7 +18,7 @@ genome = params.genome
 params.reference_list = params.genomes[genome]
 genome_fa = Channel.value(params.reference_list.genome_fa)
 genome_fai = Channel.value("${params.reference_list.genome_fa}.fai")
-target_bed_ch = params.reference_list.target_bed ? Channel.fromPath(params.reference_list.target_bed, checkIfExists: true) : Channel.empty()
+target_bed_ch = Channel.value(params.reference_list.target_bed)
 
 def checkFileSize (path) {
     return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
@@ -51,64 +51,65 @@ workflow {
         }
 
         // align and mark duplicates
-        alignedReads = alignReads( passed_bams, params.reference_list.bwa_index )
-        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams, genome_fa, genome_fai )
-        mbias        = methylDackel_mbias( markDup.md_bams, genome_fa, genome_fai )
+        alignReads( passed_bams, params.reference_list.bwa_index )
+        mergeAndMarkDuplicates( alignReads.out.bam_files )
+        md_bams = mergeAndMarkDuplicates.out.md_bams
+        methylDackel_extract( md_bams, genome_fa, genome_fai )
+        methylDackel_mbias( md_bams, genome_fa, genome_fai )
         
         // intersect methylKit files with target BED file if provided //
         if (target_bed_ch) {
 
-            methylkit_beds = convert_methylkit_to_bed( extract.extract_output, genome_fa, genome_fai )
-            prepared_bed = prepare_target_bed( target_bed_ch, genome_fa, genome_fai )
-            intersections = intersect_bed_with_methylkit(
-                methylkit_beds.methylkit_bed,
-                prepared_bed.prepared_bed.first(),
+            convert_methylkit_to_bed( methylDackel_extract.out, genome_fa, genome_fai )
+            prepare_target_bed( target_bed_ch, genome_fa, genome_fai )
+            intersect_bed_with_methylkit(
+                convert_methylkit_to_bed.out.methylkit_bed,
+                prepare_target_bed.out,
                 genome_fa,
                 genome_fai
             )
 
-            intersection_results = group_bed_intersections( intersections.intersections )
+            group_bed_intersections( intersect_bed_with_methylkit.out )
 
-            combined_results = concatenate_intersections(
-                intersection_results.intersection_results.collect(),
-                intersection_results.intersection_summary.collect()
+            concatenate_intersections(
+                group_bed_intersections.out.results.collect(),
+                group_bed_intersections.out.summary.collect()
             )
         }
         
         // collect statistics
-        gcbias       = gc_bias( markDup.md_bams, genome_fa, genome_fai )
-        idxstats     = idx_stats( markDup.md_bams )
-        flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fastqc( markDup.md_bams )
-        insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams, genome_fa, genome_fai )
-        tasmanian    = tasmanian( markDup.md_bams, genome_fa, genome_fai )
+        gc_bias(  md_bams, genome_fa, genome_fai )
+        idx_stats(  md_bams )
+        flag_stats( md_bams )
+        fastqc( md_bams )
+        insert_size_metrics( md_bams ) 
+        picard_metrics( md_bams, genome_fa, genome_fai )
+        tasmanian( md_bams, genome_fa, genome_fai )
 
 
         // channel for internal summaries
         grouped_library_results = bams
-	        .join( alignedReads.bam_files )
-            .join( alignedReads.nonconverted_counts )
-            .join( alignedReads.fastp_reports )
-            .join( markDup.log )
-            .join( gcbias.for_agg )
-            .join( idxstats.for_agg )
-            .join( flagstats.for_agg )
-            .join( fastqc.for_agg )
-            .join( tasmanian.for_agg )
-            .join( mbias.for_agg )
-            .join( metrics.for_agg )
+	        .join( alignReads.out.bam_files )
+            .join( alignReads.out.nonconverted_counts )
+            .join( alignReads.out.fastp_reports )
+            .join( mergeAndMarkDuplicates.out.log )
+            .join( gc_bias.out.for_agg )
+            .join( idx_stats.out.for_agg )
+            .join( flag_stats.out.for_agg )
+            .join( fastqc.out.for_agg )
+            .join( tasmanian.out.for_agg )
+            .join( methylDackel_mbias.out.for_agg )
+            .join( picard_metrics.out.for_agg )
 
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_library_results
-                                .join( insertsize.for_agg )
+                                .join( insert_size_metrics.out.for_agg )
             )
         }
        
         // channel for multiqc analysis
         all_results = grouped_library_results
-         .join(insertsize.high_mapq_insert_size_metrics)
+         .join(insert_size_metrics.out.high_mapq_insert_size_metrics)
          .map{[it[2..-1]]}
          .flatten()
          .collect()
