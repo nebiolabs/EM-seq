@@ -92,7 +92,6 @@ process aggregate_emseq {
     --bam ${aligned_bam} \
     --bai ${aligned_bam_bai} \
     --contact_email ${params.email} \
-    --genome \$(basename ${params.path_to_genome_fasta}) \
     --gc ${gc_metrics} \
     --idx_stats ${idxstat} \
     --flagstat ${flagstat} \
