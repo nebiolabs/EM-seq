@@ -100,7 +100,7 @@ process aggregate_emseq {
     --combined_mbias_records ${mbias} \
     --fastqc *_fastqc/fastqc_data.txt \
     --insert ${insertsize_metrics} \
-    --tasmanian ${mismatches} \
+    --tasmanian ${tasmanian} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
