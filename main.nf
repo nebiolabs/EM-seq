@@ -100,7 +100,7 @@ workflow {
             .join( methylDackel_mbias.out.for_agg )
             .join( picard_metrics.out.for_agg )
 
-        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
+        if (params.enable_neb_agg) {
             aggregate_emseq( grouped_library_results
                                 .join( insert_size_metrics.out.for_agg )
             )
