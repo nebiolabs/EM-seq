@@ -1,0 +1,139 @@
+{
+    "EM-seq workflow uBam": {
+        "content": [
+            {
+                "tasksFailed": 0,
+                "tasksCount": 31,
+                "tasksSucceeded": 31
+            },
+            [
+                "bwameth",
+                {
+                    "maxReadLength": 76,
+                    "minReadLength": 31,
+                    "meanReadLength": 74,
+                    "maxQuality": 60,
+                    "minQuality": 0,
+                    "meanQuality": 18,
+                    "readCount": 1801
+                }
+            ],
+            [
+                "fastqc",
+                true
+            ],
+            [
+                "fastp",
+                [
+                    "\t\"summary\": {",
+                    "\t\t\"fastp_version\": \"0.26.0\",",
+                    "\t\t\"sequencing\": \"paired end (76 cycles + 76 cycles)\",",
+                    "\t\t\"before_filtering\": {",
+                    "\t\t\t\"total_reads\":9534,",
+                    "\t\t\t\"total_bases\":724584,",
+                    "\t\t\t\"q20_bases\":681052,",
+                    "\t\t\t\"q30_bases\":662196,",
+                    "\t\t\t\"q20_rate\":0.939921,",
+                    "\t\t\t\"q30_rate\":0.913898,",
+                    "\t\t\t\"read1_mean_length\":76,",
+                    "\t\t\t\"read2_mean_length\":76,",
+                    "\t\t\t\"gc_content\":0.218668",
+                    "\t\t},",
+                    "\t\t\"after_filtering\": {",
+                    "\t\t\t\"total_reads\":9526,",
+                    "\t\t\t\"total_bases\":719174,",
+                    "\t\t\t\"q20_bases\":676534,",
+                    "\t\t\t\"q30_bases\":657910,",
+                    "\t\t\t\"q20_rate\":0.94071,",
+                    "\t\t\t\"q30_rate\":0.914813,",
+                    "\t\t\t\"read1_mean_length\":75,",
+                    "\t\t\t\"read2_mean_length\":75,",
+                    "\t\t\t\"gc_content\":0.216799",
+                    "\t\t}",
+                    "\t},",
+                    "\t\"filtering_result\": {",
+                    "\t\t\"passed_filter_reads\": 9526,",
+                    "\t\t\"low_quality_reads\": 0,",
+                    "\t\t\"too_many_N_reads\": 0,",
+                    "\t\t\"too_short_reads\": 8,",
+                    "\t\t\"too_long_reads\": 0",
+                    "\t},"
+                ]
+            ],
+            [
+                "markdup",
+                {
+                    "maxReadLength": 76,
+                    "minReadLength": 31,
+                    "meanReadLength": 74,
+                    "maxQuality": 60,
+                    "minQuality": 0,
+                    "meanQuality": 18,
+                    "readCount": 1801
+                }
+            ],
+            [
+                "markdup_log",
+                true
+            ],
+            [
+                "insert_sizes",
+                true
+            ],
+            [
+                "idxstats",
+                [
+                    "chr1\t284940\t1537\t264",
+                    "*\t0\t0\t0"
+                ]
+            ],
+            [
+                "flagstats",
+                true
+            ],
+            [
+                "gc_bias",
+                true
+            ],
+            [
+                "alignment_metrics",
+                true
+            ],
+            [
+                "methyldackel_extract",
+                true
+            ],
+            [
+                "mbias",
+                true
+            ],
+            [
+                "nonconverted",
+                [
+                    "chr1\t0"
+                ]
+            ],
+            [
+                "intersection_summaries",
+                true
+            ],
+            [
+                "methylkit_intersections",
+                true
+            ],
+            [
+                "tasmanian",
+                true
+            ],
+            [
+                "multiqc",
+                true
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.2"
+        },
+        "timestamp": "2025-08-21T10:09:12.71422428"
+    }
+}

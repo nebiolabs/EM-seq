@@ -9,34 +9,29 @@ on:
         - master
 
 jobs:
-  tests:
-    name: Tests
+  test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        NXF_VER: ["25.04.2"]
-    defaults:
-      run:
-        shell: bash
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install micromamba
+      - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-name: nextflow.emseq
-          create-args: >-
-              -c conda-forge -c bioconda 
-              nextflow=${{ matrix.NXF_VER }} samtools
+          micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
+          post-cleanup: 'all'
 
-          channels: |
-            - conda-forge
-            - bioconda
+      - name: Setup Nextflow latest-edge
+        uses: nf-core/setup-nextflow@v1
+        with:
+          version: 25.04.2
 
-      - name: Run test script
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxml2-utils
-          bash run_test.sh
+      - name: Install nf-test
+        uses: nf-core/setup-nf-test@v1
+        with:
+          version: 0.9.0
+
+      - name: Run Tests
+        run: nf-test test --verbose

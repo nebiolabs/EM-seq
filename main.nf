@@ -1,144 +1,117 @@
 nextflow.enable.dsl=2
 
-/* --------------- *
- * INPUT ARGUMENTS *
- * --------------- */
-params.email                     = 'undefined'
-params.flowcell                  = 'undefined'
-params.path_to_genome_fasta      = 'undefined' // HAS TO BE THE FULL PATH!! 
-params.input_glob                = '*_R1.fastq*' // either the .bam or fastq read 1
-params.project                   = 'project_undefined'
-params.workflow                  = 'EM-seq'
-params.outputDir                 = "em-seq_output" 
-params.tmp_dir                   = '/tmp'
-params.min_mapq                  = 20 // for methylation assessment.
-params.max_input_reads           = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
-params.downsample_seed           = 42
-params.enable_neb_agg            = 'False'
-
-include { alignReads; mergeAndMarkDuplicates; bwa_index; enough_reads; send_email; touchFile }          from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract }                                                    from './modules/methylation'
+include { alignReads; mergeAndMarkDuplicates }                                               from './modules/alignment'
+include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
+include { prepare_target_bed; intersect_bed_with_methylkit;
+          group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
 
-
-// custom fx
-def replaceReadNumber(inputString) {
-    return inputString.replace('_R1.', '_R2.')
-                      .replace('_1.fastq', '_2.fastq')
-                      .replace('_R1_', '_R2_')
-                      .replace('.R1.', '.R2.')
-                      .replace('_1.', '_2.')
-                      .replace('.1.fastq', '.2.fastq')
+if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
+  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
-// detect bam or fastq (or fastq.gz)
-def detectFileType(file) {
-    def file_str = file.toString()
-    if (file_str.endsWith('.bam')) {
-        return 'bam'
-    } else if (file_str.endsWith('.fastq.gz') || file_str.endsWith('.fastq')) {
-        // read2 exists for paired-end FASTQ?
-        def read2File = replaceReadNumber(file_str)
-        if (new File(read2File).exists()) {
-            return 'fastq_paired_end'
-        } else {
-            return 'fastq_single_end'
-        }
-    } else {
-        println "Unknown file type for $file_str. If fastq, check if _R1_ or .R1. patterns are used."
-        return 'unknown'
-    }
+bams = Channel.fromPath(params.ubam_dir + '/*.bam', checkIfExists: true)
+       .map{it -> tuple(it.baseName, it)}
+
+genome = params.genome
+params.reference_list = params.genomes[genome]
+genome_fa = Channel.value(params.reference_list.genome_fa)
+genome_fai = Channel.value("${params.reference_list.genome_fa}.fai")
+
+def checkFileSize (path) {
+    return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
 }
 
 
 workflow {
     main:
-        placeholder_r2 = touchFile( "placeholder.r2.fastq" )
 
-        // if reference is not indexed, index it.
-        if (!file(params.path_to_genome_fasta).exists()) {
-            println "Workflow failed: Genome file does not exist."
-            System.exit(1)  // Exit with a custom status code
+        passed_bams = bams.filter { library, bam -> checkFileSize(bam) }
+        failed_bams = bams.filter { library, bam -> !checkFileSize(bam) }
+        failed_library_names = failed_bams.map { library, bam -> library }
+
+        // Send email if there are failed libraries
+        failed_library_names.collect().subscribe { names ->
+            if (names.size() > 0) {
+                def joined_names = names.join('<br>')
+                sendMail {
+                    to params.email
+                    subject 'File Read Check'
+                    body """
+                    <html>
+                      <body>
+                        <p>The following libraries:<br> <strong>${joined_names}</strong> do not have enough reads. <br> Continuing with remaining libraries. </p>
+                      </body>
+                    </html>
+                    """
+                }
+            }
         }
 
-        genome_index_ch = bwa_index()
-
-        reads = Channel
-          .fromPath(params.input_glob)
-          .filter { !(it.name ==~ /^.*2\.fastq.*$/) }
-          .map { input_file ->
-            def fileType = detectFileType(input_file)
-            def read1File = input_file
-            def read2File = placeholder_r2.val  // val blocks until the value is available
-            if (fileType == 'fastq_paired_end') {
-                read2File = replaceReadNumber(input_file.toString())
-           }
-            if (read1File.toString() == read2File.toString()) {
-                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
-                throw new IllegalStateException("Invalid paired-end file configuration")
-            }
-	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
-            return [params.email, library, read1File, read2File, fileType]
-          }
-
-
-        println "Processing " + params.flowcell + "... => " + params.outputDir
-        println "Cmd line: $workflow.commandLine"
-
-
-        // files with few reads will be filtered out and used will get an email.
-        checking_reads = enough_reads(reads)
-        passed_reads = checking_reads
-                       .filter { tuple -> tuple[5].text.contains('pass') }
-                       .map { tuple -> tuple[0..4] }
-        failed_reads = checking_reads.filter { tuple -> tuple[5].text.contains('fail') }.map { tuple -> tuple[5].text }
-        send_email( failed_reads.collect() )
-        
-
         // align and mark duplicates
-        alignedReads = alignReads( passed_reads, genome_index_ch )
-        markDup      = mergeAndMarkDuplicates( alignedReads.bam_files )
-        extract      = methylDackel_extract( markDup.md_bams, genome_index_ch )
-        mbias        = methylDackel_mbias( markDup.md_bams, genome_index_ch )
+        alignReads( passed_bams, params.reference_list.bwa_index )
+        mergeAndMarkDuplicates( alignReads.out.bam_files )
+        md_bams = mergeAndMarkDuplicates.out.md_bams
+        methylDackel_extract( md_bams, genome_fa, genome_fai )
+        methylDackel_mbias( md_bams, genome_fa, genome_fai )
+        
+        // intersect methylKit files with target BED file if provided //
+        if (params.reference_list.target_bed) {
 
+            convert_methylkit_to_bed( methylDackel_extract.out, genome_fa, genome_fai )
+            prepare_target_bed( params.reference_list.target_bed, genome_fa, genome_fai )
+            intersect_bed_with_methylkit(
+                convert_methylkit_to_bed.out.methylkit_bed,
+                prepare_target_bed.out,
+                genome_fa,
+                genome_fai
+            )
+
+            group_bed_intersections( intersect_bed_with_methylkit.out )
+
+            concatenate_intersections(
+                group_bed_intersections.out.results.collect(),
+                group_bed_intersections.out.summary.collect()
+            )
+        }
+        
         // collect statistics
-        gcbias       = gc_bias( markDup.md_bams, genome_index_ch )
-        idxstats     = idx_stats( markDup.md_bams )
-        flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fastqc( markDup.md_bams )
-        insertsize   = insert_size_metrics( markDup.md_bams ) 
-        metrics      = picard_metrics( markDup.md_bams, genome_index_ch )
-        mismatches   = tasmanian( markDup.md_bams, genome_index_ch )
+        gc_bias(  md_bams, genome_fa, genome_fai )
+        idx_stats(  md_bams )
+        flag_stats( md_bams )
+        fastqc( md_bams )
+        insert_size_metrics( md_bams ) 
+        picard_metrics( md_bams, genome_fa, genome_fai )
+        tasmanian( md_bams, genome_fa, genome_fai )
 
-        // Channels and processes that summarize all results
 
         // channel for internal summaries
-        grouped_email_library = reads
-	      .join( alignedReads.for_agg, by: [0,1])
-            .join( markDup.for_agg, by: [0,1] )
-            .join( gcbias.for_agg, by: [0,1] )
-            .join( idxstats.for_agg, by: [0,1] )
-            .join( flagstats.for_agg, by: [0,1] )
-            .join( fastqc.for_agg, by: [0,1] )
-            .join( insertsize.for_agg, by: [0,1] )
-            .join( mismatches.for_agg, by: [0,1] )
-            .join( mbias.for_agg, by: [0,1] )
-            .join( metrics.for_agg, by: [0,1] )
+        grouped_library_results = bams
+	        .join( alignReads.out.bam_files )
+            .join( alignReads.out.nonconverted_counts )
+            .join( alignReads.out.fastp_reports )
+            .join( mergeAndMarkDuplicates.out.log )
+            .join( gc_bias.out.for_agg )
+            .join( idx_stats.out.for_agg )
+            .join( flag_stats.out.for_agg )
+            .join( fastqc.out.for_agg )
+            .join( tasmanian.out.for_agg )
+            .join( methylDackel_mbias.out.for_agg )
+            .join( picard_metrics.out.for_agg )
 
-        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-            aggregate_emseq( grouped_email_library )
+        if (params.enable_neb_agg) {
+            aggregate_emseq( grouped_library_results
+                                .join( insert_size_metrics.out.for_agg )
+            )
         }
        
         // channel for multiqc analysis
-        all_results = grouped_email_library
-         .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
-         .map { items -> [items[0], items[7..-1]] }
-         .groupTuple()
+        all_results = grouped_library_results
+         .join(insert_size_metrics.out.high_mapq_insert_size_metrics)
+         .map{[it[2..-1]]}
          .flatten()
-         .toList()
-         .map { items -> [items[0], items[7..-1]] }
+         .collect()
 
         multiqc( all_results )
 }
-
