@@ -8,18 +8,18 @@
             },
             [
                 "bwameth",
-                "16ee0c31ea77202c0e412eaaa338990f"
-            ],
-            [
-                "bwameth2",
-                true
+                {
+                    "maxReadLength": 76,
+                    "minReadLength": 31,
+                    "meanReadLength": 74,
+                    "maxQuality": 60,
+                    "minQuality": 0,
+                    "meanQuality": 18,
+                    "readCount": 1801
+                }
             ],
             [
                 "fastqc",
-                true
-            ],
-            [
-                "fastqc2",
                 true
             ],
             [
@@ -61,10 +61,6 @@
                 ]
             ],
             [
-                "fastp2",
-                true
-            ],
-            [
                 "markdup",
                 {
                     "maxReadLength": 76,
@@ -77,17 +73,8 @@
                 }
             ],
             [
-                "markdup2",
-                true
-            ],
-            [
                 "markdup_log",
-                [
-                    "LIBRARY\tUNPAIRED_READS_EXAMINED\tREAD_PAIRS_EXAMINED\tSECONDARY_OR_SUPPLEMENTARY_RDS\tUNMAPPED_READS\tUNPAIRED_READ_DUPLICATES\tREAD_PAIR_DUPLICATES\tREAD_PAIR_OPTICAL_DUPLICATES\tPERCENT_DUPLICATION\tESTIMATED_LIBRARY_SIZE",
-                    "Oct25_PV_10ngR3_F6\t264\t636\t1\t264\t25\t0\t0\t0.016276\t",
-                    "## HISTOGRAM\tjava.lang.Double",
-                    "set_size\tall_sets\tnon_optical_sets"
-                ]
+                true
             ],
             [
                 "insert_sizes",
@@ -99,10 +86,6 @@
                 ]
             ],
             [
-                "insert_sizes2",
-                true
-            ],
-            [
                 "idxstats",
                 [
                     "chr1\t284940\t1537\t264",
@@ -110,156 +93,15 @@
                 ]
             ],
             [
-                "idxstats2",
-                true
-            ],
-            [
                 "flagstats",
-                [
-                    "1219 + 582 in total (QC-passed reads + QC-failed reads)",
-                    "1218 + 582 primary",
-                    "1 + 0 secondary",
-                    "0 + 0 supplementary",
-                    "23 + 2 duplicates",
-                    "23 + 2 primary duplicates",
-                    "960 + 577 mapped (78.75% : 99.14%)",
-                    "959 + 577 primary mapped (78.74% : 99.14%)",
-                    "1218 + 582 paired in sequencing",
-                    "609 + 291 read1",
-                    "609 + 291 read2",
-                    "678 + 0 properly paired (55.67% : 0.00%)",
-                    "700 + 572 with itself and mate mapped",
-                    "259 + 5 singletons (21.26% : 0.86%)",
-                    "0 + 0 with mate mapped to a different chr",
-                    "0 + 0 with mate mapped to a different chr (mapQ>=5)"
-                ]
-            ],
-            [
-                "flagstats2",
                 true
             ],
             [
                 "gc_bias",
-                [
-                    "ACCUMULATION_LEVEL\tREADS_USED\tGC\tWINDOWS\tREAD_STARTS\tMEAN_BASE_QUALITY\tNORMALIZED_COVERAGE\tERROR_BAR_WIDTH\tSAMPLE\tLIBRARY\tREAD_GROUP",
-                    "All Reads\tALL\t0\t17252\t56\t11\t0.601553\t0.080386\t\t\t",
-                    "All Reads\tALL\t1\t3503\t13\t12\t0.687747\t0.190747\t\t\t",
-                    "All Reads\tALL\t2\t5640\t35\t10\t1.150044\t0.194393\t\t\t",
-                    "All Reads\tALL\t3\t3475\t25\t12\t1.333248\t0.26665\t\t\t",
-                    "All Reads\tALL\t4\t4275\t17\t11\t0.736951\t0.178737\t\t\t",
-                    "All Reads\tALL\t5\t3480\t14\t10\t0.745546\t0.199256\t\t\t",
-                    "All Reads\tALL\t6\t3400\t8\t11\t0.43605\t0.154167\t\t\t",
-                    "All Reads\tALL\t7\t3235\t21\t10\t1.203014\t0.262519\t\t\t",
-                    "All Reads\tALL\t8\t3640\t16\t10\t0.8146\t0.20365\t\t\t",
-                    "All Reads\tALL\t9\t3412\t9\t11\t0.488831\t0.162944\t\t\t",
-                    "All Reads\tALL\t10\t3608\t22\t10\t1.130009\t0.240919\t\t\t",
-                    "All Reads\tALL\t11\t3699\t15\t9\t0.751506\t0.194038\t\t\t",
-                    "All Reads\tALL\t12\t3840\t16\t9\t0.772173\t0.193043\t\t\t",
-                    "All Reads\tALL\t13\t3874\t30\t10\t1.435117\t0.262015\t\t\t",
-                    "All Reads\tALL\t14\t3693\t28\t10\t1.405091\t0.265537\t\t\t",
-                    "All Reads\tALL\t15\t3986\t36\t10\t1.673751\t0.278958\t\t\t",
-                    "All Reads\tALL\t16\t3911\t53\t11\t2.511387\t0.344966\t\t\t",
-                    "All Reads\tALL\t17\t3778\t40\t10\t1.962111\t0.310237\t\t\t",
-                    "All Reads\tALL\t18\t3793\t39\t10\t1.905493\t0.305123\t\t\t",
-                    "All Reads\tALL\t19\t3698\t44\t10\t2.205014\t0.332418\t\t\t",
-                    "All Reads\tALL\t20\t3735\t44\t10\t2.183171\t0.329125\t\t\t",
-                    "All Reads\tALL\t21\t3759\t40\t9\t1.972029\t0.311805\t\t\t",
-                    "All Reads\tALL\t22\t3461\t56\t10\t2.998555\t0.400699\t\t\t",
-                    "All Reads\tALL\t23\t3475\t55\t10\t2.933145\t0.395505\t\t\t",
-                    "All Reads\tALL\t24\t3393\t60\t10\t3.277125\t0.423075\t\t\t",
-                    "All Reads\tALL\t25\t3365\t71\t10\t3.910199\t0.464055\t\t\t",
-                    "All Reads\tALL\t26\t3200\t68\t10\t3.93808\t0.477562\t\t\t",
-                    "All Reads\tALL\t27\t2988\t61\t10\t3.783335\t0.484406\t\t\t",
-                    "All Reads\tALL\t28\t2852\t50\t10\t3.248973\t0.459474\t\t\t",
-                    "All Reads\tALL\t29\t2805\t58\t11\t3.831958\t0.503161\t\t\t",
-                    "All Reads\tALL\t30\t2833\t35\t9\t2.289534\t0.387002\t\t\t",
-                    "All Reads\tALL\t31\t2731\t42\t9\t2.850055\t0.439773\t\t\t",
-                    "All Reads\tALL\t32\t2760\t43\t10\t2.887254\t0.440302\t\t\t",
-                    "All Reads\tALL\t33\t2776\t32\t9\t2.13627\t0.377643\t\t\t",
-                    "All Reads\tALL\t34\t2475\t23\t9\t1.722179\t0.359099\t\t\t",
-                    "All Reads\tALL\t35\t2672\t22\t10\t1.52585\t0.325312\t\t\t",
-                    "All Reads\tALL\t36\t2796\t13\t10\t0.861652\t0.238979\t\t\t",
-                    "All Reads\tALL\t37\t2850\t23\t10\t1.495576\t0.311849\t\t\t",
-                    "All Reads\tALL\t38\t2826\t26\t10\t1.705009\t0.33438\t\t\t",
-                    "All Reads\tALL\t39\t3054\t10\t10\t0.606815\t0.191892\t\t\t",
-                    "All Reads\tALL\t40\t3449\t10\t11\t0.537319\t0.169915\t\t\t",
-                    "All Reads\tALL\t41\t4012\t28\t8\t1.29337\t0.244424\t\t\t",
-                    "All Reads\tALL\t42\t4971\t20\t9\t0.74561\t0.166724\t\t\t",
-                    "All Reads\tALL\t43\t5630\t7\t9\t0.230417\t0.08709\t\t\t",
-                    "All Reads\tALL\t44\t6409\t9\t12\t0.260242\t0.086747\t\t\t",
-                    "All Reads\tALL\t45\t7297\t7\t10\t0.177779\t0.067194\t\t\t",
-                    "All Reads\tALL\t46\t8146\t4\t12\t0.091\t0.0455\t\t\t",
-                    "All Reads\tALL\t47\t8876\t8\t13\t0.167031\t0.059055\t\t\t",
-                    "All Reads\tALL\t48\t9213\t3\t6\t0.060346\t0.034841\t\t\t",
-                    "All Reads\tALL\t49\t9815\t14\t10\t0.26434\t0.070648\t\t\t",
-                    "All Reads\tALL\t50\t10134\t16\t8\t0.292593\t0.073148\t\t\t",
-                    "All Reads\tALL\t51\t9913\t13\t8\t0.243032\t0.067405\t\t\t",
-                    "All Reads\tALL\t52\t9189\t4\t12\t0.080671\t0.040335\t\t\t",
-                    "All Reads\tALL\t53\t8455\t6\t11\t0.131511\t0.053689\t\t\t",
-                    "All Reads\tALL\t54\t7312\t6\t13\t0.152069\t0.062082\t\t\t",
-                    "All Reads\tALL\t55\t5984\t3\t8\t0.092908\t0.053641\t\t\t",
-                    "All Reads\tALL\t56\t4790\t4\t9\t0.154757\t0.077378\t\t\t",
-                    "All Reads\tALL\t57\t3659\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t58\t2618\t3\t7\t0.212362\t0.122607\t\t\t",
-                    "All Reads\tALL\t59\t1766\t3\t9\t0.314816\t0.181759\t\t\t",
-                    "All Reads\tALL\t60\t1281\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t61\t837\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t62\t441\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t63\t263\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t64\t183\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t65\t106\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t66\t63\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t67\t23\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t68\t6\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t69\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t70\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t71\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t72\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t73\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t74\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t75\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t76\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t77\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t78\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t79\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t80\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t81\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t82\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t83\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t84\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t85\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t86\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t87\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t88\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t89\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t90\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t91\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t92\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t93\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t94\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t95\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t96\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t97\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t98\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t99\t0\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t100\t0\t0\t0\t0\t0\t\t\t"
-                ]
-            ],
-            [
-                "gc_bias2",
                 true
             ],
             [
                 "alignment_metrics",
-                [
-                    "CATEGORY\tTOTAL_READS\tPF_READS\tPCT_PF_READS\tPF_NOISE_READS\tPF_READS_ALIGNED\tPCT_PF_READS_ALIGNED\tPF_ALIGNED_BASES\tPF_HQ_ALIGNED_READS\tPF_HQ_ALIGNED_BASES\tPF_HQ_ALIGNED_Q20_BASES\tPF_HQ_MEDIAN_MISMATCHES\tPF_MISMATCH_RATE\tPF_HQ_ERROR_RATE\tPF_INDEL_RATE\tMEAN_READ_LENGTH\tSD_READ_LENGTH\tMEDIAN_READ_LENGTH\tMAD_READ_LENGTH\tMIN_READ_LENGTH\tMAX_READ_LENGTH\tMEAN_ALIGNED_READ_LENGTH\tREADS_ALIGNED_IN_PAIRS\tPCT_READS_ALIGNED_IN_PAIRS\tPF_READS_IMPROPER_PAIRS\tPCT_PF_READS_IMPROPER_PAIRS\tBAD_CYCLES\tSTRAND_BALANCE\tPCT_CHIMERAS\tPCT_ADAPTER\tPCT_SOFTCLIP\tPCT_HARDCLIP\tAVG_POS_3PRIME_SOFTCLIP_LENGTH\tSAMPLE\tLIBRARY\tREAD_GROUP",
-                    "FIRST_OF_PAIR\t900\t609\t0.676667\t0\t495\t0.812808\t32340\t303\t19746\t18834\t3\t0.102783\t0.099063\t0.00436\t74.638752\t5.93946\t76\t0\t31\t76\t53.320197\t350\t0.707071\t156\t0.315152\t0\t0.89697\t0.010067\t0\t0.095281\t0\t16.406977\t\t\t",
-                    "SECOND_OF_PAIR\t900\t609\t0.676667\t0\t464\t0.761905\t30346\t299\t20009\t18482\t3\t0.10234\t0.095719\t0.004185\t74.684729\t5.894281\t76\t0\t31\t76\t50.078818\t350\t0.75431\t125\t0.269397\t0\t0.114224\t0.010417\t0\t0.087175\t0\t14.622449\t\t\t",
-                    "PAIR\t1800\t1218\t0.676667\t0\t959\t0.787356\t62686\t602\t39755\t37316\t3\t0.102569\t0.097389\t0.004275\t74.661741\t5.914527\t76\t0\t31\t76\t51.699507\t700\t0.729927\t281\t0.293014\t0\t0.518248\t0.010239\t0\t0.091227\t0\t15.456522\t\t\t"
-                ]
-            ],
-            [
-                "alignment_metrics2",
                 true
             ],
             [
@@ -267,15 +109,7 @@
                 "50dd8dd2543dba4be3436ac8b4296244"
             ],
             [
-                "methyldackel_extract2",
-                true
-            ],
-            [
                 "mbias",
-                "6896fcb45d95538f6877a5b88cd9d19a"
-            ],
-            [
-                "mbias2",
                 true
             ],
             [
@@ -283,10 +117,6 @@
                 [
                     "chr1\t0"
                 ]
-            ],
-            [
-                "nonconverted2",
-                true
             ],
             [
                 "intersection_summaries",
@@ -455,10 +285,6 @@
                 ]
             ],
             [
-                "tasmanian2",
-                true
-            ],
-            [
                 "multiqc",
                 true
             ]
@@ -467,6 +293,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-08-21T09:37:08.661846722"
+        "timestamp": "2025-08-21T09:54:37.067315629"
     }
 }
