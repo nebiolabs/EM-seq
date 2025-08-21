@@ -8,15 +8,7 @@
             },
             [
                 "bwameth",
-                {
-                    "maxReadLength": 76,
-                    "minReadLength": 31,
-                    "meanReadLength": 74,
-                    "maxQuality": 60,
-                    "minQuality": 0,
-                    "meanQuality": 18,
-                    "readCount": 1801
-                }
+                "16ee0c31ea77202c0e412eaaa338990f"
             ],
             [
                 "bwameth2",
@@ -87,6 +79,15 @@
             [
                 "markdup2",
                 true
+            ],
+            [
+                "markdup_log",
+                [
+                    "LIBRARY\tUNPAIRED_READS_EXAMINED\tREAD_PAIRS_EXAMINED\tSECONDARY_OR_SUPPLEMENTARY_RDS\tUNMAPPED_READS\tUNPAIRED_READ_DUPLICATES\tREAD_PAIR_DUPLICATES\tREAD_PAIR_OPTICAL_DUPLICATES\tPERCENT_DUPLICATION\tESTIMATED_LIBRARY_SIZE",
+                    "Oct25_PV_10ngR3_F6\t264\t636\t1\t264\t25\t0\t0\t0.016276\t",
+                    "## HISTOGRAM\tjava.lang.Double",
+                    "set_size\tall_sets\tnon_optical_sets"
+                ]
             ],
             [
                 "insert_sizes",
@@ -466,6 +467,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-08-20T14:28:45.223985108"
+        "timestamp": "2025-08-21T09:37:08.661846722"
     }
 }

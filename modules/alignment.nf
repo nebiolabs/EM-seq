@@ -135,6 +135,7 @@ process mergeAndMarkDuplicates {
     label 'high_cpu'
     tag { library }
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
+    publishDir "${params.outputDir}/stats/markdups", mode: 'copy', pattern: '*log'
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:

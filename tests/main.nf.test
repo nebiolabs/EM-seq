@@ -15,7 +15,7 @@ nextflow_pipeline {
         }
 
         then {
-            def bwameth = bam("${launchDir}/test_output/bwameth_align/emseq-test1.aln.bam").getStatistics()
+            def bwameth = bam("${launchDir}/test_output/bwameth_align/emseq-test1.aln.bam").getSamLinesMD5()
             def bwameth2 = path("${launchDir}/test_output/bwameth_align/emseq-test2.aln.bam").exists()
             def fastqc = path("${launchDir}/test_output/stats/fastqc/emseq-test1.md_fastqc.html").exists()
             def fastqc2 = path("${launchDir}/test_output/stats/fastqc/emseq-test2.md_fastqc.html").exists()
@@ -23,6 +23,7 @@ nextflow_pipeline {
             def fastp2 = path("${launchDir}/test_output/bwameth_align/emseq-test2.fastp.json").exists()
             def markdup = bam("${launchDir}/test_output/markduped_bams/emseq-test1.md.bam").getStatistics()
             def markdup2 = path("${launchDir}/test_output/markduped_bams/emseq-test2.md.bam").exists()
+            def markdup_log = path("${launchDir}/test_output/stats/markdups/emseq-test1.markdups_log").text.tokenize('\n')[5..8]
             def insert_sizes = path("${launchDir}/test_output/stats/insert_size/emseq-test1.insertsize_metrics").text.tokenize('\n')[5..8]
             def insert_sizes2 = path("${launchDir}/test_output/stats/insert_size/emseq-test2.insertsize_metrics").exists()
             def idxstats = path("${launchDir}/test_output/stats/idxstats/emseq-test1.idxstat").text.tokenize('\n')
@@ -56,6 +57,7 @@ nextflow_pipeline {
                     ["fastp2", fastp2],
                     ["markdup", markdup],
                     ["markdup2", markdup2],
+                    ["markdup_log", markdup_log],
                     ["insert_sizes", insert_sizes],
                     ["insert_sizes2", insert_sizes2],
                     ["idxstats", idxstats],
