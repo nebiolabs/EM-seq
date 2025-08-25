@@ -51,18 +51,16 @@ workflow {
 
         // align and mark duplicates
         fastp( passed_bams )
-
-        // Split fastq arrays into individual [library, fastq1, fastq2] tuples
-        split_fastqs = fastp.out.trimmed_fastq
-            .map { library, fastqs1, fastqs2 -> 
-                [fastqs1, fastqs2].transpose().collect { fq1, fq2 -> 
+        fastq_chunks = fastp.out.trimmed_fastq
+            .map { library, fq1_files, fq2_files -> 
+                [fq1_files, fq2_files].transpose().collect { fq1, fq2 -> 
                     [library, fq1.baseName.split(".1.trimmed")[0], fq1, fq2] 
                 }
             }
             .flatten()
             .collate(4)
         
-        alignReads( split_fastqs, params.reference_list.bwa_index )
+        alignReads( fastq_chunks, params.reference_list.bwa_index )
         mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
         md_bams = mergeAndMarkDuplicates.out.md_bams
         methylDackel_extract( md_bams, genome_fa, genome_fai )
