@@ -29,41 +29,6 @@ process alignReads {
     echo "Input file size: ${bam.size() / (1024 * 1024 * 1024)} GB"
     echo "Memory allocated: ${task.memory}" 
 
-    # Define helper functions
-    flowcell_from_bam(){
-        set +o pipefail
-        # check this is NOT mgi:
-        fc=\$(samtools view \$1 | head -n1 | cut -f1)
-        if echo \$fc | grep -q ":"; then
-            echo "\$fc" | cut -d":" -f3
-        elif echo \$fc | grep -q "L"; then
-            echo "\$fc" | cut -d "L" -f1
-        fi
-        set -o pipefail
-    }
-
-    # Determine barcodes and read group line
-    get_rg_line() {
-        set +o pipefail
-        local file=\$1
-        barcodes=\$(samtools view -H \$file | grep @RG | awk '{for (i=1;i<=NF;i++) {if (\$i~/BC:/) {print substr(\$i,4,length(\$i))} } }' | head -n1)
-        rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
-        set -o pipefail
-        # Export variables to parent scope
-        export barcodes
-        export rg_line
-    }
-
-    get_rg_line ${bam}
-    stream_reads="samtools view -u -h ${bam}"
-    flowcell=\$(flowcell_from_bam ${bam})
-
-    if [ "${params.flowcell}" == "undefined" ]; then
-        flowcell="\${flowcell}"
-    else
-        flowcell="${params.flowcell}"
-    fi
-
     set +o pipefail
     inst_name=\$(samtools view ${bam} | head -n 1 | cut -d ":" -f 1)
     set -o pipefail
@@ -74,7 +39,7 @@ process alignReads {
     samtools view -u -h ${bam} \
     | samtools fastq -n  /dev/stdin \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${library}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} /dev/stdin 2> "${library}.log.bwamem" \
+    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --reference ${genome_fa} /dev/stdin 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
