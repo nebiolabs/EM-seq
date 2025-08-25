@@ -1,3 +1,36 @@
+process fastp {
+	tag "${library}"
+    label 'process_single'
+    conda "bioconda::samtools=1.21 bioconda::fastp=0.23.4"
+    publishDir "${params.outputDir}/stats/fastp", mode: 'copy', pattern: "*json"
+
+    input:
+        tuple val(library), path(bam)
+    
+    output:
+        tuple val(library), path("${library}.trimmed.fastq"), emit: fastp_out
+        tuple val(library), path("${library}.fastp.json"), emit: fastp_json
+        tuple val(library), path("${library}.fastp.failed.fastq"), emit: fastp_failed
+
+    script:
+    """
+    set +o pipefail
+    inst_name=\$(samtools view ${bam} | head -n 1 | cut -d ":" -f 1)
+    set -o pipefail
+
+    trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
+    echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
+    
+    samtools fastq -n ${bam} \
+    | fastp --interleaved_in --stdin --stdout \
+                    -l 2 -Q \${trim_polyg} \
+                    --overrepresentation_analysis \
+                    -j "${library}.fastp.json" \
+                    --failed_out "${library}.fastp.failed.fastq" \
+    > ${library}.trimmed.fastq
+    """
+}
+
 process alignReads {
     label 'high_cpu'
     tag { library }
@@ -5,7 +38,7 @@ process alignReads {
     publishDir "${params.outputDir}/bwameth_align", mode: 'symlink'
     memory {
         try { 
-            def fileSize = bam.size() / (1024 * 1024 * 1024)
+            def fileSize = fastq.size() / (1024 * 1024 * 1024)
             if (fileSize < 1.8) return '64 GB'
             else if (fileSize < 6.5) return '128 GB'
             else return '256 GB'
@@ -16,30 +49,19 @@ process alignReads {
     }
 
     input:
-        tuple val(library), path(bam)
+        tuple val(library), path(fastq)
         val(genome_fa)
 
     output:
-        tuple val(library), path("*.fastp.json"), emit: fastp_reports
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: bam_files
 
     script:
     """
-    echo "Input file size: ${bam.size() / (1024 * 1024 * 1024)} GB"
+    echo "Input file size: ${fastq.size() / (1024 * 1024 * 1024)} GB"
     echo "Memory allocated: ${task.memory}" 
 
-    set +o pipefail
-    inst_name=\$(samtools view ${bam} | head -n 1 | cut -d ":" -f 1)
-    set -o pipefail
-
-    trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
-    echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
-
-    samtools view -u -h ${bam} \
-    | samtools fastq -n  /dev/stdin \
-    | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${library}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --reference ${genome_fa} /dev/stdin 2> "${library}.log.bwamem" \
+    bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --reference ${genome_fa} ${fastq} 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \

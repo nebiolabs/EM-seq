@@ -3,8 +3,8 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 31,
-                "tasksSucceeded": 31
+                "tasksCount": 33,
+                "tasksSucceeded": 33
             },
             [
                 "bwameth",
@@ -26,7 +26,7 @@
                 "fastp",
                 [
                     "\t\"summary\": {",
-                    "\t\t\"fastp_version\": \"0.26.0\",",
+                    "\t\t\"fastp_version\": \"0.23.4\",",
                     "\t\t\"sequencing\": \"paired end (76 cycles + 76 cycles)\",",
                     "\t\t\"before_filtering\": {",
                     "\t\t\t\"total_reads\":9534,",
@@ -134,6 +134,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-08-21T10:09:12.71422428"
+        "timestamp": "2025-08-25T12:47:45.62038133"
     }
 }

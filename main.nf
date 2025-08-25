@@ -1,6 +1,6 @@
 nextflow.enable.dsl=2
 
-include { alignReads; mergeAndMarkDuplicates }                                               from './modules/alignment'
+include { fastp; alignReads; mergeAndMarkDuplicates }                                                   from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
 include { prepare_target_bed; intersect_bed_with_methylkit;
           group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
@@ -50,7 +50,8 @@ workflow {
         }
 
         // align and mark duplicates
-        alignReads( passed_bams, params.reference_list.bwa_index )
+        fastp( passed_bams )
+        alignReads( fastp.out.fastp_out, params.reference_list.bwa_index )
         mergeAndMarkDuplicates( alignReads.out.bam_files )
         md_bams = mergeAndMarkDuplicates.out.md_bams
         methylDackel_extract( md_bams, genome_fa, genome_fai )
@@ -89,7 +90,7 @@ workflow {
         // channel for internal summaries
         grouped_library_results = bams
 	        .join( alignReads.out.bam_files )
-            .join( alignReads.out.fastp_reports )
+            .join( fastp.out.fastp_json )
             .join( mergeAndMarkDuplicates.out.log )
             .join( picard_metrics.out.for_agg )
             .join( gc_bias.out.for_agg )
