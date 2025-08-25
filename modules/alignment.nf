@@ -68,29 +68,6 @@ process alignReads {
         fi
         export frac_reads
 }
-
-    reheader_sam() {
-      local input_file="\$1"
-
-      cat "\$input_file" | \
-      awk 'BEGIN{
-        header_ids = "@HD @SQ @RG @CO" # exclude @pg
-        split(header_ids, headers_arr, " ")
-        flag=0;
-      } {
-        if (\$1~/^@/) {gsub(/\\\\t/,"\\t",\$0); id = substr(\$1,1,3); arr[id] = arr[id]"\\n"\$0}
-        else {
-          if (flag==0) {
-        for (id in headers_arr){
-          printf "%s", arr[headers_arr[id]]
-        }
-        flag=1;
-        print ""
-          }
-          print \$0
-        }
-      }' | tail -n +2
-    }
     
     get_rg_line ${bam}
     get_frac_reads ${bam}
@@ -120,7 +97,7 @@ process alignReads {
 
     eval \${stream_reads} \${bam2fastq} \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${library}.fastp.json" 2> fastp.stderr \
-    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} /dev/stdin 2> "${library}.log.bwamem" | reheader_sam /dev/stdin \
+    | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} /dev/stdin 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
