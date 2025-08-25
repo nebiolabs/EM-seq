@@ -89,16 +89,17 @@ workflow {
         // channel for internal summaries
         grouped_library_results = bams
 	        .join( alignReads.out.bam_files )
-            .join( alignReads.out.nonconverted_counts )
             .join( alignReads.out.fastp_reports )
             .join( mergeAndMarkDuplicates.out.log )
+            .join( picard_metrics.out.for_agg )
             .join( gc_bias.out.for_agg )
             .join( idx_stats.out.for_agg )
             .join( flag_stats.out.for_agg )
             .join( fastqc.out.for_agg )
+            .join( alignReads.out.nonconverted_counts )
             .join( tasmanian.out.for_agg )
             .join( methylDackel_mbias.out.for_agg )
-            .join( picard_metrics.out.for_agg )
+            
 
         if (params.enable_neb_agg) {
             aggregate_emseq( grouped_library_results
