@@ -11,6 +11,7 @@ nextflow_pipeline {
             params.email = 'foo@example.com'
             params.max_input_reads = 10000
             params.flowcell = "test_pipeline"
+            //params.enable_neb_agg = true
 
         }
 

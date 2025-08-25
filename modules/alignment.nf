@@ -54,23 +54,7 @@ process alignReads {
         export rg_line
     }
 
-    get_frac_reads() {
-        local file=\$1
-        if [ "${params.max_input_reads}" == "all_reads" ]; then
-            frac_reads=1
-        else
-            n_reads=\$(samtools view -c -F 2304 \$file)
-            if [ \$n_reads -le ${params.max_input_reads} ]; then
-                frac_reads=1
-            else
-                frac_reads=\$(echo \$n_reads | awk '{print ${params.max_input_reads}/\$1}')
-            fi 
-        fi
-        export frac_reads
-}
-    
     get_rg_line ${bam}
-    get_frac_reads ${bam}
     stream_reads="samtools view -u -h ${bam}"
     flowcell=\$(flowcell_from_bam ${bam})
 
@@ -80,11 +64,6 @@ process alignReads {
         flowcell="${params.flowcell}"
     fi
 
-    if [ "\${frac_reads}" != "1" ]; then
-        downsample_seed_frac=\$(awk -v seed=${params.downsample_seed} -v frac=\${frac_reads} 'BEGIN { printf "%.4f", seed + frac }')
-        stream_reads="\${stream_reads} | samtools view -u -s \${downsample_seed_frac}"
-    fi
-
     set +o pipefail
     inst_name=\$(samtools view ${bam} | head -n 1 | cut -d ":" -f 1)
     set -o pipefail
@@ -92,10 +71,8 @@ process alignReads {
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
 
-    bam2fastq="| samtools collate -f -r 100000 -u /dev/stdin -O | samtools fastq -n  /dev/stdin"
-    # -n in samtools because bwameth needs space not "/" in the header (/1 /2)
-
-    eval \${stream_reads} \${bam2fastq} \
+    samtools view -u -h ${bam} \
+    | samtools fastq -n  /dev/stdin \
     | fastp --stdin --stdout -l 2 -Q \${trim_polyg} --interleaved_in --overrepresentation_analysis -j "${library}.fastp.json" 2> fastp.stderr \
     | bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} /dev/stdin 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
