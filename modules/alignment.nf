@@ -26,6 +26,7 @@ process fastp {
                     -l 2 -Q \${trim_polyg} \
                     --overrepresentation_analysis \
                     -j "${library}.fastp.json" \
+                    --split 8 \
                     --failed_out "${library}.fastp.failed.fastq" \
     > ${library}.trimmed.fastq
     """
@@ -53,8 +54,8 @@ process alignReads {
         val(genome_fa)
 
     output:
-        tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: bam_files
+        tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
 
     script:
     """
