@@ -13,7 +13,7 @@
  */
 
 process prepare_target_bed {
-    label 'low_cpu'
+    label 'process_single'
     tag "${target_bed.baseName}"
     conda "bioconda::bedtools=2.31.1"
 
@@ -83,7 +83,7 @@ process prepare_target_bed {
 }
 
 process intersect_bed_with_methylkit {
-    label 'low_cpu'
+    label 'process_single'
     tag "${library}"
     conda "bioconda::bedtools=2.31.1"
 
@@ -111,7 +111,7 @@ process intersect_bed_with_methylkit {
 }
 
 process group_bed_intersections {
-    label 'low_cpu'
+    label 'process_single'
     tag "${library}"
     conda "conda-forge::gawk=5.3.1"
     publishDir "${params.outputDir}/methylKit_intersections", mode: 'symlink'
@@ -205,7 +205,7 @@ process group_bed_intersections {
 }
 
 process concatenate_intersections {
-    label 'low_cpu'
+    label 'process_single'
     publishDir "${params.outputDir}/methylKit_intersections", mode: 'copy'
 
     input:

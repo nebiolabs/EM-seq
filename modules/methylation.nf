@@ -76,7 +76,7 @@ process methylDackel_extract {
 }
 
 process convert_methylkit_to_bed {
-    label 'low_cpu'
+    label 'process_single'
     tag "${library}"
     conda "conda-forge::pigz=2.8 conda-forge::gawk=5.3.1 conda-forge::sed=4.9"
 
