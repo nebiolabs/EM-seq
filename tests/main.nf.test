@@ -10,12 +10,14 @@ nextflow_pipeline {
             params.genome = 'test'
             params.email = 'foo@example.com'
             params.flowcell = "test_pipeline"
+            params.fastq_split_count = 2
             //params.enable_neb_agg = true
 
         }
 
         then {
-            def bwameth = bam("${launchDir}/test_output/bwameth_align/emseq-test1.aln.bam").getStatistics()
+            def bwameth_file_1 = bam("${launchDir}/test_output/bwameth_align/0001.emseq-test1.aln.bam").getStatistics()
+            def bwameth_file_2 = bam("${launchDir}/test_output/bwameth_align/0002.emseq-test1.aln.bam").getStatistics()
             def fastqc = path("${launchDir}/test_output/stats/fastqc/emseq-test1.md_fastqc.html").exists()
             def fastp = path("${launchDir}/test_output/stats/fastp/emseq-test1.fastp.json").text.tokenize('\n')[1..33]
             def markdup = bam("${launchDir}/test_output/markduped_bams/emseq-test1.md.bam").getStatistics()
@@ -36,7 +38,8 @@ nextflow_pipeline {
             assertAll(
                 { assert workflow.success },
                 { assert snapshot(workflow.trace,
-                    ["bwameth", bwameth],
+                    ["bwameth_file_1", bwameth_file_1],
+                    ["bwameth_file_2", bwameth_file_2],
                     ["fastqc", fastqc],
                     ["fastp", fastp],
                     ["markdup", markdup],

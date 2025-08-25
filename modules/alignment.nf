@@ -8,9 +8,8 @@ process fastp {
         tuple val(library), path(bam)
     
     output:
-        tuple val(library), path("${library}.trimmed.fastq"), emit: fastp_out
+        tuple val(library), path("*.1.trimmed.fastq"), path("*.2.trimmed.fastq"), emit: trimmed_fastq
         tuple val(library), path("${library}.fastp.json"), emit: fastp_json
-        tuple val(library), path("${library}.fastp.failed.fastq"), emit: fastp_failed
 
     script:
     """
@@ -21,14 +20,14 @@ process fastp {
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    samtools fastq -n ${bam} \
-    | fastp --interleaved_in --stdin --stdout \
+    samtools fastq -n ${bam} > ${library}.fastq 
+    fastp --interleaved_in --in1 ${library}.fastq \
                     -l 2 -Q \${trim_polyg} \
                     --overrepresentation_analysis \
                     -j "${library}.fastp.json" \
-                    --split 8 \
-                    --failed_out "${library}.fastp.failed.fastq" \
-    > ${library}.trimmed.fastq
+                    --split ${params.fastq_split_count} \
+                    --out1 ${library}.1.trimmed.fastq \
+                    --out2 ${library}.2.trimmed.fastq
     """
 }
 
@@ -50,7 +49,7 @@ process alignReads {
     }
 
     input:
-        tuple val(library), path(fastq)
+        tuple val(library), val(chunk_name), path(read1), path(read2)
         val(genome_fa)
 
     output:
@@ -59,15 +58,15 @@ process alignReads {
 
     script:
     """
-    echo "Input file size: ${fastq.size() / (1024 * 1024 * 1024)} GB"
+    echo "Input file size: ${read1.size() / (1024 * 1024 * 1024)} GB"
     echo "Memory allocated: ${task.memory}" 
 
-    bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --reference ${genome_fa} ${fastq} 2> "${library}.log.bwamem" \
+    bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --reference ${genome_fa} ${read1} ${read2} 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
-       -o "${library}.aln.bam##idx##${library}.aln.bam.bai" /dev/stdin
+       -o "${chunk_name}.aln.bam##idx##${chunk_name}.aln.bam.bai" /dev/stdin
 
 
     """
@@ -81,7 +80,7 @@ process mergeAndMarkDuplicates {
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:
-        tuple val(library), path(bam), path(bai)
+        tuple val(library), path(bams), path(bais)
     output:
         tuple val(library), path('*.md.bam'), path('*.md.bai'), emit: md_bams
         path('*.markdups_log'), emit: log_files
@@ -90,10 +89,12 @@ process mergeAndMarkDuplicates {
     script:
     """
     set +o pipefail
-    inst_name=\$(samtools view ${bam} | head -n1 | cut -d ":" -f1);
+    inst_name=\$(samtools view ${bams[0]} | head -n1 | cut -d ":" -f1);
     set -o pipefail
 
     optical_distance=\$(echo \${inst_name} | awk '{if (\$1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
+
+    samtools merge ${library}.bam ${bams}
 
     picard -Xmx${task.memory.toGiga()}g MarkDuplicates \
         --TAGGING_POLICY All \
@@ -105,7 +106,7 @@ process mergeAndMarkDuplicates {
         --ASSUME_SORT_ORDER coordinate \
         --VALIDATION_STRINGENCY SILENT \
         --ADD_PG_TAG_TO_READS false \
-        -I ${bam} \
+        -I ${library}.bam \
         -O ${library}.md.bam \
         -M ${library}.markdups_log
     """
