@@ -41,7 +41,6 @@ nextflow run main.nf \
 | `--flowcell` | Flowcell identifier | Optional |
 | `--outputDir` | Output directory | `em-seq_output` |
 | `--project` | Project name | `project_undefined` |
-| `--max_input_reads` | Max reads to process (or "all_reads") | `all_reads` |
 | `--target_bed` | BED file for targeted analysis | Optional |
 | `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
 | `--min_mapq` | Minimum mapping quality | `20` |
