@@ -88,7 +88,6 @@ process alignReads {
         tuple val(library), path("*.nonconverted.tsv"), emit: nonconverted_counts
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: aligned_bams
         tuple val(library), env(barcodes), env(flowcell), env(num_reads_used), emit: metadata
-        tuple val(library), path(input_file1), emit: file_metadata
 
     script:
     """

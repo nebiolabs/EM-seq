@@ -171,7 +171,7 @@ workflow {
         if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
             aggregate_emseq( grouped_library_results
                                 .join( insertsize.for_agg )
-                                .join( alignedReads.file_metadata )
+                                .join( passed_reads.map { library, read1File, _read2File, _fileType -> [library, read1File] })
             )
         }
 
