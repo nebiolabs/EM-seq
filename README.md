@@ -56,11 +56,11 @@ nextflow run main.nf \
 | `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
 
 ### References Config
-# Modify the conf/references.config file to specify your genome files
+
+Modify the conf/references.config file to specify your genome files
 - `genome_fa` path to your genome fasta file where .fai also exists 
 - `bwameth_index` path to your genome fasta file where bwameth indices exist 
 - `target_bed` BED file for targeted analysis, Optional 
-
 
 ### Advanced Options
 - `--tmp_dir` - Temporary directory (default: `/tmp`)
