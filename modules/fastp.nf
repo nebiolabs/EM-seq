@@ -1,7 +1,7 @@
 process fastp {
 	tag "${library}"
     label 'process_single'
-    conda "bioconda::samtools=1.21 bioconda::fastp=0.23.4"
+    conda "bioconda::samtools=1.21 bioconda::fastp=1.0.1"
     publishDir "${params.outputDir}/stats/fastp", mode: 'copy', pattern: "*json"
 
     input:
