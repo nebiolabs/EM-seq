@@ -1,11 +1,24 @@
 nextflow.enable.dsl=2
 
-include { fastp; alignReads; mergeAndMarkDuplicates }                                                   from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
-include { prepare_target_bed; intersect_bed_with_methylkit;
-          group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
-include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
-include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
+include { fastp }                          from './modules/fastp'
+include { alignReads }                     from './modules/align_reads'
+include { mergeAndMarkDuplicates }         from './modules/merge_and_mark_duplicates'
+include { methylDackel_mbias }             from './modules/methyldackel_mbias'
+include { methylDackel_extract }           from './modules/methyldackel_extract'
+include { convert_methylkit_to_bed }       from './modules/convert_methylkit_to_bed'
+include { prepare_target_bed }             from './modules/prepare_target_bed'
+include { intersect_bed_with_methylkit }   from './modules/intersect_bed_with_methylkit'
+include { group_bed_intersections }        from './modules/group_bed_intersections'
+include { concatenate_intersections }      from './modules/concatenate_intersections'
+include { gc_bias }                        from './modules/gc_bias'
+include { idx_stats }                      from './modules/idx_stats'
+include { flag_stats }                     from './modules/flag_stats'
+include { fastqc }                         from './modules/fastqc'
+include { insert_size_metrics }            from './modules/insert_size_metrics'
+include { picard_metrics }                 from './modules/picard_metrics'
+include { tasmanian }                      from './modules/tasmanian'
+include { aggregate_emseq }                from './modules/aggregate_emseq.nf'
+include { multiqc }                        from './modules/multiqc.nf'
 
 if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
   exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
@@ -31,7 +44,7 @@ workflow {
         failed_bams = bams.filter { library, bam -> !checkFileSize(bam) }
         failed_library_names = failed_bams.map { library, bam -> library }
 
-        // Send email if there are failed libraries
+        ////////// Filter libraries with insufficient reads //////////
         failed_library_names.collect().subscribe { names ->
             if (names.size() > 0) {
                 def joined_names = names.join('<br>')
@@ -49,7 +62,7 @@ workflow {
             }
         }
 
-        // align and mark duplicates
+        ///////// Trim, align and mark duplicates //////////
         fastp( passed_bams )
         fastq_chunks = fastp.out.trimmed_fastq
             .map { library, fq1_files, fq2_files -> 
@@ -63,14 +76,16 @@ workflow {
         alignReads( fastq_chunks, params.reference_list.bwa_index )
         mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
         md_bams = mergeAndMarkDuplicates.out.md_bams
+
+        ///////// Methylation Calling //////////
         methylDackel_extract( md_bams, genome_fa, genome_fai )
         methylDackel_mbias( md_bams, genome_fa, genome_fai )
-        
-        // intersect methylKit files with target BED file if provided //
-        if (params.reference_list.target_bed) {
+
+        //////// Intersect methylKit files with target BED file ////////
+        if (params.reference_list.target_bed && !params.skip_target_bed) {
 
             convert_methylkit_to_bed( methylDackel_extract.out, genome_fa, genome_fai )
-            prepare_target_bed( params.reference_list.target_bed, genome_fa, genome_fai )
+            prepare_target_bed( params.reference_list.target_bed, params.target_bed_slop, genome_fa, genome_fai )
             intersect_bed_with_methylkit(
                 convert_methylkit_to_bed.out.methylkit_bed,
                 prepare_target_bed.out,
@@ -86,7 +101,7 @@ workflow {
             )
         }
         
-        // collect statistics
+        ///////// Collect statistics ///////
         gc_bias(  md_bams, genome_fa, genome_fai )
         idx_stats(  md_bams )
         flag_stats( md_bams )
@@ -95,8 +110,7 @@ workflow {
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
 
-
-        // channel for internal summaries
+        //////// Collect files for internal summaries //////////
         grouped_library_results = bams
 	        .join( alignReads.out.bam_files )
             .join( fastp.out.fastp_json )
@@ -110,14 +124,13 @@ workflow {
             .join( tasmanian.out.for_agg )
             .join( methylDackel_mbias.out.for_agg )
             
-
         if (params.enable_neb_agg) {
             aggregate_emseq( grouped_library_results
                                 .join( insert_size_metrics.out.for_agg )
             )
         }
        
-        // channel for multiqc analysis
+        ////////// MultiQC analysis ///////////
         all_results = grouped_library_results
          .join(insert_size_metrics.out.high_mapq_insert_size_metrics)
          .map{[it[2..-1]]}
