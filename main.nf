@@ -72,6 +72,10 @@ workflow {
             }
             .flatten()
             .collate(4)
+            .filter { library, chunk_name, fq1, fq2 -> 
+                fq1.size() > 0 && fq2.size() > 0 
+            }
+
         
         alignReads( fastq_chunks, params.reference_list.bwa_index )
         mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
