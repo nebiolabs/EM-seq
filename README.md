@@ -15,6 +15,18 @@ Complete EM-seq processing pipeline that accepts uBAM inputs:
 - Quality control metrics and statistics
 - Optional BED file intersection for targeted analysis
 
+### Fastq to uBam pipeline (`fastq_to_ubam.nf`)
+If your files are in fastq format you will need to convert them to uBams prior to running the main pipeline, e.g.:
+```bash
+nextflow run fastq_to_ubam.nf \
+  --input_glob "tests/fixtures/fastq/emseq-test*{.ds.1,.ds.2}.fastq.gz" \
+  --read_format 'paired-end'
+```
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--input_glob` | glob for your gzipped fastq files | `['*.{1,2}.fastq.gz']` |
+| `--read_format` | 'paired-end' or 'single-end' | `'paired-end'` |
+
 ### Legacy Workflows
 - `em-seq.nf` - Original alignment and methylation calling workflow
 - `bins.nf` - TSS-centered binned coverage analysis
@@ -45,9 +57,9 @@ nextflow run main.nf \
 
 ### References Config
 # Modify the conf/references.config file to specify your genome files
-- | `genome_fa` | path to your genome fasta file where .fai also exists | Optional | 
-- | `bwameth_index` | path to your genome fasta file where bwameth indices exist | Optional | 
-- | `target_bed` | BED file for targeted analysis | Optional | 
+- `genome_fa` path to your genome fasta file where .fai also exists 
+- `bwameth_index` path to your genome fasta file where bwameth indices exist 
+- `target_bed` BED file for targeted analysis, Optional 
 
 
 ### Advanced Options
@@ -81,4 +93,16 @@ You may also be interested in the [nf-core methylseq project](https://nf-co.re/m
 
  ### Development:
  - development workflow will run from master branch
+
+ ### Testing:
+ - Tests are run using nf-test and are integrated into github actions
+ - install nf-test from bioconda using conda/mamba
+ - To run all tests:
+ ```bash
+nf-test test
+```
+- When new tests are added or results change, to update the results snapshot:
+```bash
+nf-test test --updateSnapshot
+```
 
