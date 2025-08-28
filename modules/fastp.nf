@@ -1,6 +1,6 @@
 process fastp {
 	tag "${library}"
-    label 'process_single'
+    label 'medium_cpu'
     conda "bioconda::samtools=1.21 bioconda::fastp=1.0.1"
     publishDir "${params.outputDir}/stats/fastp", mode: 'copy', pattern: "*json"
 
@@ -23,6 +23,7 @@ process fastp {
     samtools fastq -n ${bam} > ${library}.fastq 
     fastp --interleaved_in --in1 ${library}.fastq \
                     -l 2 -Q \${trim_polyg} \
+                    --thread ${task.cpus} \
                     --overrepresentation_analysis \
                     -j "${library}.fastp.json" \
                     --split ${params.fastq_split_count} \
