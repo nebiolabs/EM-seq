@@ -139,6 +139,5 @@ process aggregate_emseq {
     --fastp ${fastp} \
     \${metadata} \
     --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
-    # --num_reads_used ${num_reads_used}
     """
 }
