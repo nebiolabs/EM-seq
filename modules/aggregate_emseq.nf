@@ -1,6 +1,6 @@
 process aggregate_emseq {
     tag { library }
-    conda "bioconda::samtools=1.9"
+    conda "bioconda::samtools=1.9 git=2.40.1"
 
     input:         
 	tuple  val(library), 
@@ -26,7 +26,7 @@ process aggregate_emseq {
     """
     unzip -o *fastqc.zip # -f in case we need to re-run
 
-    cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
+    export GIT_HASH=\$(git -C "${workflow.projectDir}" log -1 --pretty=format:"%H")
 
     export RBENV_VERSION=\$(cat ${params.path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production ${params.path_to_ngs_agg}/bin/bundle exec ${params.path_to_ngs_agg}/aggregate_results.rb \\
@@ -45,6 +45,7 @@ process aggregate_emseq {
     --combined_mbias_records ${mbias} \\
     --tasmanian ${tasmanian} \\
     --insert ${insertsize_metrics} \\
-    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
+    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out \\
+    --commit_hash \$GIT_HASH 
     """
 }

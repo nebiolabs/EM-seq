@@ -29,7 +29,7 @@ nextflow_pipeline {
             def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test1.alignment_summary_metrics.txt").exists()
             def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test1_CpG.methylKit.gz").exists()
             def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test1.combined_mbias.tsv").exists()
-            def nonconverted = path("${launchDir}/test_output/bwameth_align/emseq-test1.nonconverted.tsv").text.tokenize('\n')
+            def nonconverted = path("${launchDir}/test_output/bwameth_align/emseq-test1.nonconverted.for_agg.tsv").text.tokenize('\n')
             def intersection_summaries = path("${launchDir}/test_output/methylKit_intersections/all_summaries_combined.tsv").exists()
             def methylkit_intersections = path("${launchDir}/test_output/methylKit_intersections/all_intersections_combined.tsv").exists()
             def tasmanian = path("${launchDir}/test_output/stats/tasmanian/emseq-test1.csv").exists()
