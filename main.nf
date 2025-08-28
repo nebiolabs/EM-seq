@@ -138,7 +138,7 @@ workflow {
        
         ////////// MultiQC analysis ///////////
         all_results = grouped_library_results
-         .join(insert_size_metrics.out.high_mapq_insert_size_metrics)
+         .join(insert_size_metrics.out.high_mapq)
          .map{[it[2..-1]]}
          .flatten()
          .collect()
