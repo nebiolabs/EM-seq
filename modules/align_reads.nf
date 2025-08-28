@@ -5,7 +5,7 @@ process alignReads {
     publishDir "${params.outputDir}/bwameth_align", mode: 'symlink'
     memory {
         try { 
-            def fileSize = fastq.size() / (1024 * 1024 * 1024)
+            def fileSize = read1.size() / (1024 * 1024 * 1024)
             if (fileSize < 1.8) return '64 GB'
             else if (fileSize < 6.5) return '128 GB'
             else return '256 GB'
