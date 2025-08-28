@@ -83,7 +83,7 @@ process aggregate_emseq {
     """
     path_to_ngs_agg="${params.path_to_ngs_agg}${params.revision}/"
 
-    unzip -o *fastqc.zip # -f in case we need to re-run
+    unzip -o *fastqc.zip 
 
     if echo ${barcodes} | grep -q "+"
     then
