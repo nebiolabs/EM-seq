@@ -28,7 +28,31 @@ process alignReads {
     echo "Input file size: ${read1.size() / (1024 * 1024 * 1024)} GB"
     echo "Memory allocated: ${task.memory}" 
 
-    bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --reference ${genome_fa} ${read1} ${read2} 2> "${library}.log.bwamem" \
+    barcodes_from_fastq() {
+        set +o pipefail
+        zcat -f \$1 \
+        | head -n10000 \
+        | awk '{
+            if (NR%4==1) {
+                split(\$0, parts, ":"); 
+                arr[ parts[ length(parts) ] ]++
+            }} END { for (i in arr) {print arr[i]"\\t"i} }' \
+        | sort -k1nr | head -n1 | cut -f2 
+        set -o pipefail
+    }
+
+    get_rg_line() {
+        set +o pipefail
+        local file=\$1
+        barcodes=(\$(barcodes_from_fastq \$file))
+        rg_line="@RG\\tID:\${barcodes}\\tSM:${library}\\tBC:\${barcodes}"
+        set -o pipefail
+        export rg_line
+    }
+
+    get_rg_line ${read1}
+
+    bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} ${read1} ${read2} 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
