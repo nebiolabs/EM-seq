@@ -7,3 +7,5 @@ ngs-agg_revision.yaml
 test_data/tmp
 .env
 log/
+.nf-test*
+.conda
