@@ -2,7 +2,7 @@ process fastp {
 	tag "${library}"
     label 'medium_cpu'
     conda "bioconda::samtools=1.21 bioconda::fastp=1.0.1"
-    publishDir "${params.outputDir}/stats/fastp", mode: 'copy', pattern: "*json"
+    publishDir "${params.outputDir}/fastp"
 
     input:
         tuple val(library), path(bam)

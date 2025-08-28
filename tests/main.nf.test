@@ -19,7 +19,7 @@ nextflow_pipeline {
             def bwameth_file_1 = bam("${launchDir}/test_output/bwameth_align/0001.emseq-test1.aln.bam").getStatistics()
             def bwameth_file_2 = bam("${launchDir}/test_output/bwameth_align/0002.emseq-test1.aln.bam").getStatistics()
             def fastqc = path("${launchDir}/test_output/stats/fastqc/emseq-test1.md_fastqc.html").exists()
-            def fastp = path("${launchDir}/test_output/stats/fastp/emseq-test1.fastp.json").text.tokenize('\n')[1..33]
+            def fastp = path("${launchDir}/test_output/fastp/emseq-test1.fastp.json").text.tokenize('\n')[1..33]
             def markdup = bam("${launchDir}/test_output/markduped_bams/emseq-test1.md.bam").getStatistics()
             def markdup_log = path("${launchDir}/test_output/stats/markdups/emseq-test1.markdups_log").exists()
             def insert_sizes = path("${launchDir}/test_output/stats/insert_size/emseq-test1.insertsize_metrics").exists()
