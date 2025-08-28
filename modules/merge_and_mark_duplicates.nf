@@ -9,7 +9,6 @@ process mergeAndMarkDuplicates {
         tuple val(library), path(bams), path(bais)
     output:
         tuple val(library), path('*.md.bam'), path('*.md.bai'), emit: md_bams
-        path('*.markdups_log'), emit: log_files
         tuple val(library), path('*.markdups_log'), emit: log
 
     script:

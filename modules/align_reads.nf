@@ -21,7 +21,7 @@ process alignReads {
 
     output:
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: bam_files
-        tuple val(library), path("*.nonconverted_counts.for_agg.tsv"), emit: nonconverted_counts
+        tuple val(library), path("*.nonconverted_counts.tsv"), emit: nonconverted_counts
 
     script:
     """
@@ -38,13 +38,12 @@ process alignReads {
     get_rg_line ${bam}
 
     bwameth.py -p -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} ${read1} ${read2} 2> "${library}.log.bwamem" \
-    | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${library}.nonconverted.tsv" \
+    | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${chunk_name}.nonconverted_counts.tsv" \
     | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
        -o "${chunk_name}.aln.bam##idx##${chunk_name}.aln.bam.bai" /dev/stdin
 
-    cat ${library}.nonconverted.tsv | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted.for_agg.tsv
 
     """
 }

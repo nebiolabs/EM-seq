@@ -5,6 +5,7 @@ include { alignReads }                     from './modules/align_reads'
 include { mergeAndMarkDuplicates }         from './modules/merge_and_mark_duplicates'
 include { methylDackel_mbias }             from './modules/methyldackel_mbias'
 include { methylDackel_extract }           from './modules/methyldackel_extract'
+include { combine_nonconverted_counts }    from './modules/combine_nonconverted_counts'
 include { convert_methylkit_to_bed }       from './modules/convert_methylkit_to_bed'
 include { prepare_target_bed }             from './modules/prepare_target_bed'
 include { intersect_bed_with_methylkit }   from './modules/intersect_bed_with_methylkit'
@@ -113,10 +114,11 @@ workflow {
         insert_size_metrics( md_bams ) 
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
+        combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
 
         //////// Collect files for internal summaries //////////
         grouped_library_results = bams
-	        .join( alignReads.out.bam_files )
+	        .join( mergeAndMarkDuplicates.out.md_bams )
             .join( fastp.out.fastp_json )
             .join( mergeAndMarkDuplicates.out.log )
             .join( picard_metrics.out.for_agg )
@@ -124,7 +126,7 @@ workflow {
             .join( idx_stats.out.for_agg )
             .join( flag_stats.out.for_agg )
             .join( fastqc.out.for_agg )
-            .join( alignReads.out.nonconverted_counts )
+            .join( combine_nonconverted_counts.out.for_agg )
             .join( tasmanian.out.for_agg )
             .join( methylDackel_mbias.out.for_agg )
             

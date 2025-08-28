@@ -3,8 +3,8 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 35,
-                "tasksSucceeded": 35
+                "tasksCount": 37,
+                "tasksSucceeded": 37
             },
             [
                 "bwameth_file_1",
@@ -126,6 +126,12 @@
                 ]
             ],
             [
+                "nonconverted_combined",
+                [
+                    "emseq-test1\tchr1\t0"
+                ]
+            ],
+            [
                 "intersection_summaries",
                 true
             ],
@@ -146,6 +152,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-08-27T16:12:21.338568615"
+        "timestamp": "2025-08-28T15:35:55.439124226"
     }
 }
