@@ -68,7 +68,11 @@ workflow {
         fastp( passed_bams )
         fastq_chunks = fastp.out.trimmed_fastq
             .map { library, fq1_files, fq2_files -> 
-                [fq1_files, fq2_files].transpose().collect { fq1, fq2 -> 
+                // Needs to be a list even if there is only one fastq chunk
+                def fq1_list = fq1_files instanceof List ? fq1_files : [fq1_files]
+                def fq2_list = fq2_files instanceof List ? fq2_files : [fq2_files]
+                
+                [fq1_list, fq2_list].transpose().collect { fq1, fq2 -> 
                     [library, fq1.baseName.split(".1.trimmed")[0], fq1, fq2] 
                 }
             }
