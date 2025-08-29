@@ -40,18 +40,41 @@ process insert_size_metrics {
     wait \$picard_good_mapq_pid
     wait \$picard_bad_mapq_pid
 
-    # Combine and annotate insert size metrics for aggregation
-    grep -B 1000 '^insert_size' ${library}.good_mapq.insert_size_metrics.txt | grep -v "insert_size" > ${library}.insertsize_metrics
-    echo -e "insert_size\tAll_Reads.fr_count\tAll_Reads.rf_count\tAll_Reads.tandem_count\tcategory" >> ${library}.insertsize_metrics
-
-    for file in ${library}.good_mapq.insert_size_metrics.txt ${library}.bad_mapq.insert_size_metrics.txt; do
-        if [[ "\$file" == *good_mapq* ]]; then
-            category=">=20"
-        else
-            category="<20"
-        fi
-        grep -A1000 '^insert_size' "\$file" | awk -v cat="\$category" 'NR>1 {print \$1"\t"\$2"\t"\$3"\t"\$4"\t"cat}' >> ${library}.insertsize_metrics
-    done
+    grep -h -A1000 '^insert_size' ${library}.good_mapq.insert_size_metrics.txt ${library}.bad_mapq.insert_size_metrics.txt | awk 'BEGIN{flag=0} {
+        if (! \$2) {if (\$2 != 0) {next}}
+        if (\$1~/^insert_size/) {
+            if (flag==0) { category = ">=20"}
+            else {category = "<20"}
+            flag++;
+            # set header with indices of arr to keep order in good and bad mapq files.
+            for (i=1; i<=5; i++){
+                no_cols[i] = 0
+                if      (\$i ~ /insert_size/) {isize=i}
+                else if (\$i ~ /rf_count/)    {rf=i}
+                else if (\$i ~ /fr_count/)    {fr=i}
+                else if (\$i ~ /tandem/)      {tandem=i}
+                else                         {no_cols[i]++}
+            }
+            # columns that are not present still need to be printed (with 0 value)
+            for (i in no_cols) {
+                if (no_cols[i] > 0) {
+                    if      (! isize )  { isize = i}
+                    else if (! rf )     { rf = i}
+                    else if (! fr )     { fr = i}
+                    else if (! tandem ) { tandem = i}
+                }
+            }
+        }
+        else {
+            # get values
+            for (n=1; n<=4;n++) {
+                arr[n]=0
+                if (\$n) { arr[n] = \$n }
+            }
+            # sort values on header index and print
+            print arr[isize]"\\t"arr[fr]"\\t"arr[rf]"\\t"arr[tandem]"\\t"category
+        }
+    }' >> ${library}.insertsize_metrics
 
     """
 }
