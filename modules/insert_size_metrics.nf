@@ -40,6 +40,10 @@ process insert_size_metrics {
     wait \$picard_good_mapq_pid
     wait \$picard_bad_mapq_pid
 
+    # Combine and annotate insert size metrics for aggregation
+    grep -B 1000 '^insert_size' ${library}.good_mapq.insert_size_metrics.txt | grep -v "insert_size" > ${library}.insertsize_metrics
+    echo -e "insert_size\tAll_Reads.fr_count\tAll_Reads.rf_count\tAll_Reads.tandem_count\tcategory" >> ${library}.insertsize_metrics
+
     grep -h -A1000 '^insert_size' ${library}.good_mapq.insert_size_metrics.txt ${library}.bad_mapq.insert_size_metrics.txt | awk 'BEGIN{flag=0} {
         if (! \$2) {if (\$2 != 0) {next}}
         if (\$1~/^insert_size/) {
