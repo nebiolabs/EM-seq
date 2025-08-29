@@ -10,6 +10,8 @@ process fastp {
     output:
         tuple val(library), path("*.1.trimmed.fastq"), path("*.2.trimmed.fastq"), emit: trimmed_fastq
         tuple val(library), path("${library}.fastp.json"), emit: fastp_json
+        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
+        tuple val("${task.process}"), val('fastp'), eval('fastp --version 2>&1 | cut -f 2 -d " "'), topic: versions
 
     script:
     """

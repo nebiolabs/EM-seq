@@ -9,6 +9,7 @@ process flag_stats {
 
     output:
         tuple val(library), path("*flagstat"), emit: for_agg
+        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
 
     script:
     """

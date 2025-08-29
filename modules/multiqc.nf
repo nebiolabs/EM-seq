@@ -47,6 +47,7 @@ process multiqc {
             avg_sequence_length: False
             percent_fails: False
             total_sequences: False
+    disable_version_detection: true
 CONFIG
 
     multiqc -ip . 

@@ -10,7 +10,8 @@ process intersect_bed_with_methylkit {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*_intersect.tsv')
+        tuple val(library), path('*_intersect.tsv'), emit: tsv
+        tuple val("${task.process}"), val('bedtools'), eval('bedtools --version | sed \'s/^bedtools //\''), topic: versions
 
     script:
     """

@@ -1,5 +1,5 @@
 process methylDackel_extract {
-    label 'high_cpu'
+    label 'medium_cpu'
     tag "${library}"
     publishDir "${params.outputDir}/methylDackelExtracts", mode: 'copy'
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8"
@@ -10,7 +10,9 @@ process methylDackel_extract {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz')
+        tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz'), emit: methylkits
+        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
+        tuple val("${task.process}"), val('methyldackel'), eval('MethylDackel --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 
     script:
     """

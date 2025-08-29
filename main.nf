@@ -1,5 +1,6 @@
-nextflow.enable.dsl=2
+nextflow.preview.topic = true
 
+include {createVersionsFile}               from './lib/versions.nf'
 include { fastp }                          from './modules/fastp'
 include { alignReads }                     from './modules/align_reads'
 include { mergeAndMarkDuplicates }         from './modules/merge_and_mark_duplicates'
@@ -86,16 +87,16 @@ workflow {
         //////// Intersect methylKit files with target BED file ////////
         if (params.reference_list.target_bed && !params.skip_target_bed) {
 
-            convert_methylkit_to_bed( methylDackel_extract.out, genome_fa, genome_fai )
+            convert_methylkit_to_bed( methylDackel_extract.out.methylkits, genome_fa, genome_fai )
             prepare_target_bed( params.reference_list.target_bed, params.target_bed_slop, genome_fa, genome_fai )
             intersect_bed_with_methylkit(
                 convert_methylkit_to_bed.out.methylkit_bed,
-                prepare_target_bed.out,
+                prepare_target_bed.out.bed,
                 genome_fa,
                 genome_fai
             )
 
-            group_bed_intersections( intersect_bed_with_methylkit.out )
+            group_bed_intersections( intersect_bed_with_methylkit.out.tsv )
 
             concatenate_intersections(
                 group_bed_intersections.out.results.collect(),
@@ -134,11 +135,12 @@ workflow {
         }
        
         ////////// MultiQC analysis ///////////
+        versions_file = createVersionsFile(Channel.topic('versions'))
         all_results = grouped_library_results
          .join(insert_size_metrics.out.high_mapq)
          .map{[it[2..-1]]}
          .flatten()
+         .concat(versions_file)
          .collect()
-
         multiqc( all_results )
 }

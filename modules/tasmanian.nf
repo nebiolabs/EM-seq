@@ -15,6 +15,8 @@ process tasmanian {
 
     output:
         tuple val(library), path('*.csv'), emit: for_agg
+        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
+        tuple val("${task.process}"), val('tasmanian'), val('*should be* 1.0.9'), topic: versions
 
     script:
     """

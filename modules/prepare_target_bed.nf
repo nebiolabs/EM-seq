@@ -24,7 +24,8 @@ process prepare_target_bed {
         val(genome_fai)
 
     output:
-        path('*_slop_sorted.bed')
+        path('*_slop_sorted.bed'), emit: bed
+        tuple val("${task.process}"), val('bedtools'), eval('bedtools --version | sed \'s/^bedtools //\''), topic: versions
 
     script:
     """

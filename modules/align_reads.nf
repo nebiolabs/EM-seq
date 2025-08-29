@@ -1,7 +1,7 @@
 process alignReads {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/bwameth_align", mode: 'symlink'
 
     input:
@@ -11,6 +11,9 @@ process alignReads {
     output:
         tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: bam_files
         tuple val(library), path("*.nonconverted_counts.tsv"), emit: nonconverted_counts
+        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
+        tuple val("${task.process}"), val('bwameth'), eval('bwameth.py --version | sed \'s/^bwa-meth.py //\''), topic: versions
+        tuple val("${task.process}"), val('python'), eval('python --version | sed \'s/^Python //\''), topic: versions
 
     script:
     """
