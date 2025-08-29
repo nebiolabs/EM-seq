@@ -20,14 +20,14 @@ process fastp {
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    samtools fastq -n ${bam} > ${library}.fastq 
-    fastp --interleaved_in --in1 ${library}.fastq \
-                    -l 2 -Q \${trim_polyg} \
-                    --thread ${task.cpus} \
-                    --overrepresentation_analysis \
-                    -j "${library}.fastp.json" \
-                    --split ${params.fastq_split_count} \
-                    --out1 ${library}.1.trimmed.fastq \
+    samtools fastq --threads ${task.cpus} -n ${bam} | \\
+    fastp --interleaved_in --stdin \\
+                    -l 2 -Q \${trim_polyg} \\
+                    --thread ${task.cpus} \\
+                    --overrepresentation_analysis \\
+                    -j "${library}.fastp.json" \\
+                    --split_by_lines ${params.fastq_split_lines} \\
+                    --out1 ${library}.1.trimmed.fastq \\
                     --out2 ${library}.2.trimmed.fastq
     """
 }

@@ -10,7 +10,7 @@ nextflow_pipeline {
             params.genome = 'test'
             params.email = 'foo@example.com'
             params.flowcell = "test_pipeline"
-            params.fastq_split_count = 2
+            params.fastq_split_lines = 4000
             //params.enable_neb_agg = true
 
         }

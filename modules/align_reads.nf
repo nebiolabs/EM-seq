@@ -3,17 +3,6 @@ process alignReads {
     tag { library }
     conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::fastp=0.26 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/bwameth_align", mode: 'symlink'
-    memory {
-        try { 
-            def fileSize = read1.size() / (1024 * 1024 * 1024)
-            if (fileSize < 1.8) return '64 GB'
-            else if (fileSize < 6.5) return '128 GB'
-            else return '256 GB'
-        }
-        catch (Exception _e) {
-            return '128 GB'  // Default memory if size cannot be determined
-        }
-    }
 
     input:
         tuple val(library), path(bam), val(chunk_name), path(read1), path(read2)

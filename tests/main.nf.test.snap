@@ -3,19 +3,19 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 37,
-                "tasksSucceeded": 37
+                "tasksCount": 45,
+                "tasksSucceeded": 45
             },
             [
                 "bwameth_file_1",
                 {
                     "maxReadLength": 76,
-                    "minReadLength": 31,
+                    "minReadLength": 32,
                     "meanReadLength": 74,
                     "maxQuality": 60,
                     "minQuality": 0,
-                    "meanQuality": 18,
-                    "readCount": 944
+                    "meanQuality": 16,
+                    "readCount": 398
                 }
             ],
             [
@@ -27,7 +27,7 @@
                     "maxQuality": 60,
                     "minQuality": 0,
                     "meanQuality": 19,
-                    "readCount": 867
+                    "readCount": 375
                 }
             ],
             [
@@ -76,12 +76,12 @@
                 "markdup",
                 {
                     "maxReadLength": 76,
-                    "minReadLength": 31,
-                    "meanReadLength": 74,
+                    "minReadLength": 32,
+                    "meanReadLength": 75,
                     "maxQuality": 60,
                     "minQuality": 0,
-                    "meanQuality": 18,
-                    "readCount": 1811
+                    "meanQuality": 14,
+                    "readCount": 1435
                 }
             ],
             [
@@ -95,7 +95,7 @@
             [
                 "idxstats",
                 [
-                    "chr1\t284940\t1548\t263",
+                    "chr1\t284940\t1067\t368",
                     "*\t0\t0\t0"
                 ]
             ],
@@ -152,6 +152,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-08-28T15:35:55.439124226"
+        "timestamp": "2025-08-29T12:49:08.940695077"
     }
 }
