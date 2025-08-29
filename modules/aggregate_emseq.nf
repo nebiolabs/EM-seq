@@ -45,7 +45,8 @@ process aggregate_emseq {
     --combined_mbias_records ${mbias} \\
     --tasmanian ${tasmanian} \\
     --insert ${insertsize_metrics} \\
-    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out \\
-    --commit_hash \$GIT_HASH 
+    --workflow ${params.workflow} \\
+    --commit_hash \$GIT_HASH \\
+    2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }
