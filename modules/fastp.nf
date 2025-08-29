@@ -1,6 +1,6 @@
 process fastp {
 	tag "${library}"
-    label 'medium_cpu'
+    label 'low_cpu'
     conda "bioconda::samtools=1.21 bioconda::fastp=1.0.1"
     publishDir "${params.outputDir}/fastp"
 
@@ -22,10 +22,10 @@ process fastp {
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    samtools fastq --threads ${task.cpus} -n ${bam} | \\
+    samtools fastq -n ${bam} | \\
     fastp --interleaved_in --stdin \\
                     -l 2 -Q \${trim_polyg} \\
-                    --thread ${task.cpus} \\
+                    --thread 1 \\
                     --overrepresentation_analysis \\
                     -j "${library}.fastp.json" \\
                     --split_by_lines ${params.fastq_split_lines} \\
