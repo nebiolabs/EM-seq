@@ -1,5 +1,5 @@
 process mergeAndMarkDuplicates {
-    label 'high_cpu'
+    label 'cpus_8'
     tag { library }
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
     publishDir "${params.outputDir}/stats/markdups", mode: 'copy', pattern: '*log'
@@ -19,7 +19,7 @@ process mergeAndMarkDuplicates {
 
     optical_distance=\$(echo \${inst_name} | awk '{if (\$1~/^M0|^NS|^NB/) {print 100} else {print 2500}}')
 
-    samtools merge ${library}.bam ${bams}
+    samtools merge --threads ${task.cpus} ${library}.bam ${bams}
 
     picard -Xmx${task.memory.toGiga()}g MarkDuplicates \
         --TAGGING_POLICY All \
