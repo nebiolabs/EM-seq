@@ -73,9 +73,6 @@ workflow {
             }
             .flatten()
             .collate(4)
-            .filter { library, chunk_name, fq1, fq2 -> 
-                fq1.size() > 0 && fq2.size() > 0 
-            }
 
         
         alignReads( passed_bams.combine(fastq_chunks, by:0), params.reference_list.bwa_index )
