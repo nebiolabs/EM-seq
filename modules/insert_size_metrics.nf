@@ -12,6 +12,8 @@ process insert_size_metrics {
         tuple val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq
 
     script:
+    // Insert sizes for multiqc is filtered for high mapQ
+    // Insert sizes for ngs-agg is combined, separating low and high mapQ with a category column
     """
 
     good_mapq_pipe="${library}.good_mapq"
