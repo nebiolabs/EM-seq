@@ -1,6 +1,7 @@
 nextflow.preview.topic = true
 
-include {createVersionsFile}               from './lib/versions.nf'
+include { createVersionsFile }             from './lib/versions.nf'
+include { format_ngs_agg_opts }            from './modules/aggregate_results'
 include { fastp }                          from './modules/fastp'
 include { alignReads }                     from './modules/align_reads'
 include { mergeAndMarkDuplicates }         from './modules/merge_and_mark_duplicates'
@@ -19,7 +20,7 @@ include { fastqc }                         from './modules/fastqc'
 include { insert_size_metrics }            from './modules/insert_size_metrics'
 include { picard_metrics }                 from './modules/picard_metrics'
 include { tasmanian }                      from './modules/tasmanian'
-include { aggregate_emseq }                from './modules/aggregate_emseq.nf'
+include { aggregate_results }              from './modules/aggregate_results.nf'
 include { multiqc }                        from './modules/multiqc.nf'
 
 if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
@@ -119,32 +120,35 @@ workflow {
         combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
 
         //////// Collect files for internal summaries //////////
-        grouped_library_results = bams
-	        .join( mergeAndMarkDuplicates.out.md_bams )
-            .join( fastp.out.fastp_json )
-            .join( mergeAndMarkDuplicates.out.log )
-            .join( picard_metrics.out.for_agg )
-            .join( gc_bias.out.for_agg )
-            .join( idx_stats.out.for_agg )
-            .join( flag_stats.out.for_agg )
-            .join( fastqc.out.for_agg )
-            .join( combine_nonconverted_counts.out.for_agg )
-            .join( tasmanian.out.for_agg )
-            .join( methylDackel_mbias.out.for_agg )
-            
+        agg_opts = [
+        ['--bam', mergeAndMarkDuplicates.out.md_bams.map{ tuple(it[0], it[1]) }],
+        ['--bai', mergeAndMarkDuplicates.out.md_bams.map{ tuple(it[0], it[2]) }],
+        ['--metadata_bam_file', bams],
+        ['--fastp', fastp.out.fastp_json],
+        ['--aln', picard_metrics.out.for_agg ],
+        ['--gc', gc_bias.out.for_agg ],
+        ['--dup', mergeAndMarkDuplicates.out.log],
+        ['--idx_stats', idx_stats.out.for_agg],
+        ['--flagstat', flag_stats.out.for_agg],
+        ['--fastqc', fastqc.out.for_agg],
+        ['--nonconverted_read_counts', combine_nonconverted_counts.out.for_agg ],
+        ['--tasmanian', tasmanian.out.for_agg ],
+        ['--combined_mbias_records', methylDackel_mbias.out.for_agg ]
+        ]
+        
+        multiqc_opts = agg_opts + [
+            ['--insert', insert_size_metrics.out.high_mapq]
+        ]
+
         if (params.enable_neb_agg) {
-            aggregate_emseq( grouped_library_results
-                                .join( insert_size_metrics.out.for_agg )
-            )
-        }
-       
+            agg_opts << ['--insert', insert_size_metrics.out.for_agg]
+            agg_tuple = format_ngs_agg_opts(agg_opts)
+            aggregate_results( agg_tuple )
+        } 
         ////////// MultiQC analysis ///////////
+        multiqc_tuple = format_ngs_agg_opts(multiqc_opts)
         versions_file = createVersionsFile(Channel.topic('versions'))
-        all_results = grouped_library_results
-         .join(insert_size_metrics.out.high_mapq)
-         .map{[it[2..-1]]}
-         .flatten()
-         .concat(versions_file)
-         .collect()
-        multiqc( all_results )
+        multiqc_files = multiqc_tuple.map{it[2]}.flatten().concat(versions_file).collect()
+
+        multiqc( multiqc_files )
 }

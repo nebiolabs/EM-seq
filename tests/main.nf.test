@@ -3,6 +3,7 @@ nextflow_pipeline {
     name "Test EM-seq"
     script "main.nf"
     tag "pipeline"
+    options "-stub-run"
 
     test("EM-seq workflow uBam") {
         when {
@@ -11,8 +12,8 @@ nextflow_pipeline {
             params.email = 'foo@example.com'
             params.flowcell = "test_pipeline"
             params.fastq_split_lines = 4000
-            //params.enable_neb_agg = true
-
+            params.enable_neb_agg = true
+            
         }
 
         then {
@@ -35,6 +36,7 @@ nextflow_pipeline {
             def methylkit_intersections = path("${launchDir}/test_output/methylKit_intersections/all_intersections_combined.tsv").exists()
             def tasmanian = path("${launchDir}/test_output/stats/tasmanian/emseq-test1.csv").exists()
             def multiqc = path("${launchDir}/test_output/EM-seq-Alignment-Summary-test_pipeline_multiqc_report.html").exists()
+            def ngs_agg = path("${launchDir}/test_output/aggregate_results/emseq-test1.arguments.txt").text.tokenize('\n')
 
             assertAll(
                 { assert workflow.success },
@@ -57,7 +59,8 @@ nextflow_pipeline {
                     ["intersection_summaries", intersection_summaries],
                     ["methylkit_intersections", methylkit_intersections],
                     ["tasmanian", tasmanian],
-                    ["multiqc", multiqc]
+                    ["multiqc", multiqc],
+                    ["ngs_agg", ngs_agg]
                 ).match()
             }
         )

@@ -3,8 +3,8 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 43,
-                "tasksSucceeded": 43
+                "tasksCount": 45,
+                "tasksSucceeded": 45
             },
             [
                 "bwameth_file_1",
@@ -146,12 +146,32 @@
             [
                 "multiqc",
                 true
+            ],
+            [
+                "ngs_agg",
+                [
+                    "--bam emseq-test1.md.bam ",
+                    "--bai emseq-test1.md.bai ",
+                    "--metadata_bam_file emseq-test1.bam ",
+                    "--fastp emseq-test1.fastp.json ",
+                    "--aln emseq-test1.alignment_summary_metrics.txt ",
+                    "--gc emseq-test1.gc_metrics ",
+                    "--dup emseq-test1.markdups_log ",
+                    "--idx_stats emseq-test1.idxstat ",
+                    "--flagstat emseq-test1.flagstat ",
+                    "--fastqc emseq-test1.md_fastqc.zip ",
+                    "--nonconverted_read_counts emseq-test1.nonconverted_counts.for_agg.tsv ",
+                    "--tasmanian emseq-test1.csv ",
+                    "--combined_mbias_records emseq-test1.combined_mbias.tsv ",
+                    "--insert emseq-test1.insertsize_metrics",
+                    "--workflow EM-seq"
+                ]
             ]
         ],
         "meta": {
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-08-29T15:26:34.804773324"
+        "timestamp": "2025-09-02T14:44:24.436205561"
     }
 }
