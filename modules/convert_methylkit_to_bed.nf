@@ -4,7 +4,7 @@ process convert_methylkit_to_bed {
     conda "conda-forge::pigz=2.8 conda-forge::gawk=5.3.1 conda-forge::sed=4.9"
 
     input:
-        tuple val(library), path(methylkit_CHH_gz), path(methylkit_CHG_gz), path(methylkit_CpG_gz)
+        tuple val(library), path(cytosine_report)
         val(genome_fa)
         val(genome_fai)
 
@@ -12,22 +12,31 @@ process convert_methylkit_to_bed {
         tuple val(library), path('*.bed'), emit: methylkit_bed
 
     script:
+    // Using cytosine report as a substitute for merging 3 methylkit files. 
+    // Reports C's with no coverage, so we will filter those out
     """
-    methylkit_basename=\$(basename "${methylkit_CpG_gz}" _CpG.methylKit.gz)
-
-    # create sed scripts to interconvert chr names from genome index with line numbers for efficient sorting
-    awk '{print "s/\\t"\$1"\\t/\\t"NR-1"\\t/"}' "${genome_fai}" > convert_chr_to_num.sed
-    awk '{print "s/^"NR-1"\\t/"\$1"\\t/"}' "${genome_fai}" > revert_num_to_chr.sed
-    # merge initial methylkit files into a single BED format
-    # Convert methylKit to BED format (0-based coordinates)
-    # methylKit format: chr.base\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT
-    # Output format: chr\tstart\tend\tname\tmethylation\tstrand
-    sort -m -k2,2n -k3,3n \
-            <(pigz -d -c "${methylkit_CHH_gz}" | sed 's/\$/\\tCHH/' | sed -f convert_chr_to_num.sed) \
-            <(pigz -d -c "${methylkit_CHG_gz}" | sed 's/\$/\\tCHG/' | sed -f convert_chr_to_num.sed) \
-            <(pigz -d -c "${methylkit_CpG_gz}" | sed 's/\$/\\tCpG/' | sed -f convert_chr_to_num.sed) \
-    | awk -v OFS="\\t" 'NR>3{print \$2,\$3-1,\$3,\$8,\$6,(\$4 == "F") ? "+" : "-"}' \
-    | sed -f revert_num_to_chr.sed \
-    > "\${methylkit_basename}.bed"
+    # Input: chromosome, position (1-based), strand, meth_count, unmeth_count, context, trinucleotide
+    # Output: chr, start (0-based), end (1-based), context, methylation_freq, strand
+    awk '
+        BEGIN { OFS = "\t" }
+        !( \$4==0 && \$5==0 ){
+            chromosome = \$1
+            position = \$2
+            strand = \$3
+            meth_count = \$4
+            unmeth_count = \$5
+            context = \$6
+            
+            # Calculate methylation frequency
+            total_count = meth_count + unmeth_count
+            meth_freq = (total_count > 0) ? (meth_count / total_count * 100) : 0
+            
+            # Convert to BED format (0-based start, 1-based end)
+            start = position - 1
+            end = position
+            
+            print chromosome, start, end, context, meth_freq, strand
+        }
+    ' ${cytosine_report} > "${library}.bed"
     """
 }

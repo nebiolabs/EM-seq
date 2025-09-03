@@ -7,6 +7,7 @@ include { alignReads }                     from './modules/align_reads'
 include { mergeAndMarkDuplicates }         from './modules/merge_and_mark_duplicates'
 include { methylDackel_mbias }             from './modules/methyldackel_mbias'
 include { methylDackel_extract }           from './modules/methyldackel_extract'
+include { extract_cytosine_report }        from './modules/extract_cytosine_report'
 include { combine_nonconverted_counts }    from './modules/combine_nonconverted_counts'
 include { convert_methylkit_to_bed }       from './modules/convert_methylkit_to_bed'
 include { prepare_target_bed }             from './modules/prepare_target_bed'
@@ -91,8 +92,8 @@ workflow {
 
         //////// Intersect methylKit files with target BED file ////////
         if (params.reference_list.target_bed && !params.skip_target_bed) {
-
-            convert_methylkit_to_bed( methylDackel_extract.out.methylkits, genome_fa, genome_fai )
+            extract_cytosine_report( md_bams, genome_fa, genome_fai )
+            convert_methylkit_to_bed( extract_cytosine_report.out.report, genome_fa, genome_fai )
             prepare_target_bed( params.reference_list.target_bed, params.target_bed_slop, genome_fa, genome_fai )
             intersect_bed_with_methylkit(
                 convert_methylkit_to_bed.out.methylkit_bed,
