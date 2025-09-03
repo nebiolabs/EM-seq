@@ -16,7 +16,7 @@ process methylDackel_extract {
 
     script:
     """
-    MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ ${task.cpus} \
+    MethylDackel extract --methylKit -q ${params.methyl_quality_threshold} --nOT 0,0,0,5 --nOB 0,0,5,0 -@ ${task.cpus} \
         --CHH --CHG -o ${library} ${genome_fa} "${md_bam}"
     pigz -p ${task.cpus} *.methylKit
     """
