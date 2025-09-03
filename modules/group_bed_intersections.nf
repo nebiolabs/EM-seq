@@ -1,5 +1,5 @@
 process group_bed_intersections {
-    label 'process_single'
+    label 'process_high_memory'
     tag "${library}"
     conda "conda-forge::gawk=5.3.1"
     publishDir "${params.outputDir}/methylKit_intersections", mode: 'symlink'
