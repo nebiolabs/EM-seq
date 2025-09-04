@@ -19,10 +19,6 @@ def format_ngs_agg_opts(optlist) {
     // Transpose to change from (lib, [opt1, val1], [opt2, val2]) to (lib, [opt1, opt2], [val1, val2])
     agg_tuple = agg_tuple.map{[it[0], *it[1..-1].transpose()]}
 
-    if (params.dry_run) {
-        agg_tuple.map{lib, opts, paths -> [lib, opts, paths.collect{ file -> file.name }]}.view() // For the function test
-    }
-
     return agg_tuple
 }
 
