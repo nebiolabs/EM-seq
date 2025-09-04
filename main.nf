@@ -1,28 +1,30 @@
 nextflow.preview.topic = true
 
-include { createVersionsFile }             from './lib/versions.nf'
-include { format_ngs_agg_opts }            from './modules/aggregate_results'
-include { fastp }                          from './modules/fastp'
-include { alignReads }                     from './modules/align_reads'
-include { mergeAndMarkDuplicates }         from './modules/merge_and_mark_duplicates'
-include { methylDackel_mbias }             from './modules/methyldackel_mbias'
-include { methylDackel_extract }           from './modules/methyldackel_extract'
-include { extract_cytosine_report }        from './modules/extract_cytosine_report'
-include { combine_nonconverted_counts }    from './modules/combine_nonconverted_counts'
-include { convert_methylkit_to_bed }       from './modules/convert_methylkit_to_bed'
-include { prepare_target_bed }             from './modules/prepare_target_bed'
-include { intersect_bed_with_methylkit }   from './modules/intersect_bed_with_methylkit'
-include { group_bed_intersections }        from './modules/group_bed_intersections'
-include { concatenate_intersections }      from './modules/concatenate_intersections'
-include { gc_bias }                        from './modules/gc_bias'
-include { idx_stats }                      from './modules/idx_stats'
-include { flag_stats }                     from './modules/flag_stats'
-include { fastqc }                         from './modules/fastqc'
-include { insert_size_metrics }            from './modules/insert_size_metrics'
-include { picard_metrics }                 from './modules/picard_metrics'
-include { tasmanian }                      from './modules/tasmanian'
-include { aggregate_results }              from './modules/aggregate_results.nf'
-include { multiqc }                        from './modules/multiqc.nf'
+include { createVersionsFile }                                from './lib/versions.nf'
+include { format_ngs_agg_opts }                               from './modules/aggregate_results'
+include { fastp }                                             from './modules/fastp'
+include { alignReads }                                        from './modules/align_reads'
+include { mergeAndMarkDuplicates }                            from './modules/merge_and_mark_duplicates'
+include { methylDackel_mbias }                                from './modules/methyldackel_mbias'
+include { methylDackel_extract }                              from './modules/methyldackel_extract'
+include { extract_cytosine_report }                           from './modules/extract_cytosine_report'
+include { combine_nonconverted_counts }                       from './modules/combine_nonconverted_counts'
+include { convert_methylkit_to_bed }                          from './modules/convert_methylkit_to_bed'
+include { prepare_target_bed }                                from './modules/prepare_target_bed'
+include { intersect_bed_with_methylkit }                      from './modules/intersect_bed_with_methylkit'
+include { group_bed_intersections }                           from './modules/group_bed_intersections'
+include { concatenate_files as concat_intersections;
+          concatenate_files as concat_positional_summaries;
+          concatenate_files as concat_region_summaries;}      from './modules/concatenate_files'
+include { gc_bias }                                           from './modules/gc_bias'
+include { idx_stats }                                         from './modules/idx_stats'
+include { flag_stats }                                        from './modules/flag_stats'
+include { fastqc }                                            from './modules/fastqc'
+include { insert_size_metrics }                               from './modules/insert_size_metrics'
+include { picard_metrics }                                    from './modules/picard_metrics'
+include { tasmanian }                                         from './modules/tasmanian'
+include { aggregate_results }                                 from './modules/aggregate_results.nf'
+include { multiqc }                                           from './modules/multiqc.nf'
 
 if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
   exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
@@ -104,10 +106,22 @@ workflow {
 
             group_bed_intersections( intersect_bed_with_methylkit.out.tsv )
 
-            concatenate_intersections(
-                group_bed_intersections.out.results.collect(),
-                group_bed_intersections.out.summary.collect()
+            concat_intersections(
+                group_bed_intersections.out.intersections.collect(),
+                "methylkit_file\\tchr\\tstart\\tend\\tcontext\\tmethylation\\ttarget_locus\\ttarget_name",
+                "intersections"
             )
+            concat_positional_summaries(
+                group_bed_intersections.out.positional_summary.collect(),
+                "methylkit_file\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements",
+                "positional_summaries"
+            )
+            concat_region_summaries(
+                intersect_bed_with_methylkit.out.region_summary.collect(),
+                "library\\ttarget_locus\\target_name\\tcontext\\tmean_methylation",
+                "region_summaries"
+            )
+            
         }
         
         ///////// Collect statistics ///////

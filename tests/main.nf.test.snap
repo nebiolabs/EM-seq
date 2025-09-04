@@ -3,8 +3,8 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 47,
-                "tasksSucceeded": 47
+                "tasksCount": 49,
+                "tasksSucceeded": 49
             },
             [
                 "bwameth_file_1",
@@ -133,11 +133,15 @@
             ],
             [
                 "intersection_summaries",
-                true
+                false
             ],
             [
                 "methylkit_intersections",
-                true
+                false
+            ],
+            [
+                "region_summaries",
+                false
             ],
             [
                 "tasmanian",
@@ -172,6 +176,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-09-03T10:44:34.249552862"
+        "timestamp": "2025-09-04T14:33:02.995855841"
     }
 }
