@@ -3,7 +3,11 @@ GEM
   specs:
     airbrussh (1.5.3)
       sshkit (>= 1.6.1, != 1.7.0)
+<<<<<<< HEAD
     base64 (0.2.0)
+=======
+    base64 (0.3.0)
+>>>>>>> master
     capistrano (3.19.2)
       airbrussh (>= 1.0.0)
       i18n
@@ -18,14 +22,23 @@ GEM
     dotenv (3.1.8)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
+<<<<<<< HEAD
     logger (1.6.4)
+=======
+    logger (1.7.0)
+>>>>>>> master
     net-scp (4.1.0)
       net-ssh (>= 2.6.5, < 8.0.0)
     net-sftp (4.0.0)
       net-ssh (>= 5.0.0, < 8.0.0)
     net-ssh (7.3.0)
+<<<<<<< HEAD
     ostruct (0.6.1)
     rake (13.2.1)
+=======
+    ostruct (0.6.3)
+    rake (13.3.0)
+>>>>>>> master
     sshkit (1.24.0)
       base64
       logger

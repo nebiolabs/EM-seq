@@ -93,7 +93,7 @@ process aggregate_emseq {
     fi
 
     # Validate barcodes
-    if [[ ! ${barcodes} =~ ^[+-ACGT]+\$ ]]; then
+    if [[ ! "${barcodes}" =~ ^[+\\-ACGT]+\$ ]]; then
         echo "Warning: Invalid barcode format: ${barcodes}" >&2
     fi
 
