@@ -16,7 +16,7 @@ params.max_input_reads           = "all_reads" // default is not downsampling , 
 params.downsample_seed           = 42
 params.enable_neb_agg            = 'False'
 params.target_bed                = 'undefined' // BED file to intersect with methylKit output
-params.testing_more              = false 
+params.testing_mode              = false 
 
 include { alignReads; mergeAndMarkDuplicates; genome_index; send_email; touchFile }                     from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'

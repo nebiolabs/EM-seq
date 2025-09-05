@@ -117,8 +117,9 @@ function test_pipeline() {
         -with-dag "emseq_metadata_dag.html" \
         -w "${tmp}/work" \
         --read_length 151 \
+        --testing_mode true \
         --enable_neb_agg "false" 2>&1 >> "${test_log}"; then
-        
+               
         echo "Nextflow pipeline succeeded" >> "${test_log}"
     else
         echo "Nextflow pipeline failed" >> "${test_log}"
