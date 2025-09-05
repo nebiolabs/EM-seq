@@ -16,6 +16,7 @@ params.max_input_reads           = "all_reads" // default is not downsampling , 
 params.downsample_seed           = 42
 params.enable_neb_agg            = 'False'
 params.target_bed                = 'undefined' // BED file to intersect with methylKit output
+params.testing_more              = false 
 
 include { alignReads; mergeAndMarkDuplicates; genome_index; send_email; touchFile }                     from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
@@ -23,7 +24,7 @@ include { prepare_target_bed; intersect_bed_with_methylkit;
           group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
-
+include { test_flagstats; test_alignment_metrics }                                                      from './modules/tests'    
 
 // identify and replace common R1/R2 naming patterns and return the read2 file name
 // e.g. _R1.fastq -> _R2.fastq, _1.fastq -> _2.fastq, .R1. -> .R2., etc.
@@ -181,4 +182,10 @@ workflow {
             .map { it[1,2] + it[6..-1].flatten() } //multiqc needs all the files (without the library name)
 
         multiqc( all_results )
+
+        // ONLY for testing.
+        if (params.run_tests.toString().toUpperCase() == "TRUE") {
+            test_flagstats( grouped_library_results )
+            test_alignment_metrics( grouped_library_results )
+        }
 }
