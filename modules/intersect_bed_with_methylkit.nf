@@ -1,5 +1,5 @@
 process intersect_bed_with_methylkit {
-    label 'process_single'
+    label 'cpus_8'
     tag "${library}"
     conda "bioconda::bedtools=2.31.1"
     publishDir "${params.outputDir}/methylKit_intersections", pattern: "*summary.tsv"
@@ -27,7 +27,8 @@ process intersect_bed_with_methylkit {
         -b "${methylkit_bed}" \\
         -wa -wb -sorted -g "${genome_fai}" | \\
     tee ${library}_vs_\${target_basename}_intersect.tsv | \\
-    awk -v FS='\t' -v OFS='\t' '{print "${library}", \$1,\$2,\$3,\$1":"\$2"-"\$3,\$4,\$10,\$11}' | sort -k5,5 -k7,7 | \\
+    awk -v FS='\t' -v OFS='\t' '{print "${library}", \$1,\$2,\$3,\$1":"\$2"-"\$3,\$4,\$10,\$11}' | \\
+    sort --buffer-size=${task.memory.toGiga().intdiv(2)}G --parallel=${task.cpus} -k5,5 -k7,7 | \\
     bedtools groupby -g 1,5,6,7 -o mean -c 8 >> ${library}_vs_\${target_basename}_region_summary.tsv
     """
 }
