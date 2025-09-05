@@ -149,7 +149,7 @@ if ! test_pipeline "emseq-test*bam"; then
     exit 1
 fi
 
-echo "echo "✅ All tests passed!"
+echo "echo ✅ All tests passed!"
 
 # Optional cleanup (uncomment if desired)
 # echo "Cleaning up temporary files..."
