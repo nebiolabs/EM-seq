@@ -184,12 +184,12 @@ workflow {
         multiqc( all_results )
 
         // ONLY for testing.
-        if (params.run_tests.toString().toUpperCase() == "TRUE") {
+        if (params.testing_mode.toString().toUpperCase() == "TRUE") {
             test_flagstats( flagstats.for_agg  )
             test_alignment_metrics( metrics.for_agg )
         }
         else
         {
-            println("${params.run_tests.toString().toUpperCase()}")
+            println("${params.testing_mode.toString().toUpperCase()}")
         }
 }
