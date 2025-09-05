@@ -185,7 +185,7 @@ workflow {
 
         // ONLY for testing.
         if (params.run_tests.toString().toUpperCase() == "TRUE") {
-            test_flagstats( grouped_library_results )
-            test_alignment_metrics( grouped_library_results )
+            test_flagstats( flagstats.for_agg  )
+            test_alignment_metrics( metrics.for_agg )
         }
 }
