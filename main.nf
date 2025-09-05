@@ -113,7 +113,7 @@ workflow {
             )
             concat_positional_summaries(
                 group_bed_intersections.out.positional_summary.collect(),
-                "methylkit_file\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements",
+                "methylkit_file\\tchr\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements",
                 "positional_summaries"
             )
             concat_region_summaries(

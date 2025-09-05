@@ -19,7 +19,7 @@ process group_bed_intersections {
     summary_file="\${intersect_basename}_positional_summary.tsv"
 
     echo -e "methylkit_file\\tchr\\tstart\\tend\\tcontext\\tmethylation\\ttarget_locus\\ttarget_name" > \${output_file}
-    echo -e "methylkit_file\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements" > \${summary_file}
+    echo -e "methylkit_file\tchr\ttarget_length\tposition\tcontext\tmean_methylation\tn_loci\tn_measurements" > \${summary_file}
 
     if [ -s "${intersect_file}" ]; then
         awk -v output_file="\${output_file}" \\
@@ -50,7 +50,7 @@ process group_bed_intersections {
             print "${library}", meth_chr, meth_start, meth_end, meth_context, meth_value, locus, target_name >> output_file
 
             # Collect summary data
-            key = "${library}" "\\t" target_length "\\t" position_in_target "\\t" meth_context
+            key = "${library}" "\\t" target_chr "\\t" target_length "\\t" position_in_target "\\t" meth_context
             sum[key] += meth_value
             count[key]++
             loci[key][locus] = 1  # Track unique loci
@@ -60,13 +60,14 @@ process group_bed_intersections {
             for (k in sum) {
                 split(k, parts, "\\t")
                 methylkit_file = parts[1]
-                target_length = parts[2]
-                position = parts[3]
-                context = parts[4]
+                chr = parts[2]
+                target_length = parts[3]
+                position = parts[4]
+                context = parts[5]
                 mean_meth = sum[k] / count[k]
                 n_measurements = count[k]
                 n_loci = length(loci[k])
-                print methylkit_file, target_length, position, context, mean_meth, n_loci, n_measurements >> summary_file
+                print methylkit_file, chr, target_length, position, context, mean_meth, n_loci, n_measurements >> summary_file
             }
         }' "${intersect_file}"
     else

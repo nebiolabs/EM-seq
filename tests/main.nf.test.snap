@@ -133,15 +133,39 @@
             ],
             [
                 "intersection_summaries",
-                false
+                [
+                    "methylkit_file\tchr\ttarget_length\tposition\tcontext\tmean_methylation\tn_loci\tn_measurements",
+                    "emseq-test2\tchr1\t182\t178\tCG\t0\t1\t1",
+                    "emseq-test2\tchr1\t204\t189\tCG\t0\t1\t1",
+                    "emseq-test2\tchr1\t151\t142\tCG\t100\t1\t1",
+                    "emseq-test1\tchr1\t151\t142\tCG\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t178\tCG\t0\t1\t1",
+                    "emseq-test1\tchr1\t204\t189\tCG\t0\t1\t1"
+                ]
             ],
             [
                 "methylkit_intersections",
-                false
+                [
+                    "methylkit_file\tchr\tstart\tend\tcontext\tmethylation\ttarget_locus\ttarget_name",
+                    "emseq-test2\tchr1\t31858\t31859\tCG\t100\tchr1:31718-31868\tStemLoop_31767_31817_2mm_18C_0CG",
+                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test1\tchr1\t31858\t31859\tCG\t100\tchr1:31718-31868\tStemLoop_31767_31817_2mm_18C_0CG",
+                    "emseq-test1\tchr1\t141027\t141028\tCG\t0\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test1\tchr1\t141027\t141028\tCG\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG"
+                ]
             ],
             [
                 "region_summaries",
-                false
+                [
+                    "library\ttarget_locus\target_name\tcontext\tmean_methylation",
+                    "emseq-test1\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCG\t0",
+                    "emseq-test1\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCG\t0",
+                    "emseq-test1\tchr1:31717-31868\tStemLoop_31767_31817_2mm_18C_0CG\tCG\t100",
+                    "emseq-test2\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCG\t0",
+                    "emseq-test2\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCG\t0",
+                    "emseq-test2\tchr1:31717-31868\tStemLoop_31767_31817_2mm_18C_0CG\tCG\t100"
+                ]
             ],
             [
                 "tasmanian",
@@ -176,6 +200,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-09-04T14:33:02.995855841"
+        "timestamp": "2025-09-05T09:15:26.474319094"
     }
 }
