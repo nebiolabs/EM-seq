@@ -188,8 +188,4 @@ workflow {
             test_flagstats( flagstats.for_agg  )
             test_alignment_metrics( metrics.for_agg )
         }
-        else
-        {
-            println("${params.testing_mode.toString().toUpperCase()}")
-        }
 }

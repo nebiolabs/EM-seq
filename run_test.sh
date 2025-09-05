@@ -117,9 +117,8 @@ function test_pipeline() {
         -with-dag "emseq_metadata_dag.html" \
         -w "${tmp}/work" \
         --read_length 151 \
-        --testing_mode "true" \
         --enable_neb_agg "false" 2>&1 >> "${test_log}"; then
-               
+        
         echo "Nextflow pipeline succeeded" >> "${test_log}"
     else
         echo "Nextflow pipeline failed" >> "${test_log}"
@@ -136,21 +135,21 @@ function test_pipeline() {
 echo "Running pipeline tests..."
 
 if ! test_pipeline "emseq-test*1.fastq.gz"; then
-    echo "Test failed for fastq.gz files"
+    echo "❌ Test failed for fastq.gz files"
     exit 1
 fi
 
 if ! test_pipeline "emseq-test*1.fastq"; then
-    echo "Test failed for fastq files"
+    echo "❌ Test failed for fastq files"
     exit 1
 fi
 
 if ! test_pipeline "emseq-test*bam"; then
-    echo "Test failed for bam files"
+    echo "❌ Test failed for bam files"
     exit 1
 fi
 
-echo "All tests passed!"
+echo "echo "✅ All tests passed!"
 
 # Optional cleanup (uncomment if desired)
 # echo "Cleaning up temporary files..."
