@@ -2,18 +2,16 @@
 process gc_bias {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
-    publishDir "${params.outputDir}/stats/gc_bias"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
-        path(genome_path)
+        tuple val(library), path(bam), path(bai)
+        tuple path(genome_fa), path(genome_fai)
     output:
-        tuple val(params.email), val(library), path('*gc_metrics'), emit: for_agg
+        tuple val(library), path('*gc_metrics'), emit: for_agg
 
     script:
     """
-    genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
     samtools view -H ${bam} | grep "^@SQ" \
     | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" \
     | awk -F":|\\t" '{print \$3"\\t"0"\\t"\$5}' > include_regions.bed
@@ -22,21 +20,20 @@ process gc_bias {
     picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \
-        --CHART ${library}.gc.pdf -R \${genome}
+        -R ${genome_fa} --CHART /dev/null
     """
 }
 
 process idx_stats {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::samtools=1.9"
-    publishDir "${params.outputDir}/stats/idxstats"
+    conda "bioconda::samtools=1.22"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path("*idxstat"), emit: for_agg
+        tuple val(library), path("*idxstat"), emit: for_agg
 
     script:
     """
@@ -47,14 +44,13 @@ process idx_stats {
 process flag_stats {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::samtools=1.9"
-    publishDir "${params.outputDir}/stats/flagstats"
+    conda "bioconda::samtools=1.22"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path("*flagstat"), emit: for_agg
+        tuple val(library), path("*flagstat"), emit: for_agg
 
     script:
     """
@@ -66,13 +62,12 @@ process fastqc {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::fastqc=0.11.8"
-    publishDir "${params.outputDir}/stats/fastqc"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path('*_fastqc.zip'), emit: for_agg
+        tuple val(library), path('*_fastqc.zip'), emit: for_agg
 
     shell:
     """
@@ -83,15 +78,14 @@ process fastqc {
 process insert_size_metrics {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
-    publishDir "${params.outputDir}/stats/insert_size"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
+        tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(params.email), val(library), path('*_metrics'), emit: for_agg
-        tuple val(params.email), val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq_insert_size_metrics
+        tuple val(library), path('*_metrics'), emit: for_agg
+        tuple val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq_insert_size_metrics
 
     script:
     """
@@ -151,7 +145,7 @@ process insert_size_metrics {
         }
         else {
             # get values
-            for (n=1; n<=4;n++) { 
+            for (n=1; n<=4;n++) {
                 arr[n]=0
                 if (\$n) { arr[n] = \$n }
             }
@@ -169,21 +163,19 @@ process insert_size_metrics {
 process picard_metrics {
     label 'medium_cpu'
     tag { library }
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
-    publishDir "${params.outputDir}/stats/picard_alignment_metrics"
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
-        path(genome_path)
+        tuple val(library), path(bam), path(bai)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
-        tuple val(params.email), val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
+        tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
 
     script:
     """
-    genome=\$(ls *.fa 2>/dev/null || ls *.fasta 2>/dev/null)
     picard -Xmx${task.memory.toGiga()}g CollectAlignmentSummaryMetrics \
-        --VALIDATION_STRINGENCY SILENT -BS true -R \${genome} \
+        --VALIDATION_STRINGENCY SILENT -BS true -R ${genome_fa} \
         -I ${bam} -O ${library}.alignment_summary_metrics.txt
     """
 }
@@ -192,25 +184,24 @@ process tasmanian {
     label 'medium_cpu'
     tag { library }
     publishDir "${params.outputDir}/stats/tasmanian"
-    conda "bioconda::samtools=1.9 bioconda::tasmanian-mismatch=1.0.7"
+    conda "bioconda::samtools=1.22 bioconda::tasmanian-mismatch=1.0.9"
 
     errorStrategy { retry < 1 ? 'retry' : 'terminate' }
     maxRetries 1
     memory { retry > 0 ? '16 GB' : '8 GB' }
 
     input:
-        tuple val(library), path(bam), path(bai), val(barcodes)
-        path(genome_path)
+        tuple val(library), path(bam), path(bai)
+        tuple path(genome_fa), path(genome_fai)
 
     output:
-        tuple val(params.email), val(library), path('*.csv'), emit: for_agg
+        tuple val(library), path('*.csv'), emit: for_agg
 
     script:
     """
     set +e
     set +o pipefail
-    genome=\$(ls *.bwameth.c2t.bwt | sed 's/.bwameth.c2t.bwt//')
-    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r \${genome} > ${library}.csv
+    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_fa} > ${library}.csv
     """
 
 }

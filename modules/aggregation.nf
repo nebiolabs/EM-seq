@@ -6,7 +6,7 @@ process multiqc {
     publishDir "${params.outputDir}", mode: 'copy'
 
     input:
-        tuple val(email), path('*')
+        path('*')
 
     output:
         path("*multiqc_report.html"), emit: multiqc_report
@@ -58,20 +58,23 @@ CONFIG
 process aggregate_emseq {
     tag { library }
     conda "bioconda::samtools=1.9"
-    publishDir "${params.outputDir}/ngs-agg"
 
     input:
-	tuple  val(email), val(library), path(fq_or_bam), path(_read2), val(fileType),
-	       val(barcodes), path(nonconverted_counts_tsv), path(fastp),
-               path(bam), path(bai),
-               path(gc_metrics),
-               path(idxstat),
-               path(flagstat),
-               path(fastqc_zip),
-               path(insertsize_metrics),
-               path(tasmanian),
-               path(mbias),
-               path(alignment_summary_metrics_txt)
+	tuple   val(library),
+            path(aligned_bam), path(aligned_bam_bai),
+            val(barcodes), val(flowcell), val(num_reads_used),
+            path(fastp),
+            path(nonconverted_counts_tsv),
+            path(markdups_log),
+            path(gc_metrics),
+            path(idxstat),
+            path(flagstat),
+            path(fastqc_zip),
+            path(mismatches),
+            path(mbias),
+            path(alignment_summary_metrics_txt),
+            path(insertsize_metrics),
+            path(file_metadata)
 
     output:
         path('ngs_agg.*')
@@ -80,7 +83,8 @@ process aggregate_emseq {
     """
     path_to_ngs_agg="${params.path_to_ngs_agg}${params.revision}/"
 
-    # bc = barcode1 + barcode2 if exists.
+    unzip -o *fastqc.zip 
+
     if echo ${barcodes} | grep -q "+"
     then
         bc=\$(echo ${barcodes} | tr -d "][" | awk -F"+" '{bc2=""; if (length(\$2)==length(\$1)) {bc2="--barcode2 "\$2}; print \$1" "bc2;}')
@@ -93,19 +97,36 @@ process aggregate_emseq {
         echo "Warning: Invalid barcode format: ${barcodes}" >&2
     fi
 
-    unzip -o *fastqc.zip
+    echo "task attempt is ${task.attempt}"
+
+    bc1=\$(echo \$bc | sed 's/ \\-\\-barcode2.*//')
+    bc2=\$(echo \$bc | sed 's/.*\\-\\-barcode2 //')
+
+    if [ ${task.attempt} -eq 2 ] || [ ${task.attempt} -eq 4 ]; then
+        bc2=\$(echo "\$bc2" | rev | tr "[ATCG]" "[TAGC]")
+    elif [ ${task.attempt} -eq 3 ] || [ ${task.attempt} -eq 4 ]; then
+        bc1=\$(echo "\$bc1" | rev | tr "[ATCG]" "[TAGC]")
+    fi
+
+    if echo ${file_metadata} | grep -q "fastq\$\\|fq\$"; then
+        metadata="--metadatafq_file ${file_metadata}"
+    elif echo ${file_metadata} | grep -q "bam\$" ; then
+        metadata="--metadata_bam_file ${file_metadata}"
+    else
+        echo "Error: Unsupported file type in metadata file: ${file_metadata}" >&2
+        exit 1
+    fi
 
     cat ${nonconverted_counts_tsv} | awk -v l=${library} '{print l"\t"\$0}' > ${library}.nonconverted_counts.for_agg.tsv
-
-    deploy_revision=\$(get_capistrano_release.sh) # script extracts currently executing revision of emseq from cap deploy logs
-    
     export RBENV_VERSION=\$(cat \${path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production \${path_to_ngs_agg}/bin/bundle exec \${path_to_ngs_agg}/aggregate_results.rb \
-    --bam ${bam} \
-    --bai ${bai} \
-    --barcode1 \${bc} \
+    --bam ${aligned_bam} \
+    --bai ${aligned_bam_bai} \
     --contact_email ${params.email} \
-    --genome \$(basename ${params.path_to_genome_fasta}) \
+    --genome ${params.path_to_genome_fasta} \
+    --barcode1 \${bc1} \
+    --barcode2 \${bc2} \
+    --flowcell ${flowcell} \
     --gc ${gc_metrics} \
     --idx_stats ${idxstat} \
     --flagstat ${flagstat} \
@@ -113,10 +134,10 @@ process aggregate_emseq {
     --combined_mbias_records ${mbias} \
     --fastqc *_fastqc/fastqc_data.txt \
     --insert ${insertsize_metrics} \
-    --tasmanian ${tasmanian} \
+    --tasmanian ${mismatches} \
     --aln ${alignment_summary_metrics_txt} \
     --fastp ${fastp} \
-    --metadata_bam_file ${fq_or_bam} \
-    --workflow "${params.workflow} \${deploy_revision}" 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
+    \${metadata} \
+    --workflow ${params.workflow} 2> ngs_agg.${library}.err 1> ngs_agg.${library}.out
     """
 }

@@ -1,12 +1,15 @@
-# Load DSL and set up stages
+# Capfile
 require "capistrano/setup"
-
-# Include default deployment tasks
 require "capistrano/deploy"
-
 require "capistrano/scm/git"
+require 'capistrano/bundler'
+require 'capistrano/rbenv'
+require 'dotenv'
+Dotenv.load
 install_plugin Capistrano::SCM::Git
 
+set :rbenv_type, :user
+set :rbenv_ruby, '3.4.5'
 
-# Load custom tasks from `lib/capistrano/tasks` if you have any defined
-Dir.glob("lib/capistrano/tasks/*.rake").each { |r| import r }
+
+

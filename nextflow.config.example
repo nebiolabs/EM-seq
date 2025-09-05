@@ -4,6 +4,7 @@ report.enabled = true
 timeline.enabled = true
 dag.enabled = true
 dag.overwrite = true
+report.overwrite = true
 
 // Dynamic resource fetching
 def availableCpus = { java.lang.Runtime.getRuntime().availableProcessors() }()

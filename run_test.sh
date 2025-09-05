@@ -1,103 +1,162 @@
 #!/usr/bin/env bash
 set -euo pipefail
-set -x
 
-# user migth need custom config file
+
+# user might need custom config file, don't overwrite it
 if [ ! -f nextflow.config ]; then
     echo "Copying example nextflow.config to nextflow.config"
     cp nextflow.config.example nextflow.config
 fi
 
 # set up tmp folder and copy test data into it
-pwd=$(pwd)
-tmp="${pwd}/test_data/tmp"
-[ -d "${tmp}" ] || mkdir -p "${tmp}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+tmp="${script_dir}/test_data/tmp"
+test_log="${script_dir}/test.log.out"
 
-ln -sf ${pwd}/test_data/emseq-test*.fastq.gz ${tmp}
-ln -sf ${pwd}/test_data/reference.fa ${tmp}
+if [ ! -d "${tmp}" ]; then
+    mkdir -p "${tmp}"
+fi
+
+if ! ln -sf "${script_dir}"/test_data/emseq-test*.fastq.gz "${tmp}"; then
+    echo "Error: Failed to link fastq.gz files"
+    exit 1
+fi
 
 
+# Check for micromamba
+if ! command -v micromamba >/dev/null 2>&1; then
+    echo "Error: micromamba not found in PATH. Please install micromamba or adjust your PATH."
+    exit 1
+fi
+eval "$(micromamba shell hook --shell=bash)"
 if [ "${GITHUB_ACTIONS:-}" == "true" ]; then
     echo "gh actions..."
 else
-    micromamba create --name nextflow.emseq --yes python=3
+    #see if nextflow.emseq env exists, if not create it
+    micromamba activate nextflow.emseq || \
+        micromamba create --name nextflow.emseq --yes python=3 bioconda:nextflow bioconda::samtools
 fi
-    micromamba install --name nextflow.emseq --yes bioconda:nextflow bioconda::samtools
-    eval "$(micromamba shell hook --shell bash)"
-    micromamba activate nextflow.emseq
+# if running on osX need to set CONDA_OVERRIDE_OSX=<current osx version>
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    export CONDA_OVERRIDE_OSX=$(sw_vers -productVersion | cut -d '.' -f 1)
+    echo "Setting CONDA_OVERRIDE_OSX to ${CONDA_OVERRIDE_OSX}"
+fi
+
+micromamba activate nextflow.emseq
 
 # generate test data from minimal set of reads (fq/fq.gz/bam)
- echo "generating reads"
- 
- # fastq (perhaps make 76bp long in future test)
- gunzip -c ${tmp}/emseq-testg_R1.fastq.gz > ${tmp}/emseq-test_R1.fastq
- gunzip -c ${tmp}/emseq-testg_R2.fastq.gz > ${tmp}/emseq-test_R2.fastq
+echo "Generating test reads..."
 
- # bam
- paste -d "\n" <(samtools sort ${tmp}/emseq-test_R1.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=77; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') \
-	 		   <(samtools sort ${tmp}/emseq-test_R2.fastq | samtools view | awk 'BEGIN{OFS="\t"}{$2=141; print $0"\tBC:Z:CGTCAAGA-GGGTTGTT\tRG:Z:NS500.4"}') \
-| samtools view -u -o ${tmp}/emseq-test.u.bam
+# Extract fastq files
+echo "Extracting fastq files..."
+if ! gunzip -c "${tmp}/emseq-testg_R1.fastq.gz" > "${tmp}/emseq-test_R1.fastq"; then
+    echo "Error: Failed to extract R1 fastq"
+    exit 1
+fi
 
+if ! gunzip -c "${tmp}/emseq-testg_R2.fastq.gz" > "${tmp}/emseq-test_R2.fastq"; then
+    echo "Error: Failed to extract R2 fastq"
+    exit 1
+fi
 
+# Generate unaligned BAM file
+echo "Generating unaligned BAM file..."
+if ! samtools import \
+    -1 "${tmp}/emseq-test_R1.fastq" \
+    -2 "${tmp}/emseq-test_R2.fastq" \
+    -o "${tmp}/emseq-test.u.bam" \
+    --barcode-tag BC \
+    --barcode CGTCAAGA-GGGTTGTT \
+    --rg-line $'@RG\tID:NS500.4\tSM:emseq-test\tPL:ILLUMINA'; then
+    echo "Error: Failed to generate unaligned BAM file"
+    exit 1
+fi
+
+# Verify the output BAM file is valid
+if ! samtools quickcheck -u "${tmp}/emseq-test.u.bam"; then
+    echo "Error: Generated BAM file failed validation"
+    exit 1
+fi
 
 
 # run tests #
 # --------- #
 
-echo "running nextflow pipeline..."
+echo "Running nextflow pipeline..."
 
+genome_path=$(realpath "test_data/reference.fa")
+target_bed=$(realpath "test_data/emseq_test_regions.bed")
 
-genome_path=${tmp}/reference.fa
+pushd "${tmp}" || {
+    echo "Error: Failed to change to tmp directory"
+    exit 1
+}
 
-pushd ${tmp}
-rm -f ${pwd}/test.log.out
+# Initialize test log
+rm -f "${test_log}"
 # loop for different type of files, fastq, fastq.gz and bam
 
-echo "check if files are in here"
-ls -ltr 
-echo "finished listing files"
+# echo "check if files are in here"
+# ls -ltr 
+# echo "finished listing files"
 
-function test_pipeline {
-    local file=$1
-
+function test_pipeline() {
+    local file="$1"
+    echo -n "Testing with file: ${file} ... " | tee -a "${test_log}"
+    
     # Run the Nextflow pipeline with the specified input file
-    nextflow run ${pwd}/main.nf \
+    if nextflow run "${script_dir}/main.nf" \
         --input_glob "${file}" \
-        --path_to_genome_fasta ${genome_path} \
-        --email "aerijman@neb.com" \
+        --path_to_genome_fasta "${genome_path}" \
+        --email "me@example.com" \
         --max_input_reads 10000 \
-        --flowcell "test_pipeline" \
-        -with-report  "emseq_metadata_report.html" \
+        --target_bed "${target_bed}" \
+        --flowcell "test" \
+        -with-report "emseq_metadata_report.html" \
         -with-timeline "emseq_metadata_timeline.html" \
         -with-dag "emseq_metadata_dag.html" \
         -w "${tmp}/work" \
         --read_length 151 \
-        --enable_neb_agg "false" 2>&1 >> ${pwd}/test.log.out
+        --testing_mode "true" \
+        --enable_neb_agg "false" 2>&1 >> "${test_log}"; then
+        
+        echo "Nextflow pipeline succeeded" >> "${test_log}"
+    else
+        echo "Nextflow pipeline failed" >> "${test_log}"
+        return 1
+    fi
 
-        # Check if Nextflow run was successful
-        if [ $? -ne 0 ]; then
-            echo "Nextflow pipeline failed" >> ${pwd}/test.log.out 
-            exit 1
-        else
-            echo "Nextflow pipeline succeeded" >> ${pwd}/test.log.out
-        fi
-
-
-        # Check results
-        echo "checking results..."
-        cat em-seq_output/stats/flagstats/emseq-testg.flagstat |\
-            grep -q "1972 + 0 properly paired" && echo "flagstats OK" >> ${pwd}/test.log.out || echo "flagstats not OK" >> ${pwd}/test.log.out
-        tail -n2 em-seq_output/stats/picard_alignment_metrics/emseq-testg.alignment_summary_metrics.txt |\
-            awk 'BEGIN{result="alignment metrics not OK"}{if ($1==150 && $3>2200) {result="alignment metrics OK"}}END{print result}' >> ${pwd}/test.log.out
+    # Check results
+    echo "Test complete. Checking results..." | tee -a "${test_log}"
+    
+    return 0
 }
 
-test_pipeline "emseq-test*1.fastq.gz"
-test_pipeline "emseq-test*1.fastq"
-test_pipeline "emseq-test*bam"
+# Run tests with different input formats
+echo "Running pipeline tests..."
 
+if ! test_pipeline "emseq-test*1.fastq.gz"; then
+    echo "❌ Test failed for fastq.gz files"
+    exit 1
+fi
 
-# rm -r ${tmp}
+if ! test_pipeline "emseq-test*1.fastq"; then
+    echo "❌ Test failed for fastq files"
+    exit 1
+fi
 
-cat ${pwd}/test.log.out
-echo "FINISHED"
+if ! test_pipeline "emseq-test*bam"; then
+    echo "❌ Test failed for bam files"
+    exit 1
+fi
+
+echo "echo ✅ All tests passed!"
+
+# Optional cleanup (uncomment if desired)
+# echo "Cleaning up temporary files..."
+# rm -rf "${tmp}"
+
+# Display test results
+echo "Test Results:"
+cat "${test_log}"
 

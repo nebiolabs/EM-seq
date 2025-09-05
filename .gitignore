@@ -5,5 +5,7 @@ ngs-agg_revision.yaml
 **/.DS_Store
 .vscode/
 test_data/tmp
-.env
-log/
+test.log.out
+
+##we ship a template nextflow.config file
+nextflow.config
