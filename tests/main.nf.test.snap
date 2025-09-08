@@ -1,4 +1,244 @@
 {
+    "EM-seq workflow uBam - single-end": {
+        "content": [
+            {
+                "tasksFailed": 0,
+                "tasksCount": 57,
+                "tasksSucceeded": 57
+            },
+            [
+                "bwameth_file_1",
+                {
+                    "maxReadLength": 76,
+                    "minReadLength": 41,
+                    "meanReadLength": 75,
+                    "maxQuality": 60,
+                    "minQuality": 0,
+                    "meanQuality": 9,
+                    "readCount": 150
+                }
+            ],
+            [
+                "bwameth_file_2",
+                {
+                    "maxReadLength": 76,
+                    "minReadLength": 76,
+                    "meanReadLength": 76,
+                    "maxQuality": 60,
+                    "minQuality": 0,
+                    "meanQuality": 20,
+                    "readCount": 75
+                }
+            ],
+            [
+                "fastqc",
+                true
+            ],
+            [
+                "fastp",
+                [
+                    "\t\"summary\": {",
+                    "\t\t\"fastp_version\": \"1.0.1\",",
+                    "\t\t\"sequencing\": \"single end (76 cycles)\",",
+                    "\t\t\"before_filtering\": {",
+                    "\t\t\t\"total_reads\":9534,",
+                    "\t\t\t\"total_bases\":724584,",
+                    "\t\t\t\"q20_bases\":681052,",
+                    "\t\t\t\"q30_bases\":662196,",
+                    "\t\t\t\"q20_rate\":0.939921,",
+                    "\t\t\t\"q30_rate\":0.913898,",
+                    "\t\t\t\"read1_mean_length\":76,",
+                    "\t\t\t\"gc_content\":0.218668",
+                    "\t\t},",
+                    "\t\t\"after_filtering\": {",
+                    "\t\t\t\"total_reads\":9530,",
+                    "\t\t\t\"total_bases\":724053,",
+                    "\t\t\t\"q20_bases\":680589,",
+                    "\t\t\t\"q30_bases\":661741,",
+                    "\t\t\t\"q20_rate\":0.939971,",
+                    "\t\t\t\"q30_rate\":0.91394,",
+                    "\t\t\t\"read1_mean_length\":75,",
+                    "\t\t\t\"gc_content\":0.218099",
+                    "\t\t}",
+                    "\t},",
+                    "\t\"filtering_result\": {",
+                    "\t\t\"passed_filter_reads\": 9530,",
+                    "\t\t\"low_quality_reads\": 0,",
+                    "\t\t\"too_many_N_reads\": 0,",
+                    "\t\t\"too_short_reads\": 4,",
+                    "\t\t\"too_long_reads\": 0",
+                    "\t},",
+                    "\t\"duplication\": {",
+                    "\t\t\"rate\": 0.00125865"
+                ]
+            ],
+            [
+                "markdup",
+                {
+                    "maxReadLength": 76,
+                    "minReadLength": 41,
+                    "meanReadLength": 75,
+                    "maxQuality": 60,
+                    "minQuality": 0,
+                    "meanQuality": 16,
+                    "readCount": 808
+                }
+            ],
+            [
+                "markdup_log",
+                true
+            ],
+            [
+                "idxstats",
+                [
+                    "chr1\t284940\t808\t0",
+                    "*\t0\t0\t0"
+                ]
+            ],
+            [
+                "flagstats",
+                true
+            ],
+            [
+                "gc_bias",
+                true
+            ],
+            [
+                "alignment_metrics",
+                true
+            ],
+            [
+                "methyldackel_extract",
+                true
+            ],
+            [
+                "mbias",
+                true
+            ],
+            [
+                "nonconverted",
+                [
+                    "chr1\t0"
+                ]
+            ],
+            [
+                "nonconverted_combined",
+                [
+                    "emseq-test1\tchr1\t0"
+                ]
+            ],
+            [
+                "positional_summary",
+                [
+                    "methylkit_file\tchr\ttarget_length\tposition\tcontext\tmean_methylation\tn_loci\tn_measurements",
+                    "emseq-test1\tchr1\t182\t177\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t187\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t199\tCHH\t50\t1\t1",
+                    "emseq-test1\tchr1\t204\t179\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t167\tCHH\t0\t1\t1",
+                    "emseq-test1\tchr1\t204\t194\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t180\tCHG\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t192\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t190\tCG\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t182\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t178\tCG\t0\t1\t1",
+                    "emseq-test1\tchr1\t182\t170\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t188\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t176\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t179\tCG\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t174\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t189\tCG\t0\t1\t1",
+                    "emseq-test1\tchr1\t204\t181\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t178\tCHH\t0\t1\t1",
+                    "emseq-test1\tchr1\t204\t191\tCHG\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t181\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t185\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t171\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t182\t168\tCHH\t100\t1\t1",
+                    "emseq-test1\tchr1\t204\t203\tCHH\t100\t1\t1"
+                ]
+            ],
+            [
+                "combined_summaries",
+                true
+            ],
+            [
+                "region_summary",
+                [
+                    "library\ttarget_locus\ttarget_name\tcontext\tmean_methylation",
+                    "emseq-test2\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCG\t50",
+                    "emseq-test2\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCHG\t100",
+                    "emseq-test2\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCHH\t86.36363636",
+                    "emseq-test2\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCG\t50",
+                    "emseq-test2\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCHG\t100",
+                    "emseq-test2\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCHH\t87.5"
+                ]
+            ],
+            [
+                "methylkit_intersections",
+                [
+                    "methylkit_file\tchr\tstart\tend\tcontext\tmethylation\ttarget_locus\ttarget_name",
+                    "emseq-test2\tchr1\t141016\t141017\tCHH\t0\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141017\t141018\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141019\t141020\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141020\t141021\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141023\t141024\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141025\t141026\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141026\t141027\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141028\t141029\tCG\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141029\t141030\tCHG\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141030\t141031\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141032\t141033\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141037\t141038\tCHH\t50\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141041\t141042\tCHH\t100\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
+                    "emseq-test2\tchr1\t141016\t141017\tCHH\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141017\t141018\tCHH\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141019\t141020\tCHH\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141020\t141021\tCHH\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141023\t141024\tCHH\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141025\t141026\tCHH\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141026\t141027\tCHH\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141028\t141029\tCG\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141029\t141030\tCHG\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
+                    "emseq-test2\tchr1\t141030\t141031\tCHH\t100\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG"
+                ]
+            ],
+            [
+                "tasmanian",
+                true
+            ],
+            [
+                "multiqc",
+                true
+            ],
+            [
+                "ngs_agg",
+                [
+                    "--bam emseq-test1.md.bam ",
+                    "--bai emseq-test1.md.bai ",
+                    "--metadata_bam_file emseq-test1.bam ",
+                    "--fastp emseq-test1.fastp.json ",
+                    "--aln emseq-test1.alignment_summary_metrics.txt ",
+                    "--gc emseq-test1.gc_metrics ",
+                    "--dup emseq-test1.markdups_log ",
+                    "--idx_stats emseq-test1.idxstat ",
+                    "--flagstat emseq-test1.flagstat ",
+                    "--fastqc emseq-test1.md_fastqc.zip ",
+                    "--nonconverted_read_counts emseq-test1.nonconverted_counts.for_agg.tsv ",
+                    "--tasmanian emseq-test1.csv ",
+                    "--combined_mbias_records emseq-test1.combined_mbias.tsv",
+                    "--workflow EM-seq"
+                ]
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.2"
+        },
+        "timestamp": "2025-09-08T16:10:50.217382893"
+    },
     "EM-seq workflow uBam": {
         "content": [
             {
@@ -132,15 +372,25 @@
                 ]
             ],
             [
-                "intersection_summaries",
+                "positional_summary",
                 [
                     "methylkit_file\tchr\ttarget_length\tposition\tcontext\tmean_methylation\tn_loci\tn_measurements",
-                    "emseq-test2\tchr1\t182\t178\tCG\t0\t1\t1",
-                    "emseq-test2\tchr1\t204\t189\tCG\t0\t1\t1",
-                    "emseq-test2\tchr1\t151\t142\tCG\t100\t1\t1",
                     "emseq-test1\tchr1\t151\t142\tCG\t100\t1\t1",
                     "emseq-test1\tchr1\t182\t178\tCG\t0\t1\t1",
                     "emseq-test1\tchr1\t204\t189\tCG\t0\t1\t1"
+                ]
+            ],
+            [
+                "combined_summaries",
+                true
+            ],
+            [
+                "region_summary",
+                [
+                    "library\ttarget_locus\ttarget_name\tcontext\tmean_methylation",
+                    "emseq-test2\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCG\t0",
+                    "emseq-test2\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCG\t0",
+                    "emseq-test2\tchr1:31717-31868\tStemLoop_31767_31817_2mm_18C_0CG\tCG\t100"
                 ]
             ],
             [
@@ -149,22 +399,7 @@
                     "methylkit_file\tchr\tstart\tend\tcontext\tmethylation\ttarget_locus\ttarget_name",
                     "emseq-test2\tchr1\t31858\t31859\tCG\t100\tchr1:31718-31868\tStemLoop_31767_31817_2mm_18C_0CG",
                     "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG",
-                    "emseq-test1\tchr1\t31858\t31859\tCG\t100\tchr1:31718-31868\tStemLoop_31767_31817_2mm_18C_0CG",
-                    "emseq-test1\tchr1\t141027\t141028\tCG\t0\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test1\tchr1\t141027\t141028\tCG\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG"
-                ]
-            ],
-            [
-                "region_summaries",
-                [
-                    "library\ttarget_locus\target_name\tcontext\tmean_methylation",
-                    "emseq-test1\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCG\t0",
-                    "emseq-test1\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCG\t0",
-                    "emseq-test1\tchr1:31717-31868\tStemLoop_31767_31817_2mm_18C_0CG\tCG\t100",
-                    "emseq-test2\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCG\t0",
-                    "emseq-test2\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCG\t0",
-                    "emseq-test2\tchr1:31717-31868\tStemLoop_31767_31817_2mm_18C_0CG\tCG\t100"
+                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG"
                 ]
             ],
             [
@@ -200,6 +435,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-09-05T09:15:26.474319094"
+        "timestamp": "2025-09-08T16:09:49.470441818"
     }
 }

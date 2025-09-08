@@ -70,19 +70,33 @@ workflow {
 
         ///////// Trim, align and mark duplicates //////////
         fastp( passed_bams )
-        fastq_chunks = fastp.out.trimmed_fastq
-            .map { library, fq1_files, fq2_files -> 
-                // Needs to be a list even if there is only one fastq chunk
-                def fq1_list = fq1_files instanceof List ? fq1_files : [fq1_files]
-                def fq2_list = fq2_files instanceof List ? fq2_files : [fq2_files]
+        if (params.single_end) {
+            fastq_chunks = fastp.out.trimmed_fastq
+            .flatMap { library, fq_files ->                 
+                def fq_list = fq_files instanceof List ? fq_files : [fq_files]
                 
-                [fq1_list, fq2_list].transpose().collect { fq1, fq2 -> 
-                    [library, fq1.baseName.split(".1.trimmed")[0], fq1, fq2] 
+                fq_list.findAll { it.baseName.contains('.1.trimmed') }.collect { fq1 ->
+                    def chunk_name = fq1.baseName.split(".1.trimmed")[0]
+                    [library, chunk_name, fq1]
                 }
             }
-            .flatten()
-            .collate(4)
-
+        }
+        else {
+            fastq_chunks = fastp.out.trimmed_fastq
+            .flatMap { library, fq_files ->
+                def fq_list = fq_files instanceof List ? fq_files : [fq_files]                
+                def chunk_groups = fq_list.groupBy { 
+                    it.baseName.replaceAll(/\.[12]\.trimmed$/, '') 
+                }
+                
+                chunk_groups.collect { chunk_prefix, files ->
+                    def r1 = files.find { it.baseName.contains('.1.trimmed') }
+                    def r2 = files.find { it.baseName.contains('.2.trimmed') }
+                    
+                    [library, chunk_prefix, [r1, r2]]
+                }
+            }
+        }
         
         alignReads( passed_bams.combine(fastq_chunks, by:0), params.reference_list.bwa_index )
         mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
@@ -129,10 +143,12 @@ workflow {
         idx_stats(  md_bams )
         flag_stats( md_bams )
         fastqc( md_bams )
-        insert_size_metrics( md_bams ) 
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
         combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
+        if (!params.single_end) {
+            insert_size_metrics( md_bams )
+        }
 
         //////// Collect files for internal summaries //////////
         agg_opts = [
@@ -151,15 +167,19 @@ workflow {
         ['--combined_mbias_records', methylDackel_mbias.out.for_agg ]
         ]
         
-        multiqc_opts = agg_opts + [
-            ['--insert', insert_size_metrics.out.high_mapq]
-        ]
+        multiqc_opts = agg_opts.clone()
+        if (!params.single_end) {
+            multiqc_opts << ['--insert', insert_size_metrics.out.high_mapq]
+        }
 
         if (params.enable_neb_agg) {
-            agg_opts << ['--insert', insert_size_metrics.out.for_agg]
+            if (!params.single_end) {
+                agg_opts << ['--insert', insert_size_metrics.out.for_agg]
+            }
             agg_tuple = format_ngs_agg_opts(agg_opts)
             aggregate_results( agg_tuple )
         } 
+
         ////////// MultiQC analysis ///////////
         multiqc_tuple = format_ngs_agg_opts(multiqc_opts)
         versions_file = createVersionsFile(Channel.topic('versions'))
