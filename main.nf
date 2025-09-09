@@ -36,7 +36,7 @@ bams = Channel.fromPath(params.ubam_dir + '/*.bam', checkIfExists: true)
 genome = params.genome
 params.reference_list = params.genomes[genome]
 genome_fa = Channel.value(params.reference_list.genome_fa)
-genome_fai = Channel.value("${params.reference_list.genome_fa}.fai")
+genome_fai = Channel.value(params.reference_list.genome_fai)
 
 def checkFileSize (path) {
     return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
