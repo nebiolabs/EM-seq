@@ -29,7 +29,6 @@ process alignReads {
 
     bwameth.py -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} ${bwameth_input} 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${chunk_name}.nonconverted_counts.tsv" \
-    | samtools view -u /dev/stdin \
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${Math.max(1,task.cpus.intdiv(8))} \
        -m ${(task.memory.toGiga()*5).intdiv(8)}G --write-index \
        -o "${chunk_name}.aln.bam##idx##${chunk_name}.aln.bam.bai" /dev/stdin
