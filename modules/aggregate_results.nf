@@ -27,6 +27,7 @@ process aggregate_results {
     tag { library }
     conda "bioconda::samtools=1.9 git=2.40.1"
     publishDir "${params.outputDir}/aggregate_results"
+    label 'process_single'
 
     input:         
 	tuple val(library), val(ngs_agg_opts), path(ngs_agg_paths)
