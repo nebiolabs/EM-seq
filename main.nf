@@ -146,9 +146,6 @@ workflow {
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
         combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
-        if (!params.single_end) {
-            insert_size_metrics( md_bams )
-        }
 
         //////// Collect files for internal summaries //////////
         agg_opts = [
@@ -169,13 +166,12 @@ workflow {
         
         multiqc_opts = agg_opts.clone()
         if (!params.single_end) {
+            insert_size_metrics( md_bams )
             multiqc_opts << ['--insert', insert_size_metrics.out.high_mapq]
+            agg_opts << ['--insert', insert_size_metrics.out.for_agg]
         }
 
         if (params.enable_neb_agg) {
-            if (!params.single_end) {
-                agg_opts << ['--insert', insert_size_metrics.out.for_agg]
-            }
             agg_tuple = format_ngs_agg_opts(agg_opts)
             aggregate_results( agg_tuple )
         } 
