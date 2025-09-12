@@ -4,6 +4,17 @@ process mergeAndMarkDuplicates {
     publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
     publishDir "${params.outputDir}/stats/markdups", mode: 'copy', pattern: '*log'
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    memory {
+        try {
+            def totalFileSize = bams.collect { it.size() }.sum() / (1024 * 1024 * 1024)
+            if (totalFileSize < 2 ) return '32.GB' // 20M reads
+            else if (totalFileSize < 8 ) return '64.GB' // 100M reads 
+            else return '128.GB' // for deep sequencing (900M reads was around 66GB)
+        }
+        catch (Exception _e) {
+            return '64.GB' 
+        }
+    }
 
     input:
         tuple val(library), path(bams), path(bais)
@@ -23,7 +34,7 @@ process mergeAndMarkDuplicates {
 
     samtools merge --threads ${task.cpus} ${library}.bam ${bams}
 
-    picard -Xmx${task.memory.toGiga()}g MarkDuplicates \
+    picard -Xmx${task.memory.toGiga().intdiv(2)}g MarkDuplicates \
         --TAGGING_POLICY All \
         --OPTICAL_DUPLICATE_PIXEL_DISTANCE \${optical_distance} \
         --TMP_DIR ${params.tmp_dir} \
