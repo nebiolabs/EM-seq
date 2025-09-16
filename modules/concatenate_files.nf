@@ -4,7 +4,6 @@ process concatenate_files {
 
     input:
         path(files)
-        val(header)
         val(output_prefix)
 
     output:
@@ -12,7 +11,7 @@ process concatenate_files {
 
     script:
     """
-    echo -e "${header}" > ${output_prefix}_combined.tsv
+    head -n 1 "${files[0]}" > ${output_prefix}_combined.tsv
 
     for file in ${files}; do
         if [ -s "\$file" ]; then

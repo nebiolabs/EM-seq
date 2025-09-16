@@ -122,17 +122,14 @@ workflow {
 
             concat_intersections(
                 group_bed_intersections.out.intersections.collect(),
-                "methylkit_file\\tchr\\tstart\\tend\\tcontext\\tmethylation\\ttarget_locus\\ttarget_name",
                 "intersections"
             )
             concat_positional_summaries(
                 group_bed_intersections.out.positional_summary.collect(),
-                "methylkit_file\\tchr\\ttarget_length\\tposition\\tcontext\\tmean_methylation\\tn_loci\\tn_measurements",
                 "positional_summaries"
             )
             concat_region_summaries(
                 intersect_bed_with_methylkit.out.region_summary.collect(),
-                "library\\ttarget_locus\\target_name\\tcontext\\tmean_methylation",
                 "region_summaries"
             )
             
