@@ -3,20 +3,7 @@ nextflow.enable.dsl=2
 /* --------------- *
  * INPUT ARGUMENTS *
  * --------------- */
-params.email                     = 'undefined'
-params.flowcell                  = 'undefined'
-params.path_to_genome_fasta      = 'undefined'   // path to the genome FASTA file, e.g. /path/to/genome.fa
-params.input_glob                = '*_R1.fastq*' // either the .bam or fastq read 1
-params.project                   = 'project_undefined'
-params.workflow                  = 'EM-seq'
-params.outputDir                 = "em-seq_output"
-params.tmp_dir                   = '/tmp'
-params.min_mapq                  = 20 // for methylation assessment.
-params.max_input_reads           = "all_reads" // default is not downsampling , set to a number to downsample e.g. 1000000 is 500k read pairs
-params.downsample_seed           = 42
-params.enable_neb_agg            = 'False'
-params.target_bed                = 'undefined' // BED file to intersect with methylKit output
-params.testing_mode              = false 
+
 
 include { alignReads; mergeAndMarkDuplicates; genome_index; send_email; touchFile }                     from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
@@ -120,6 +107,7 @@ workflow {
         }
 
         alignedReads = alignReads( passed_reads, bwa_index_ch )
+        alignedReads.out.nonconverted_counts.publishDir("${params.outputDir}/non_converted_counts/", mode: 'copy')
         markDup      = mergeAndMarkDuplicates( alignedReads.aligned_bams )
 
         extract      = methylDackel_extract( markDup.md_bams, genome_ch )

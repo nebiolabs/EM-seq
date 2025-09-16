@@ -183,7 +183,6 @@ process picard_metrics {
 process tasmanian {
     label 'medium_cpu'
     tag { library }
-    publishDir "${params.outputDir}/stats/tasmanian"
     conda "bioconda::samtools=1.22 bioconda::tasmanian-mismatch=1.0.9"
 
     errorStrategy { retry < 1 ? 'retry' : 'terminate' }
