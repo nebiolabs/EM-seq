@@ -18,14 +18,9 @@ process alignReads {
     script:
     def bwameth_input = params.single_end ? "${reads}" : "-p ${reads[0]} ${reads[1]}"
     """
-    get_rg_line() {
-        set +o pipefail
-        local file=\$1
-        rg_line=\$(samtools view -H \$file | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
-        set -o pipefail
-        export rg_line
-    }
-    get_rg_line ${bam}
+    set +o pipefail
+    rg_line=\$(samtools view -H ${bam} | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
+    set -o pipefail
 
     bwameth.py -t ${Math.max(1,(task.cpus*7).intdiv(8))} --read-group "\${rg_line}" --reference ${genome_fa} ${bwameth_input} 2> "${library}.log.bwamem" \
     | mark-nonconverted-reads.py --reference ${genome_fa} 2> "${chunk_name}.nonconverted_counts.tsv" \
