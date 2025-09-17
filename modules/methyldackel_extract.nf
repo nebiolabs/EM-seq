@@ -10,7 +10,7 @@ process methylDackel_extract {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*CHG.methylKit.gz'), path('*CHH.methylKit.gz'),path('*CpG.methylKit.gz'), emit: methylkits
+        tuple val(library), path("${library}_CHG.methylKit.gz"), path("${library}_CHH.methylKit.gz"),path("${library}_CpG.methylKit.gz"), emit: methylkits
         tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
         tuple val("${task.process}"), val('methyldackel'), eval('MethylDackel --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 

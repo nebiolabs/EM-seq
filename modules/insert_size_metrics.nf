@@ -8,8 +8,8 @@ process insert_size_metrics {
         tuple val(library), path(bam), path(bai)
 
     output:
-        tuple val(library), path('*_metrics'), emit: for_agg
-        tuple val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq
+        tuple val(library), path("${library}.insertsize_metrics"), emit: for_agg
+        tuple val(library), path("${library}.good_mapq.insert_size_metrics.txt"), emit: high_mapq
 
     script:
     // Insert sizes for multiqc is filtered for high mapQ

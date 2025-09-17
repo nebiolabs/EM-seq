@@ -10,7 +10,7 @@ process gc_bias {
         val(genome_fa)
         val(genome_fai)
     output:
-        tuple val(library), path('*gc_metrics'), emit: for_agg
+        tuple val(library), path("${library}.gc_metrics"), emit: for_agg
         tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
         tuple val("${task.process}"), val('picard'), eval('picard CollectGcBiasMetrics --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 

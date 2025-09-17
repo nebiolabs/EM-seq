@@ -154,7 +154,7 @@ workflow {
         ['--gc', gc_bias.out.for_agg ],
         ['--dup', mergeAndMarkDuplicates.out.log],
         ['--idx_stats', idx_stats.out.for_agg],
-        ['--flagstat', flag_stats.out.for_agg],
+        ['--flagstat', flagstats.out.for_agg],
         ['--fastqc', fastqc.out.for_agg],
         ['--nonconverted_read_counts', combine_nonconverted_counts.out.for_agg ],
         ['--tasmanian', tasmanian.out.for_agg ],

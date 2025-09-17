@@ -355,7 +355,7 @@
                     "--flagstat emseq-test1.flagstat ",
                     "--fastqc emseq-test1.md_fastqc.zip ",
                     "--nonconverted_read_counts emseq-test1.nonconverted_counts.for_agg.tsv ",
-                    "--tasmanian emseq-test1.csv ",
+                    "--tasmanian emseq-test1.tasmanian.csv ",
                     "--combined_mbias_records emseq-test1.combined_mbias.tsv",
                     "--workflow EM-seq"
                 ]
@@ -365,7 +365,7 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-09-12T11:08:02.126443816"
+        "timestamp": "2025-09-17T10:24:44.861870934"
     },
     "EM-seq workflow uBam": {
         "content": [
@@ -685,7 +685,7 @@
                     "--flagstat emseq-test1.flagstat ",
                     "--fastqc emseq-test1.md_fastqc.zip ",
                     "--nonconverted_read_counts emseq-test1.nonconverted_counts.for_agg.tsv ",
-                    "--tasmanian emseq-test1.csv ",
+                    "--tasmanian emseq-test1.tasmanian.csv ",
                     "--combined_mbias_records emseq-test1.combined_mbias.tsv ",
                     "--insert emseq-test1.insertsize_metrics",
                     "--workflow EM-seq"
@@ -696,6 +696,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.2"
         },
-        "timestamp": "2025-09-11T17:04:46.975871157"
+        "timestamp": "2025-09-17T10:23:29.040913733"
     }
 }

@@ -36,7 +36,7 @@ nextflow_pipeline {
             def positional_summary = path("${launchDir}/test_output/methylKit_intersections/emseq-test1_vs_emseq_test_regions_positional_summary.tsv").text.tokenize('\n')
             def methylkit_intersections = path("${launchDir}/test_output/methylKit_intersections/emseq-test2_vs_emseq_test_regions_intersections.tsv").text.tokenize('\n')
             def region_summary = path("${launchDir}/test_output/methylKit_intersections/emseq-test2_vs_emseq_test_regions_region_summary.tsv").text.tokenize('\n')
-            def tasmanian = path("${launchDir}/test_output/stats/tasmanian/emseq-test1.csv").exists()
+            def tasmanian = path("${launchDir}/test_output/stats/tasmanian/emseq-test1.tasmanian.csv").exists()
             def multiqc = path("${launchDir}/test_output/EM-seq-Alignment-Summary-test_pipeline_multiqc_report.html").exists()
             def ngs_agg = path("${launchDir}/test_output/aggregate_results/emseq-test1.arguments.txt").text.tokenize('\n')
 
@@ -102,7 +102,7 @@ nextflow_pipeline {
             def positional_summary = path("${launchDir}/test_output/methylKit_intersections/emseq-test1_vs_emseq_test_regions_positional_summary.tsv").text.tokenize('\n')
             def methylkit_intersections = path("${launchDir}/test_output/methylKit_intersections/emseq-test2_vs_emseq_test_regions_intersections.tsv").text.tokenize('\n')
             def region_summary = path("${launchDir}/test_output/methylKit_intersections/emseq-test2_vs_emseq_test_regions_region_summary.tsv").text.tokenize('\n')
-            def tasmanian = path("${launchDir}/test_output/stats/tasmanian/emseq-test1.csv").exists()
+            def tasmanian = path("${launchDir}/test_output/stats/tasmanian/emseq-test1.tasmanian.csv").exists()
             def multiqc = path("${launchDir}/test_output/EM-seq-Alignment-Summary-test_pipeline_multiqc_report.html").exists()
             def ngs_agg = path("${launchDir}/test_output/aggregate_results/emseq-test1.arguments.txt").text.tokenize('\n')
 

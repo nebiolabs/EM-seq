@@ -13,7 +13,7 @@ process methylDackel_mbias {
     output:
         path('*.svg'), emit: mbias_output_svg
         path('*.tsv'), emit: mbias_output_tsv
-        tuple val(library), path('*.tsv'), emit: for_agg
+        tuple val(library), path("${library}.combined_mbias.tsv"), emit: for_agg
         tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
         tuple val("${task.process}"), val('methyldackel'), eval('MethylDackel --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 

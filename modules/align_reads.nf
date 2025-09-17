@@ -9,8 +9,8 @@ process alignReads {
         val(genome_fa)
 
     output:
-        tuple val(library), path("*.aln.bam"), path("*.aln.bam.bai"), emit: bam_files
-        tuple val(library), path("*.nonconverted_counts.tsv"), emit: nonconverted_counts
+        tuple val(library), path("${chunk_name}.aln.bam"), path("${chunk_name}.aln.bam.bai"), emit: bam_files
+        tuple val(library), path("${chunk_name}.nonconverted_counts.tsv"), emit: nonconverted_counts
         tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
         tuple val("${task.process}"), val('bwameth'), eval('bwameth.py --version | sed \'s/^bwa-meth.py //\''), topic: versions
         tuple val("${task.process}"), val('python'), eval('python --version | sed \'s/^Python //\''), topic: versions

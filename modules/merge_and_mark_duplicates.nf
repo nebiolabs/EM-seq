@@ -18,7 +18,7 @@ process mergeAndMarkDuplicates {
     input:
         tuple val(library), path(bams), path(bais)
     output:
-        tuple val(library), path('*.md.bam'), path('*.md.bai'), emit: md_bams
+        tuple val(library), path("${library}.md.bam"), path("${library}.md.bai"), emit: md_bams
         tuple val(library), path('*.markdups_log'), emit: log
         tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
         tuple val("${task.process}"), val('picard'), eval('picard MarkDuplicates --version 2>&1 | cut -f 2 -d ":"'), topic: versions

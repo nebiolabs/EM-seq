@@ -10,7 +10,7 @@ process picard_metrics {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*alignment_summary_metrics.txt'), emit: for_agg
+        tuple val(library), path("${library}.alignment_summary_metrics.txt"), emit: for_agg
         tuple val("${task.process}"), val('picard'), eval('picard CollectAlignmentSummaryMetrics --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 
     script:

@@ -7,7 +7,7 @@ process concatenate_files {
         val(output_prefix)
 
     output:
-        path('*_combined.tsv'), emit: combined_file
+        path("${output_prefix}_combined.tsv"), emit: combined_file
 
     script:
     """

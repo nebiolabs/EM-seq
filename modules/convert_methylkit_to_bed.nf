@@ -9,7 +9,7 @@ process convert_methylkit_to_bed {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*.bed'), emit: methylkit_bed
+        tuple val(library), path("${library}.bed"), emit: methylkit_bed
 
     script:
     // Using cytosine report as a substitute for merging 3 methylkit files. 

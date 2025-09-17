@@ -9,7 +9,7 @@ process extract_cytosine_report {
         val(genome_fai)
 
     output:
-        tuple val(library), path('*cytosine_report.txt'), emit: report
+        tuple val(library), path("${library}.cytosine_report.txt"), emit: report
         tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
         tuple val("${task.process}"), val('methyldackel'), eval('MethylDackel --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 
