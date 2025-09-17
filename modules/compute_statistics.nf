@@ -184,6 +184,9 @@ process tasmanian {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22 bioconda::tasmanian-mismatch=1.0.9"
+    if (params.publishOutput) {
+        publishDir params.publishOutput ? "{params.outputDir}/${task.process}_logs" : null, mode: 'symlink'
+    }
 
     errorStrategy { retry < 1 ? 'retry' : 'terminate' }
     maxRetries 1

@@ -75,6 +75,9 @@ process alignReads {
             return '128 GB'  // Default memory if size cannot be determined
         }
     }
+    if (params.publishOutput) {
+        publishDir "{params.outputDir}/${task.process}_logs", mode: 'symlink', pattern: '*.{tsv,json,log.bwamem}'
+    }
 
     input:
         tuple val(library),
@@ -267,7 +270,11 @@ process alignReads {
 process mergeAndMarkDuplicates {
     label 'high_cpu'
     tag { library }
-    publishDir "${params.outputDir}/markduped_bams", mode: 'copy', pattern: '*.md.{bam,bai}'
+
+    if (params.publishOutput) {
+        publishDir params.publishOutput ? "{params.outputDir}/${task.process}" : null, mode: 'copy', pattern: '*md.{bam,bau}'
+    }
+
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
 
     input:

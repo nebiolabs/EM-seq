@@ -107,7 +107,6 @@ workflow {
         }
 
         alignedReads = alignReads( passed_reads, bwa_index_ch )
-        alignedReads.out.nonconverted_counts.publishDir("${params.outputDir}/non_converted_counts/", mode: 'copy')
         markDup      = mergeAndMarkDuplicates( alignedReads.aligned_bams )
 
         extract      = methylDackel_extract( markDup.md_bams, genome_ch )
