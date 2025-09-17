@@ -1,4 +1,4 @@
-process flag_stats {
+process flagstats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"

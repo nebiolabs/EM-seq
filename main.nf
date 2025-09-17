@@ -18,7 +18,7 @@ include { concatenate_files as concat_intersections;
           concatenate_files as concat_region_summaries;}      from './modules/concatenate_files'
 include { gc_bias }                                           from './modules/gc_bias'
 include { idx_stats }                                         from './modules/idx_stats'
-include { flag_stats }                                        from './modules/flag_stats'
+include { flagstats }                                        from './modules/flagstats'
 include { fastqc }                                            from './modules/fastqc'
 include { insert_size_metrics }                               from './modules/insert_size_metrics'
 include { picard_metrics }                                    from './modules/picard_metrics'
@@ -138,7 +138,7 @@ workflow {
         ///////// Collect statistics ///////
         gc_bias(  md_bams, genome_fa, genome_fai )
         idx_stats(  md_bams )
-        flag_stats( md_bams )
+        flagstats( md_bams )
         fastqc( md_bams )
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
