@@ -3,7 +3,7 @@
 process multiqc {
     label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
-    publishDir "${params.outputDir}", mode: params.enable_neb_agg ? 'copy' : 'link'
+    publishDir "${params.outputDir}", mode: params.galaxy_mode
 
     input:
         path('*')

@@ -49,10 +49,5 @@ process {
         cpus = 1
         memory = '4 GB' 
     }
-
-    publishDir = params.publishOutput ? [
-        path: "${params.outputDir}/${task.process.tokenize(':')[-1]}",
-        mode: 'symlink'
-    ] : null
 }
 
