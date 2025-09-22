@@ -7,12 +7,25 @@ This repository contains Nextflow-based analysis tools for [Enzymatic Methylatio
 The repository includes multiple [Nextflow](https://www.nextflow.io/) workflows:
 
 ### Main Analysis Pipeline (`main.nf`)
-Complete EM-seq processing pipeline that accepts both FASTQ and BAM inputs:
+Complete EM-seq processing pipeline that accepts uBAM inputs:
+- trimming with fastp 
 - Read alignment with BWA-meth
 - Duplicate marking and filtering  
 - Methylation calling with MethylDackel
 - Quality control metrics and statistics
 - Optional BED file intersection for targeted analysis
+
+### Fastq to uBam pipeline (`fastq_to_ubam.nf`)
+If your files are in fastq format you will need to convert them to uBams prior to running the main pipeline, e.g.:
+```bash
+nextflow run fastq_to_ubam.nf \
+  --input_glob "tests/fixtures/fastq/emseq-test*{.ds.1,.ds.2}.fastq.gz" \
+  --read_format 'paired-end'
+```
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--input_glob` | glob for your gzipped fastq files | `['*.{1,2}.fastq.gz']` |
+| `--read_format` | 'paired-end' or 'single-end' | `'paired-end'` |
 
 ### Legacy Workflows
 - `em-seq.nf` - Original alignment and methylation calling workflow
@@ -24,30 +37,32 @@ Complete EM-seq processing pipeline that accepts both FASTQ and BAM inputs:
 ### Basic Usage
 ```bash
 nextflow run main.nf \
-  --path_to_genome_fasta /path/to/genome.fa \
-  --input_glob "*_R1.fastq*" \
+  --genome 'test' \
+  --ubam_dir './' \
   --email your.email@example.com \
   --flowcell FLOWCELL_ID
 ```
-`input_glob` should capture your bam files or `read1` fastq files  (even for paired-end libraries)
+`ubam_dir` should be the folder where your ubam files are.
 
 ### Key Parameters
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--path_to_genome_fasta` | Path to reference genome FASTA file | Required |
-| `--input_glob` | Glob pattern for input files (FASTQ/BAM) | `*_R1.fastq*`/`*.bam` |
+| `--genome` | reference genome found in conf/references.config | Required |
 | `--email` | Email for notifications | Required |
 | `--flowcell` | Flowcell identifier | Optional |
 | `--outputDir` | Output directory | `em-seq_output` |
 | `--project` | Project name | `project_undefined` |
-| `--max_input_reads` | Max reads to process (or "all_reads") | `all_reads` |
-| `--target_bed` | BED file for targeted analysis | Optional |
 | `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
-| `--min_mapq` | Minimum mapping quality | `20` |
+
+### References Config
+
+Modify the conf/references.config file to specify your genome files
+- `genome_fa` path to your genome fasta file where .fai also exists 
+- `bwameth_index` path to your genome fasta file where bwameth indices exist 
+- `target_bed` BED file for targeted analysis, Optional 
 
 ### Advanced Options
-- `--downsample_seed` - Random seed for downsampling (default: 42)
 - `--tmp_dir` - Temporary directory (default: `/tmp`)
 - `--workflow` - Workflow identifier (default: `EM-seq`)
 
@@ -65,17 +80,29 @@ Pre-built reference genomes with methylation spike-in controls:
 
 ## Configuration
 
-Copy `nextflow.config.example` to `nextflow.config` and modify as needed for your environment.
+Modify `nextflow.config` as needed for your environment.
 
 ## Related Projects
 
 You may also be interested in the [nf-core methylseq project](https://nf-co.re/methylseq/2.5.0)
 
 ## Developer documentation
-### Production deploy (NEB internal):
+### Production:
  - git tag -f current_production
  - git push -f origin current_production
- - cap production deploy
 
-### Development deploy: 
- - cap development deploy
+ ### Development:
+ - development workflow will run from master branch
+
+ ### Testing:
+ - Tests are run using nf-test and are integrated into github actions
+ - install nf-test from bioconda using conda/mamba
+ - To run all tests:
+ ```bash
+nf-test test
+```
+- When new tests are added or results change, to update the results snapshot:
+```bash
+nf-test test --updateSnapshot
+```
+
