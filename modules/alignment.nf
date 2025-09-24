@@ -170,7 +170,7 @@ process alignReads {
             exit 1
         fi
 
-        if [ "${params.max_input_reads}" == "all_reads" ||  \$n_reads -le ${params.max_input_reads} ]; then
+        if [[ "${params.max_input_reads}" == "all_reads" ||  \$n_reads -le ${params.max_input_reads} ]]; then
             frac_reads=1
         else
             frac_reads=\$(echo \$n_reads | awk '{print ${params.max_input_reads}/\$1}')
