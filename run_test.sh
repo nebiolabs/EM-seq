@@ -102,6 +102,7 @@ rm -f "${test_log}"
 
 function test_pipeline() {
     local file="$1"
+	local bed_argument="$2"
     echo -n "Testing with file: ${file} ... " | tee -a "${test_log}"
     
     # Run the Nextflow pipeline with the specified input file
@@ -118,6 +119,7 @@ function test_pipeline() {
         -w "${tmp}/work" \
         --read_length 151 \
         --testing_mode "true" \
+		${bed_argument} \
         --enable_neb_agg "false" 2>&1 >> "${test_log}"; then
         
         echo "Nextflow pipeline succeeded" >> "${test_log}"
@@ -135,20 +137,29 @@ function test_pipeline() {
 # Run tests with different input formats
 echo "Running pipeline tests..."
 
-if ! test_pipeline "emseq-test*1.fastq.gz"; then
+bed_arg1="--target_bed ${target_bed}"
+bed_arg2=""
+
+if ! test_pipeline "emseq-test*1.fastq.gz" "${bed_arg1}"; then
     echo "❌ Test failed for fastq.gz files"
     exit 1
 fi
 
-if ! test_pipeline "emseq-test*1.fastq"; then
+if ! test_pipeline "emseq-test*1.fastq" "${bed_arg1}"; then
     echo "❌ Test failed for fastq files"
     exit 1
 fi
 
-if ! test_pipeline "emseq-test*bam"; then
+if ! test_pipeline "emseq-test*bam" "${bed_arg1}"; then
     echo "❌ Test failed for bam files"
     exit 1
 fi
+
+if ! test_pipeline "emseq-test*bam" "${bed_arg2}"; then
+    echo "❌ Test failed for bam files"
+    exit 1
+fi
+
 
 echo "echo ✅ All tests passed!"
 
