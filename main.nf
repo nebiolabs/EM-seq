@@ -11,7 +11,7 @@ include { prepare_target_bed; intersect_bed_with_methylkit;
           group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
-include { test_flagstats; test_alignment_metrics }                                                      from './modules/tests'    
+include { test_flagstats; test_alignment_metrics }                                                      from './modules/tests'
 
 // identify and replace common R1/R2 naming patterns and return the read2 file name
 // e.g. _R1.fastq -> _R2.fastq, _1.fastq -> _2.fastq, .R1. -> .R2., etc.
@@ -164,10 +164,11 @@ workflow {
         }
 
         // channel for multiqc analysis
-        all_results = grouped_email_library
-         .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
-         .map { email, library, read1, read2, filetype, *qc_files ->
-                [email, library, qc_files.flatten()] }
+        all_results = grouped_library_results
+         .join(insertsize.for_agg)
+         .map { tuple -> [tuple[0], tuple[1..-1].flatten()] }
+         .groupTuple(by: 0)
+         .map { library, qc_files -> [library, qc_files.flatten()] }
 
         multiqc( all_results )
 

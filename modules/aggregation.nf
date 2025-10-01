@@ -3,7 +3,7 @@
 process multiqc {
     label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
-    publishDir "${params.outputDir}", mode: params.galaxy_mode
+    publishDir "${params.outputDir}"
 
     input:
         path('*')
@@ -85,7 +85,7 @@ process aggregate_emseq {
     """
     path_to_ngs_agg="${params.path_to_ngs_agg}${params.revision}/"
 
-    unzip -o *fastqc.zip 
+    unzip -o *fastqc.zip
 
     if echo ${barcodes} | grep -q "+"
     then
