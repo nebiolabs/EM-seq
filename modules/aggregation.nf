@@ -12,12 +12,14 @@ process multiqc {
         path("*multiqc_report.html"), emit: multiqc_report
 
     script:
-    '''
+    """
     cat <<-CONFIG > multiqc_config.yaml
-    title: EM-seq Alignment Summary - !{flowcell}
+    title: EM-seq Alignment Summary - ${flowcell}
     extra_fn_clean_exts:
+        - '.aln'
         - '.md'
-        - '_combined_fastp'
+        - '.fastp.json'
+        - '.good_mapq'
     custom_plot_config:
         picard_insert_size:
             xmax: 1000
@@ -52,7 +54,7 @@ process multiqc {
 CONFIG
 
     multiqc -ip .
-    '''
+    """
 }
 
 process aggregate_emseq {

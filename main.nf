@@ -163,10 +163,11 @@ workflow {
             )
         }
 
-        // channel for multiqc analysis -
-        all_results = grouped_library_results
-            .join(insertsize.high_mapq_insert_size_metrics)
-            .map { it[1,2] + it[6..-1].flatten() } //multiqc needs all the files (without the library name)
+        // channel for multiqc analysis
+        all_results = grouped_email_library
+         .join(insertsize.high_mapq_insert_size_metrics.groupTuple(by: [0, 1]), by: [0, 1])
+         .map { email, library, read1, read2, filetype, *qc_files ->
+                [email, library, qc_files.flatten()] }
 
         multiqc( all_results )
 
