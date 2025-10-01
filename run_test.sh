@@ -17,10 +17,10 @@ if [ ! -d "${tmp}" ]; then
     mkdir -p "${tmp}"
 fi
 
-if ! ln -sf "${script_dir}"/test_data/emseq-test*.fastq.gz "${tmp}"; then
-    echo "Error: Failed to link fastq.gz files"
-    exit 1
-fi
+for fq in "${script_dir}"/test_data/emseq-test*.fastq.gz; do
+    basename=$(basename "$fq")
+    ln -sf "$fq" "${tmp}/2${basename}"
+done
 
 
 # Check for micromamba
@@ -138,7 +138,7 @@ echo "Running pipeline tests..."
 bed_arg1="--target_bed ${target_bed}"
 bed_arg2=""
 
-if ! test_pipeline "emseq-test*1.fastq.gz" "${bed_arg1}"; then
+if ! test_pipeline "*emseq-test*1.fastq.gz" "${bed_arg1}"; then
     echo "❌ Test failed for fastq.gz files"
     exit 1
 fi

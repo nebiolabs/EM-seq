@@ -164,9 +164,9 @@ workflow {
         // channel for multiqc analysis
         all_results = grouped_library_results
          .join(insertsize.for_agg)
-         .map { tuple -> [tuple[0], tuple[1..-1].flatten()] }
-         .groupTuple()
-         .map { library, qc_files -> qc_files.flatten() }
+         .map { tuple -> tuple[1..-1].flatten() }
+         .flatten()
+         .collect()
 
         multiqc( all_results )
 
