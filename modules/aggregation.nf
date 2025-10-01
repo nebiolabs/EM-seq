@@ -14,12 +14,12 @@ process multiqc {
     script:
     """
     cat <<-CONFIG > multiqc_config.yaml
-    title: EM-seq Alignment Summary - ${flowcell}
+    title: EM-seq Alignment Summary - ${params.flowcell}
     extra_fn_clean_exts:
         - '.aln'
         - '.md'
         - '.fastp.json'
-        - '.good_mapq'
+        - '.tmp'
     custom_plot_config:
         picard_insert_size:
             xmax: 1000

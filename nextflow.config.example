@@ -5,6 +5,7 @@ timeline.enabled = true
 dag.enabled = true
 dag.overwrite = true
 report.overwrite = true
+timeline.overwrite = true
 
 // Dynamic resource fetching
 def availableCpus = { java.lang.Runtime.getRuntime().availableProcessors() }()
@@ -28,13 +29,13 @@ params {
 	downsample_seed           = 42
 	enable_neb_agg            = 'False'
 	target_bed                = 'undefined' // BED file to intersect with methylKit output
-	testing_mode              = false 
-    publishOutput             = false  
+	testing_mode              = false
+    publishOutput             = false
 }
 
 process {
-    executor = 'local' // 'sge'. 'slurm', etc... 
-    
+    executor = 'local' // 'sge'. 'slurm', etc...
+
     withLabel: high_cpu {
 	    cpus = { Math.min(task.requested_cpus ?: 16, Runtime.runtime.availableProcessors()) }
 	    memory = { "${Math.min(64, Math.max(8, (availableMemoryGB as Integer)))} GB" }
@@ -47,7 +48,6 @@ process {
 
     withLabel: low_cpu {
         cpus = 1
-        memory = '4 GB' 
+        memory = '4 GB'
     }
 }
-

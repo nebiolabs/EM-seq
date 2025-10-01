@@ -143,9 +143,7 @@ workflow {
 
 
         // channel for internal summaries
-        grouped_library_results = markDup.md_bams
-            .join( alignedReads.metadata )
-	        .join( alignedReads.fastp_reports )
+        grouped_library_results = alignedReads.fastp_reports
             .join( alignedReads.nonconverted_counts )
             .join( markDup.for_agg )
             .join( gcbias.for_agg )
@@ -167,8 +165,8 @@ workflow {
         all_results = grouped_library_results
          .join(insertsize.for_agg)
          .map { tuple -> [tuple[0], tuple[1..-1].flatten()] }
-         .groupTuple(by: 0)
-         .map { library, qc_files -> [library, qc_files.flatten()] }
+         .groupTuple()
+         .map { library, qc_files -> qc_files.flatten() }
 
         multiqc( all_results )
 

@@ -237,7 +237,7 @@ process alignReads {
         stream_reads="\${stream_reads} | samtools view -u -s \${downsample_seed_frac}"
     fi
 
-    base_outputname="${library}_\${flowcell}"
+    base_outputname="${library}"
 
     set +o pipefail
     inst_name=\$(samtools view ${input_file1} | head -n 1 | cut -d ":" -f 1)

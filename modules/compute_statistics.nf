@@ -85,13 +85,13 @@ process insert_size_metrics {
 
     output:
         tuple val(library), path('*_metrics'), emit: for_agg
-        tuple val(library), path('*good_mapq.insert_size_metrics.txt'), emit: high_mapq_insert_size_metrics
+        tuple val(library), path('*.good_mapq.insert_size_metrics.txt'), emit: high_mapq_insert_size_metrics
 
     script:
     """
 
-    good_mapq=\$(mktemp -u good_mapq.XXXXXX)
-    bad_mapq=\$(mktemp -u bad_mapq.XXXXXX)
+    good_mapq="${library}.tmp.good_mapq.\$\$"
+    bad_mapq="${library}.tmp.bad_mapq.\$\$"
     mkfifo "\$good_mapq"
     mkfifo "\$bad_mapq"
     trap "rm -f \$good_mapq \$bad_mapq" EXIT # cleanup upon exit
@@ -157,6 +157,9 @@ process insert_size_metrics {
 
     # for multiqc channel
     mv good_mapq.out.txt ${library}.good_mapq.insert_size_metrics.txt
+
+    # Explicitly remove fifos before Nextflow collects outputs
+    rm -f "\$good_mapq" "\$bad_mapq"
     """
 }
 

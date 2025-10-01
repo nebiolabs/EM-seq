@@ -96,15 +96,13 @@ pushd "${tmp}" || {
 rm -f "${test_log}"
 # loop for different type of files, fastq, fastq.gz and bam
 
-# echo "check if files are in here"
-# ls -ltr 
-# echo "finished listing files"
+
 
 function test_pipeline() {
     local file="$1"
 	local bed_argument="$2"
     echo -n "Testing with file: ${file} ... " | tee -a "${test_log}"
-    
+
     # Run the Nextflow pipeline with the specified input file
     if nextflow run "${script_dir}/main.nf" \
         --input_glob "${file}" \
@@ -121,7 +119,7 @@ function test_pipeline() {
         --testing_mode "true" \
 		${bed_argument} \
         --enable_neb_agg "false" 2>&1 >> "${test_log}"; then
-        
+
         echo "Nextflow pipeline succeeded" >> "${test_log}"
     else
         echo "Nextflow pipeline failed" >> "${test_log}"
@@ -130,7 +128,7 @@ function test_pipeline() {
 
     # Check results
     echo "Test complete. Checking results..." | tee -a "${test_log}"
-    
+
     return 0
 }
 
@@ -170,4 +168,3 @@ echo "echo ✅ All tests passed!"
 # Display test results
 echo "Test Results:"
 cat "${test_log}"
-
