@@ -3,9 +3,7 @@ process methylDackel_mbias {
     errorStrategy 'retry'
     tag "${library}"
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8 conda-forge::sed=4.9"
-    if (params.publishOutput) {
-        publishDir params.publishOutput ? "{params.outputDir}/${task.process}_logs" : null, mode: 'symlink'
-    }
+    publishDir "${params.output_dir}/methylation/mbias", mode: params.publish_dir_mode
 
 
     input:
@@ -34,11 +32,11 @@ process methylDackel_mbias {
             # not sure why we need both --keepDupes and -F, probably a bug in mbias
             join -t \$'\t' -j1 -o 1.2,1.3,1.4,1.5,1.6,2.5,2.6 -a 1 -e 0 \
             <( \
-                MethylDackel mbias --noSVG \$arg -@ ${task.cpus} -r \$chr ${genome_fa} "${md_bam}" | \
+                MethylDackel mbias --noSVG \$arg -@ ${task.cpus} -r \$chr ${genome_fa} -q ${params.min_mapq} "${md_bam}" | \
                 tail -n +2 | awk '{print \$1"-"\$2"-"\$3"\t"\$0}' | sort -k 1b,1
             ) \
             <( \
-                MethylDackel mbias --noSVG --keepDupes -F 2816 \$arg -@ ${task.cpus} -r \$chr ${genome_fa} "${md_bam}" | \
+                MethylDackel mbias --noSVG --keepDupes -F 2816 \$arg -@ ${task.cpus} -r \$chr ${genome_fa} -q ${params.min_mapq} "${md_bam}" | \
                 tail -n +2 | awk '{print \$1"-"\$2"-"\$3"\t"\$0}' | sort -k 1b,1
             ) \
             | sed "s/^/\${chr}\t\${context}\t/" \
@@ -46,10 +44,10 @@ process methylDackel_mbias {
         done
     done
     # makes the svg files for trimming checks
-    MethylDackel mbias -@ ${task.cpus} --noCpG --CHH --CHG -r \${chrs[0]} ${genome_fa} "${md_bam}" ${library}_chn
+    MethylDackel mbias -@ ${task.cpus} -q ${params.min_mapq} --noCpG --CHH --CHG -r \${chrs[0]} ${genome_fa} "${md_bam}" ${library}_chn
     for f in *chn*.svg; do sed -i "s/Strand<\\/text>/Strand \$f \${chrs[0]} CHN <\\/text>/" \$f; done;
 
-    MethylDackel mbias -@ ${task.cpus} -r \${chrs[0]} ${genome_fa} "${md_bam}" ${library}_cpg
+    MethylDackel mbias -@ ${task.cpus} -q ${params.min_mapq} -r \${chrs[0]} ${genome_fa} "${md_bam}" ${library}_cpg
     for f in *cpg*.svg; do sed -i "s/Strand<\\/text>/Strand \$f \${chrs[0]} CpG<\\/text>/" \$f; done;
     """
 }
@@ -60,10 +58,8 @@ process methylDackel_extract {
     tag "${library}"
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8"
 
-    if (params.publishOutput) {
-        publishDir params.publishOutput ? "{params.outputDir}/${task.process}_logs" : null, mode: 'symlink'
-    }
-   
+    publishDir "${params.output_dir}/methylation", mode: params.publish_dir_mode
+
 
     input:
         tuple val(library), path(md_bam), path(md_bai)
@@ -74,7 +70,7 @@ process methylDackel_extract {
 
     script:
     """
-    MethylDackel extract --methylKit -q 20 --nOT 0,0,0,5 --nOB 0,0,5,0 -@ ${task.cpus} \
+    MethylDackel extract --methylKit -q ${params.min_mapq} --nOT 0,0,0,${params.trim_bases} --nOB 0,0,${params.trim_bases},0 -@ ${task.cpus} \
         --CHH --CHG -o ${library} ${genome_fa} "${md_bam}"
     pigz -p ${task.cpus} *.methylKit
     """

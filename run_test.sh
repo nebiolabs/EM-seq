@@ -19,6 +19,7 @@ fi
 
 for fq in "${script_dir}"/test_data/emseq-test*.fastq.gz; do
     basename=$(basename "$fq")
+    ln -sf "$fq" "${tmp}/${basename}"
     ln -sf "$fq" "${tmp}/2${basename}"
 done
 
@@ -94,9 +95,6 @@ pushd "${tmp}" || {
 
 # Initialize test log
 rm -f "${test_log}"
-# loop for different type of files, fastq, fastq.gz and bam
-
-
 
 function test_pipeline() {
     local file="$1"
@@ -109,7 +107,6 @@ function test_pipeline() {
         --path_to_genome_fasta "${genome_path}" \
         --email "me@example.com" \
         --max_input_reads 10000 \
-        --target_bed "${target_bed}" \
         --flowcell "test" \
         -with-report "emseq_metadata_report.html" \
         -with-timeline "emseq_metadata_timeline.html" \

@@ -3,6 +3,9 @@ process gc_bias {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    if (params.publish_intermediate_output) {
+        publishDir "${params.output_dir}/picard_stats", mode: params.publish_dir_mode
+    }
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -28,6 +31,9 @@ process idx_stats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
+    if (params.publish_intermediate_output) {
+        publishDir "${params.output_dir}/samtools_stats", mode: params.publish_dir_mode
+    }
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -45,6 +51,9 @@ process flag_stats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
+    if (params.publish_intermediate_output) {
+        publishDir "${params.output_dir}/samtools_stats", mode: params.publish_dir_mode
+    }
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -62,6 +71,9 @@ process fastqc {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::fastqc=0.11.8"
+    if (params.publish_intermediate_output) {
+        publishDir "${params.output_dir}/fastqc", mode: params.publish_dir_mode
+    }
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -79,6 +91,9 @@ process insert_size_metrics {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    if (params.publish_intermediate_output) {
+        publishDir "${params.output_dir}/picard_stats", mode: params.publish_dir_mode
+    }
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -167,6 +182,9 @@ process picard_metrics {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
+    if (params.publish_intermediate_output) {
+        publishDir "${params.output_dir}/picard_stats", mode: params.publish_dir_mode
+    }
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -187,8 +205,8 @@ process tasmanian {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22 bioconda::tasmanian-mismatch=1.0.9"
-    if (params.publishOutput) {
-        publishDir params.publishOutput ? "{params.outputDir}/${task.process}_logs" : null, mode: 'symlink'
+    if (params.publish_intermediate_output) {
+        publishDir "${params.output_dir}/tasmanian_mismatch", mode: params.publish_dir_mode
     }
 
     errorStrategy { retry < 1 ? 'retry' : 'terminate' }

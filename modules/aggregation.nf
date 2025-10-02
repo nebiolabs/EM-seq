@@ -3,7 +3,7 @@
 process multiqc {
     label 'medium_cpu'
     conda "bioconda::multiqc=1.25"
-    publishDir "${params.outputDir}"
+    publishDir "${params.output_dir}", mode: params.publish_dir_mode
 
     input:
         path('*')
@@ -59,7 +59,7 @@ CONFIG
 
 process aggregate_emseq {
     tag { library }
-    conda "bioconda::samtools=1.9"
+    conda "bioconda::samtools=1.22"
 
     input:
 	tuple   val(library),

@@ -203,7 +203,9 @@ process group_bed_intersections {
 
 process concatenate_intersections {
     label 'low_cpu'
-    publishDir "${params.outputDir}/methylKit_intersections", mode: 'copy'
+    if (file(params.target_bed).exists()) {
+        publishDir "${params.output_dir}/bed_intersections", mode: params.publish_dir_mode
+    }
 
     input:
         path(intersection_files)

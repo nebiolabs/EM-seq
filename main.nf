@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
  * --------------- */
 
 
-include { alignReads; mergeAndMarkDuplicates; genome_index; send_email; touchFile }                     from './modules/alignment'
+include { alignReads; markDuplicates; genome_index; send_email; touchFile }                             from './modules/alignment'
 include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
 include { prepare_target_bed; intersect_bed_with_methylkit;
           group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
@@ -81,7 +81,7 @@ workflow {
             return [library, read1File, read2File, fileType]
           }
 
-        println "Processing " + params.flowcell + "... => " + params.outputDir
+        println "Processing " + params.flowcell + "... => " + params.output_dir
         println "Cmd line: $workflow.commandLine"
 
         passed_reads = reads.filter { library, read1File, read2File, fileType -> checkFileSize(read1File) }
@@ -107,7 +107,7 @@ workflow {
         }
 
         alignedReads = alignReads( passed_reads, bwa_index_ch )
-        markDup      = mergeAndMarkDuplicates( alignedReads.aligned_bams )
+        markDup      = markDuplicates( alignedReads.aligned_bams )
 
         extract      = methylDackel_extract( markDup.md_bams, genome_ch )
         mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
