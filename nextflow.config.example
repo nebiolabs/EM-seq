@@ -29,7 +29,6 @@ params {
 	downsample_seed             = 42
 	enable_neb_agg              = 'False'
 	target_bed                  = null // BED file to intersect with methylKit output
-	testing_mode                = false
     publish_intermediate_output = false
 	publish_dir_mode            = 'symlink' // 'copy', 'link', 'symlink', 'rellink'
 }

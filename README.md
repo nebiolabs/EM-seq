@@ -1,5 +1,7 @@
 # EM-seq Analysis Pipeline
 
+[![Test Status](https://github.com/nebiolabs/EM-seq/actions/workflows/test.yml/badge.svg)](https://github.com/nebiolabs/EM-seq/actions)
+
 This repository contains Nextflow-based analysis tools for [Enzymatic Methylation Sequencing (EM-seq)](https://www.neb.com/products/e7120-nebnext-enzymatic-methyl-seq-kit) and [Enzymatic 5hmC-seq (E5hmC-seq)](https://www.neb.com/en-us/products/e3350nebnext-enzymatic-methyl-seq-5hmc-kit) data processing.
 
 ### Main Analysis Pipeline (`main.nf`)

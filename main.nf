@@ -11,7 +11,6 @@ include { prepare_target_bed; intersect_bed_with_methylkit;
           group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
 include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
 include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
-include { test_flagstats; test_alignment_metrics }                                                      from './modules/tests'
 
 // identify and replace common R1/R2 naming patterns and return the read2 file name
 // e.g. _R1.fastq -> _R2.fastq, _1.fastq -> _2.fastq, .R1. -> .R2., etc.
@@ -43,11 +42,9 @@ def detectFileType(file) {
     }
 }
 
-
 def checkFileSize (path) {
     return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
 }
-
 
 workflow {
     main:
@@ -169,10 +166,4 @@ workflow {
          .collect()
 
         multiqc( all_results )
-
-        // ONLY for testing.
-        if (params.testing_mode.toString().toUpperCase() == "TRUE") {
-            test_flagstats( flagstats.for_agg  )
-            test_alignment_metrics( metrics.for_agg )
-        }
 }
