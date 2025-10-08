@@ -47,7 +47,8 @@ nextflow run main.nf \
 ### References Config
 
 Modify the conf/references.config file to specify your genome files
-- `genome_fa` path to your genome fasta file where .fai also exists 
+- `genome_fa` path to your genome fasta file 
+- `genome_fai` path to your genome fasta fai file 
 - `bwameth_index` path to your genome fasta file where bwameth indices exist 
 - `target_bed` BED file for targeted analysis, Optional 
 
