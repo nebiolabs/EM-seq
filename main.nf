@@ -42,7 +42,6 @@ def checkFileSize (path) {
     return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
 }
 
-
 workflow {
     main:
 
