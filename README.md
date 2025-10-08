@@ -5,24 +5,37 @@
 This repository contains Nextflow-based analysis tools for [Enzymatic Methylation Sequencing (EM-seq)](https://www.neb.com/products/e7120-nebnext-enzymatic-methyl-seq-kit) and [Enzymatic 5hmC-seq (E5hmC-seq)](https://www.neb.com/en-us/products/e3350nebnext-enzymatic-methyl-seq-5hmc-kit) data processing.
 
 ### Main Analysis Pipeline (`main.nf`)
-Complete EM-seq processing pipeline that accepts both FASTQ and BAM inputs:
+Complete EM-seq processing pipeline that accepts UBAM inputs:
 - Adapter trimming and read alignment with (fastp, bwa-meth)
 - Duplicate marking (Picard)
 - Methylation calling (MethylDackel)
 - Quality control metrics and statistics (Picard, Samtools, FastQC, MultiQC)
 - Optional BED file intersection for targeted analysis (bedtools)
 
+### Fastq to uBam pipeline (`fastq_to_ubam.nf`)
+If your files are in fastq format you will need to convert them to uBams prior to running the main pipeline, e.g.:
+```bash
+nextflow run fastq_to_ubam.nf \
+  --input_glob "tests/fixtures/fastq/emseq-test*{.ds.1,.ds.2}.fastq.gz" \
+  --read_format 'paired-end'
+```
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--input_glob` | glob for your gzipped fastq files | `['*.{1,2}.fastq.gz']` |
+| `--read_format` | 'paired-end' or 'single-end' | `'paired-end'` |
+
 ## Quick Start
 1. Install [miniforge](https://conda-forge.org/download/) and [bioconda](https://bioconda.github.io/) (see [Requirements](<README#Requirements>))
-1. Install [Nextflow](https://www.nextflow.io/) (e.g. conda install nextflow, or see [Nextflow installation guide](https://www.nextflow.io/docs/latest/getstarted.html#installation))
-1. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Copy `nextflow.config.example` to `nextflow.config` and modify default settings as needed for your environment
-1. Download or prepare a genome reference FASTA file (see [Reference Genomes](<README#Reference Genomes>))
-1. Run the pipeline with appropriate parameters (see [Basic Usage](<README#Basic Usage>))
-1. Examine results in the EM-seq_output directory
+2. Install [Nextflow](https://www.nextflow.io/) (e.g. conda install nextflow, or see [Nextflow installation guide](https://www.nextflow.io/docs/latest/getstarted.html#installation))
+3. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Copy `nextflow.config.example` to `nextflow.config` and modify default settings as needed for your environment
+4. Download or prepare a genome reference FASTA file (see [Reference Genomes](<README#Reference Genomes>))
+5. Create a bwameth index for the fasta and configure your references in conf/references.config
+6. Run the pipeline with appropriate parameters (see [Basic Usage](<README#Basic Usage>))
+7. Examine results in the EM-seq_output directory
    - `EM-seq-Alignment-Summary-<FLOWCELL_ID>_multiqc_report.html` in em-seq_output for overall QC summary
-   - Mbias files `em-seq_output/methylation/mbias` (to identify sample-dependent positional biases)
-   - Methylation output files in `em-seq_output/methylation` (suitable for analysis with [methylKit](https://bioconductor.org/packages/release/bioc/html/methylKit.html))
-   - Aligned reads in `em-seq_output/bams` (methylation coloring is recommended for visualization in [IGV](https://igv.org/doc/desktop/#UserGuide/tracks/alignments/bisulfite_sequencing/))
+   - Mbias files `em-seq_output/methylDackelExtracts/mbias` (to identify sample-dependent positional biases)
+   - Methylation output files in `em-seq_output/methylDackelExtracts` (suitable for analysis with [methylKit](https://bioconductor.org/packages/release/bioc/html/methylKit.html))
+   - Aligned reads in `em-seq_output/markduped_bams` (methylation coloring is recommended for visualization in [IGV](https://igv.org/doc/desktop/#UserGuide/tracks/alignments/bisulfite_sequencing/))
 
 ### Basic Usage
 ```bash
@@ -71,7 +84,7 @@ Pre-built reference genomes with methylation spike-in controls:
 - Sufficient computational resources (memory scales with input size)
 
 ### Historical Workflows
-These legacy scripts are retained for reference and reproducibility but are not actively maintained and are not compatible with the latest Nextflow versions. Use `NXF_VER=22.10.4 nextflow run ...` to reproduce the results in the [EM-seq paper](README#Citation).
+These in the "legacy" folder are retained for reference and reproducibility but are not actively maintained and are not compatible with the latest Nextflow versions. Use `NXF_VER=22.10.4 nextflow run ...` to reproduce the results in the [EM-seq paper](README#Citation).
 - `em-seq.nf` - Original alignment and methylation calling workflow
 - `bins.nf` - TSS-centered binned coverage analysis
 - `cov_vs_meth.nf` - Coverage vs methylation analysis for genomic features
