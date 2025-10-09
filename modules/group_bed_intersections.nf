@@ -22,7 +22,7 @@ process group_bed_intersections {
     echo -e "methylkit_file\tchr\ttarget_length\tposition\tcontext\tmean_methylation\tn_loci\tn_measurements" > \${summary_file}
 
     if [ -s "${intersect_file}" ]; then
-        awk -v output_file="\${output_file}" \\
+        gawk -v output_file="\${output_file}" \\
             -v summary_file="\${summary_file}" '
         BEGIN {
             OFS="\\t"

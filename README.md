@@ -27,9 +27,9 @@ nextflow run fastq_to_ubam.nf \
 ## Quick Start
 1. Install [miniforge](https://conda-forge.org/download/) and [bioconda](https://bioconda.github.io/) (see [Requirements](<README#Requirements>))
 2. Install [Nextflow](https://www.nextflow.io/) (e.g. conda install nextflow, or see [Nextflow installation guide](https://www.nextflow.io/docs/latest/getstarted.html#installation))
-3. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Copy `nextflow.config.example` to `nextflow.config` and modify default settings as needed for your environment
+3. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Modify `nextflow.config` as needed for your environment, e.g. if running locally, change executor block to 'local' and set, e.g. `--max_cpus 10 --max_memory 30.GB`. 
 4. Download or prepare a genome reference FASTA file (see [Reference Genomes](<README#Reference Genomes>))
-5. Create a bwameth index for the fasta and configure your references in conf/references.config
+5. Create a bwameth index for the fasta and add it to your references in conf/references.config
 6. Run the pipeline with appropriate parameters (see [Basic Usage](<README#Basic Usage>))
 7. Examine results in the EM-seq_output directory
    - `EM-seq-Alignment-Summary-<FLOWCELL_ID>_multiqc_report.html` in em-seq_output for overall QC summary
@@ -54,7 +54,6 @@ nextflow run main.nf \
 | `--email` | Email for notifications | Required |
 | `--flowcell` | Flowcell identifier | Optional |
 | `--outputDir` | Output directory | `em-seq_output` |
-| `--project` | Project name | `project_undefined` |
 | `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
 
 ### References Config
