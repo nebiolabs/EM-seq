@@ -1,46 +1,42 @@
-nextflow.enable.dsl=2
+nextflow.preview.topic = true
 
-/* --------------- *
- * INPUT ARGUMENTS *
- * --------------- */
+include { createVersionsFile }                                from './lib/versions.nf'
+include { format_ngs_agg_opts }                               from './modules/aggregate_results'
+include { fastp }                                             from './modules/fastp'
+include { alignReads }                                        from './modules/align_reads'
+include { mergeAndMarkDuplicates }                            from './modules/merge_and_mark_duplicates'
+include { methylDackel_mbias }                                from './modules/methyldackel_mbias'
+include { methylDackel_extract }                              from './modules/methyldackel_extract'
+include { extract_cytosine_report }                           from './modules/extract_cytosine_report'
+include { combine_nonconverted_counts }                       from './modules/combine_nonconverted_counts'
+include { convert_methylkit_to_bed }                          from './modules/convert_methylkit_to_bed'
+include { prepare_target_bed }                                from './modules/prepare_target_bed'
+include { intersect_bed_with_methylkit }                      from './modules/intersect_bed_with_methylkit'
+include { group_bed_intersections }                           from './modules/group_bed_intersections'
+include { concatenate_files as concat_intersections;
+          concatenate_files as concat_positional_summaries;
+          concatenate_files as concat_region_summaries;}      from './modules/concatenate_files'
+include { gc_bias }                                           from './modules/gc_bias'
+include { idx_stats }                                         from './modules/idx_stats'
+include { flagstats }                                        from './modules/flagstats'
+include { fastqc }                                            from './modules/fastqc'
+include { insert_size_metrics }                               from './modules/insert_size_metrics'
+include { picard_metrics }                                    from './modules/picard_metrics'
+include { tasmanian }                                         from './modules/tasmanian'
+include { aggregate_results }                                 from './modules/aggregate_results.nf'
+include { multiqc }                                           from './modules/multiqc.nf'
 
-
-include { alignReads; markDuplicates; genome_index; send_email; touchFile }                             from './modules/alignment'
-include { methylDackel_mbias; methylDackel_extract; convert_methylkit_to_bed }                          from './modules/methylation'
-include { prepare_target_bed; intersect_bed_with_methylkit;
-          group_bed_intersections; concatenate_intersections }                                          from './modules/bed_processing'
-include { gc_bias; idx_stats; flag_stats; fastqc; insert_size_metrics; picard_metrics; tasmanian }      from './modules/compute_statistics'
-include { aggregate_emseq; multiqc }                                                                    from './modules/aggregation'
-
-// identify and replace common R1/R2 naming patterns and return the read2 file name
-// e.g. _R1.fastq -> _R2.fastq, _1.fastq -> _2.fastq, .R1. -> .R2., etc.
-def replaceReadNumber(inputString) {
-    return inputString.replace('_R1.', '_R2.')
-                      .replace('_1.fastq', '_2.fastq')
-                      .replace('_R1_', '_R2_')
-                      .replace('.R1.', '.R2.')
-                      .replace('_1.', '_2.')
-                      .replace('.1.fastq', '.2.fastq')
+if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
+  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
-// detect bam or fastq (or fastq.gz)
-def detectFileType(file) {
-    def file_str = file.toString()
-    if (file_str.endsWith('.bam')) {
-        return 'bam'
-    } else if (file_str.endsWith('.fastq.gz') || file_str.endsWith('.fastq')) {
-        // read2 exists for paired-end FASTQ?
-        def read2File = replaceReadNumber(file_str)
-        if (new File(read2File).exists()) {
-            return 'fastq_paired_end'
-        } else {
-            return 'fastq_single_end'
-        }
-    } else {
-        println "Unknown file type for $file_str. If fastq, check if _R1_ or .R1. patterns are used."
-        return 'unknown'
-    }
-}
+bams = Channel.fromPath(params.ubam_dir + '/*.bam', checkIfExists: true)
+       .map{it -> tuple(it.baseName, it)}
+
+genome = params.genome
+params.reference_list = params.genomes[genome]
+genome_fa = Channel.value(params.reference_list.genome_fa)
+genome_fai = Channel.value(params.reference_list.genome_fai)
 
 def checkFileSize (path) {
     return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
@@ -48,44 +44,12 @@ def checkFileSize (path) {
 
 workflow {
     main:
-        placeholder_r2 = touchFile( "placeholder.r2.fastq" )
 
-        // if reference is not indexed, index it.
-        if (!file(params.path_to_genome_fasta).exists()) {
-            println "Workflow failed: Genome file does not exist."
-            System.exit(1)  // Exit with a custom status code
-        }
+        passed_bams = bams.filter { library, bam -> checkFileSize(bam) }
+        failed_bams = bams.filter { library, bam -> !checkFileSize(bam) }
+        failed_library_names = failed_bams.map { library, bam -> library }
 
-        genome_indices = genome_index()
-        bwa_index_ch = genome_indices.aligner_files
-        genome_ch = genome_indices.genome_index
-
-        reads = Channel
-          .fromPath(params.input_glob)
-          .filter { !(it.name ==~ /^.*2\.fastq.*$/) }
-          .map { input_file ->
-            def fileType = detectFileType(input_file)
-            def read1File = input_file
-            def read2File = placeholder_r2.val  // val blocks until the value is available
-            if (fileType == 'fastq_paired_end') {
-                read2File = replaceReadNumber(input_file.toString())
-           }
-            if (read1File.toString() == read2File.toString()) {
-                log.error("Error: Detected paired-end file with read1: ${read1File} but no read2. What is different in the file name?")
-                throw new IllegalStateException("Invalid paired-end file configuration")
-            }
-	        def library = read1File.baseName.replaceFirst(/.fastq|.fastq.gz|.bam/,"").replaceFirst(/_1|\.1|.R1/,"")
-            return [library, read1File, read2File, fileType]
-          }
-
-        println "Processing " + params.flowcell + "... => " + params.output_dir
-        println "Cmd line: $workflow.commandLine"
-
-        passed_reads = reads.filter { library, read1File, read2File, fileType -> checkFileSize(read1File) }
-        failed_reads = reads.filter { library, read1File, read2File, fileType -> !checkFileSize(read1File) }
-        failed_library_names = failed_reads.map { library, read1File, read2File, fileType -> library }
-
-        // Send email if there are failed libraries
+        ////////// Filter libraries with insufficient reads //////////
         failed_library_names.collect().subscribe { names ->
             if (names.size() > 0) {
                 def joined_names = names.join('<br>')
@@ -103,67 +67,116 @@ workflow {
             }
         }
 
-        alignedReads = alignReads( passed_reads, bwa_index_ch )
-        markDup      = markDuplicates( alignedReads.aligned_bams )
+        ///////// Trim, align and mark duplicates //////////
+        fastp( passed_bams )
+        if (params.single_end) {
+            fastq_chunks = fastp.out.trimmed_fastq
+            .flatMap { library, fq_files ->                 
+                def fq_list = fq_files instanceof List ? fq_files : [fq_files]
+                
+                fq_list.findAll { it.baseName.contains('.1.trimmed') }.collect { fq1 ->
+                    def chunk_name = fq1.baseName.split(".1.trimmed")[0]
+                    [library, chunk_name, fq1]
+                }
+            }
+        }
+        else {
+            fastq_chunks = fastp.out.trimmed_fastq
+            .flatMap { library, fq_files ->
+                def fq_list = fq_files instanceof List ? fq_files : [fq_files]                
+                def chunk_groups = fq_list.groupBy { 
+                    it.baseName.replaceAll(/\.[12]\.trimmed$/, '') 
+                }
+                
+                chunk_groups.collect { chunk_prefix, files ->
+                    def r1 = files.find { it.baseName.contains('.1.trimmed') }
+                    def r2 = files.find { it.baseName.contains('.2.trimmed') }
+                    
+                    [library, chunk_prefix, [r1, r2]]
+                }
+            }
+        }
+        
+        alignReads( passed_bams.combine(fastq_chunks, by:0), params.reference_list.bwa_index )
+        mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
+        md_bams = mergeAndMarkDuplicates.out.md_bams
 
-        extract      = methylDackel_extract( markDup.md_bams, genome_ch )
-        mbias        = methylDackel_mbias( markDup.md_bams, genome_ch )
+        ///////// Methylation Calling //////////
+        methylDackel_extract( md_bams, genome_fa, genome_fai )
+        methylDackel_mbias( md_bams, genome_fa, genome_fai )
 
-        // intersect methylKit files with target BED file if provided //
-        if (params.target_bed && file(params.target_bed).exists()) {
-            target_bed_ch = Channel.fromPath(params.target_bed)
-
-            methylkit_beds = convert_methylkit_to_bed( extract.extract_output.combine(genome_ch) )
-            prepared_bed = prepare_target_bed( target_bed_ch, genome_ch )
-            intersections = intersect_bed_with_methylkit(
-                methylkit_beds.methylkit_bed,
-                prepared_bed.prepared_bed.first(),
-                genome_ch
+        //////// Intersect methylKit files with target BED file ////////
+        if (params.reference_list.target_bed && !params.skip_target_bed) {
+            extract_cytosine_report( md_bams, genome_fa, genome_fai )
+            convert_methylkit_to_bed( extract_cytosine_report.out.report, genome_fa, genome_fai )
+            prepare_target_bed( params.reference_list.target_bed, params.target_bed_slop, genome_fa, genome_fai )
+            intersect_bed_with_methylkit(
+                convert_methylkit_to_bed.out.methylkit_bed,
+                prepare_target_bed.out.bed,
+                genome_fa,
+                genome_fai
             )
 
-            intersection_results = group_bed_intersections( intersections.intersections )
+            group_bed_intersections( intersect_bed_with_methylkit.out.tsv )
 
-            combined_results = concatenate_intersections(
-                intersection_results.intersection_results.collect(),
-                intersection_results.intersection_summary.collect()
+            concat_intersections(
+                group_bed_intersections.out.intersections.collect(),
+                "intersections"
             )
+            concat_positional_summaries(
+                group_bed_intersections.out.positional_summary.collect(),
+                "positional_summaries"
+            )
+            concat_region_summaries(
+                intersect_bed_with_methylkit.out.region_summary.collect(),
+                "region_summaries"
+            )
+            
+        }
+        
+        ///////// Collect statistics ///////
+        gc_bias(  md_bams, genome_fa, genome_fai )
+        idx_stats(  md_bams )
+        flagstats( md_bams )
+        fastqc( md_bams )
+        picard_metrics( md_bams, genome_fa, genome_fai )
+        tasmanian( md_bams, genome_fa, genome_fai )
+        combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
+
+        //////// Collect files for internal summaries //////////
+        agg_opts = [
+        ['--bam', mergeAndMarkDuplicates.out.md_bams.map{ tuple(it[0], it[1]) }],
+        ['--bai', mergeAndMarkDuplicates.out.md_bams.map{ tuple(it[0], it[2]) }],
+        ['--metadata_bam_file', bams],
+        ['--fastp', fastp.out.fastp_json],
+        ['--aln', picard_metrics.out.for_agg ],
+        ['--gc', gc_bias.out.for_agg ],
+        ['--dup', mergeAndMarkDuplicates.out.log],
+        ['--idx_stats', idx_stats.out.for_agg],
+        ['--flagstat', flagstats.out.for_agg],
+        ['--fastqc', fastqc.out.for_agg],
+        ['--nonconverted_read_counts', combine_nonconverted_counts.out.for_agg ],
+        ['--tasmanian', tasmanian.out.for_agg ],
+        ['--combined_mbias_records', methylDackel_mbias.out.for_agg ]
+        ]
+        
+        multiqc_opts = agg_opts.clone()
+        if (!params.single_end) {
+            insert_size_metrics( md_bams )
+            multiqc_opts << ['--insert', insert_size_metrics.out.high_mapq]
+            agg_opts << ['--insert', insert_size_metrics.out.for_agg]
         }
 
-        // collect statistics
-        gcbias       = gc_bias( markDup.md_bams, genome_ch )
-        idxstats     = idx_stats( markDup.md_bams )
-        flagstats    = flag_stats( markDup.md_bams )
-        fastqc       = fastqc( markDup.md_bams )
-        insertsize   = insert_size_metrics( markDup.md_bams )
-        metrics      = picard_metrics( markDup.md_bams, genome_ch )
-        mismatches   = tasmanian( markDup.md_bams, genome_ch )
-
-
-        // channel for internal summaries
-        grouped_library_results = alignedReads.fastp_reports
-            .join( alignedReads.nonconverted_counts )
-            .join( markDup.for_agg )
-            .join( gcbias.for_agg )
-            .join( idxstats.for_agg )
-            .join( flagstats.for_agg )
-            .join( fastqc.for_agg )
-            .join( mismatches.for_agg )
-            .join( mbias.for_agg )
-            .join( metrics.for_agg )
-
-        if (params.enable_neb_agg.toString().toUpperCase() == "TRUE") {
-            aggregate_emseq( grouped_library_results
-                                .join( insertsize.for_agg )
-                                .join( passed_reads.map { library, read1File, _read2File, _fileType -> [library, read1File] })
-            )
+        if (params.enable_neb_agg) {
+            agg_tuple = format_ngs_agg_opts(agg_opts)
+            workflow_name_modifier = params.workflow_name_modifier ? "-${params.workflow_name_modifier}" : ""
+            aggregate_results( agg_tuple, "${params.workflow}${workflow_name_modifier}" )
         }
 
-        // channel for multiqc analysis
-        all_results = grouped_library_results
-         .join(insertsize.for_agg)
-         .map { tuple -> tuple[1..-1].flatten() }
-         .flatten()
-         .collect()
+        ////////// MultiQC analysis ///////////
+        multiqc_tuple = format_ngs_agg_opts(multiqc_opts)
+        versions_file = createVersionsFile(Channel.topic('versions'))
+        multiqc_files = multiqc_tuple.map{it[2]}.flatten().concat(versions_file).collect()
 
-        multiqc( all_results )
+        multiqc( multiqc_files )
 }
