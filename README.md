@@ -27,7 +27,7 @@ nextflow run fastq_to_ubam.nf \
 ## Quick Start
 1. Install [miniforge](https://conda-forge.org/download/) and [bioconda](https://bioconda.github.io/) (see [Requirements](<README#Requirements>))
 2. Install [Nextflow](https://www.nextflow.io/) (e.g. conda install nextflow, or see [Nextflow installation guide](https://www.nextflow.io/docs/latest/getstarted.html#installation))
-3. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Modify `nextflow.config` as needed for your environment, e.g. if running locally, change executor block to 'local' and set, e.g. `--max_cpus 10 --max_memory 30.GB`. 
+3. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Modify `nextflow.config` as needed for your environment, e.g. if running locally, change executor block to 'local' and set, e.g. `--max_cpus 10 --max_memory 30.GB`.
 4. Download or prepare a genome reference FASTA file (see [Reference Genomes](<README#Reference Genomes>))
 5. Create a bwameth index for the fasta and add it to your references in conf/references.config
 6. Run the pipeline with appropriate parameters (see [Basic Usage](<README#Basic Usage>))
@@ -59,10 +59,10 @@ nextflow run main.nf \
 ### References Config
 
 Modify the conf/references.config file to specify your genome files
-- `genome_fa` path to your genome fasta file 
-- `genome_fai` path to your genome fasta fai file 
-- `bwameth_index` path to your genome fasta file where bwameth indices exist 
-- `target_bed` BED file for targeted analysis, Optional 
+- `genome_fa` path to your genome fasta file
+- `genome_fai` path to your genome fasta fai file
+- `bwameth_index` path to your genome fasta file where bwameth indices exist
+- `target_bed` BED file for targeted analysis, Optional
 
 ### Advanced Options
 - `--tmp_dir` - Temporary directory (default: `/tmp`)
@@ -77,7 +77,8 @@ Pre-built reference genomes with methylation spike-in controls:
 - Create your own reference by appending the [control sequences](methylation_controls.fa) to your preferred genome fasta (e.g. `cat genome.fa methylation_controls.fa > genome+methylation_controls.fa`)
 
 ## Requirements
-- [Nextflow](https://www.nextflow.io/)
+- [Nextflow](https://www.nextflow.io/) (version 24.04 or later)
+ https://get.nextflow.io | bash`
 - [Miniforge](https://conda-forge.org/download/), [Micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html), or [Conda](https://docs.conda.io/projects/conda/en/stable/) for dependency management
 - [Bioconda](https://bioconda.github.io/) channel configured
 - Sufficient computational resources (memory scales with input size)
@@ -105,7 +106,7 @@ You may also be interested in the [nf-core methylseq project](https://nf-co.re/m
  - development workflow will run from master branch
 
  ### Testing:
- - Tests are run using nf-test and are integrated into github actions
+ - Tests are run using [nf-test](https://www.nf-test.com/) and are integrated into github actions
  - install nf-test from bioconda using conda/mamba
  - To run all tests:
  ```bash
@@ -115,4 +116,3 @@ nf-test test
 ```bash
 nf-test test --updateSnapshot
 ```
-
