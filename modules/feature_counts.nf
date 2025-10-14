@@ -2,7 +2,7 @@ process calculate_feature_counts {
     label 'high_cpu'
     tag { feature_type }
     conda "subread=2.1.1"
-    publishDir "${params.outputDir}/feature_counts"
+    publishDir "${params.outputDir}/feature_counts", mode: 'copy'
 
     input:
         tuple val(feature_type), path(feature_file)
@@ -27,7 +27,7 @@ process calculate_feature_counts {
 
 process combine_counts {
     label 'low_cpu'
-    publishDir "${params.outputDir}"
+    publishDir "${params.outputDir}", mode: 'copy'
 
     input:
         path(count_files)

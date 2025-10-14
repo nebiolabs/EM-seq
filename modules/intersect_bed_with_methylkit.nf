@@ -2,7 +2,7 @@ process intersect_bed_with_methylkit {
     label 'cpus_8'
     tag "${library}"
     conda "bioconda::bedtools=2.31.1"
-    publishDir "${params.outputDir}/methylKit_intersections", pattern: "*summary.tsv"
+    publishDir "${params.outputDir}/methylKit_intersections", mode: 'copy', pattern: "*summary.tsv"
 
     input:
         tuple val(library), path(methylkit_bed)

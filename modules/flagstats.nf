@@ -2,7 +2,7 @@ process flagstats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/flagstats"
+    publishDir "${params.outputDir}/stats/flagstats", mode: 'copy'
 
     input:
         tuple val(library), path(bam), path(bai)

@@ -2,7 +2,7 @@ process calculate_feature_methylation {
     label 'medium_cpu'
     tag { "${feature_type}" }
     conda "bedtools=2.29.2 htslib=1.9"
-    publishDir "${params.outputDir}/feature_methylation"
+    publishDir "${params.outputDir}/feature_methylation", mode: 'copy'
 
     input:
         tuple val(feature_type), path(feature_gtf)
@@ -25,7 +25,7 @@ process calculate_feature_methylation {
 
 process combine_methylation {
     label 'low_cpu'
-    publishDir "${params.outputDir}"
+    publishDir "${params.outputDir}", mode: 'copy'
 
     input:
         path(methylation_files)

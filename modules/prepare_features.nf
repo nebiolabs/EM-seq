@@ -1,7 +1,7 @@
 process download_epd_promoters {
     label 'low_cpu'
     conda "conda-forge::curl conda-forge::gawk bioconda::ucsc-bedtogenepred bioconda::ucsc-genepredtogtf "
-    publishDir "${params.outputDir}/features"
+    publishDir "${params.outputDir}/features", mode: 'copy'
 
     input:
         val(epd_url)
@@ -24,7 +24,7 @@ process download_epd_promoters {
 process download_liftover_chain {
     label 'low_cpu'
     conda "conda-forge::curl bioconda::htslib=1.22.1"
-    publishDir "${params.outputDir}/features"
+    publishDir "${params.outputDir}/features", mode: 'copy'
 
     input:
         val(chain_file_url)
@@ -42,7 +42,7 @@ process download_liftover_chain {
 process crossmap_epd_promoters {
     label 'low_cpu'
     conda "bioconda::crossmap=0.7.0"
-    publishDir "${params.outputDir}/features"
+    publishDir "${params.outputDir}/features", mode: 'copy'
 
     input:
         path(epd_orig_gtf)
@@ -61,7 +61,7 @@ process crossmap_epd_promoters {
 process download_cpg_islands {
     label 'low_cpu'
     conda "conda-forge::curl"
-    publishDir "${params.outputDir}/features"
+    publishDir "${params.outputDir}/features", mode: 'copy'
 
     input:
         val(cpg_file_url)
@@ -113,7 +113,7 @@ process download_assembly_report {
 process normalize_cpg_islands {
     label 'low_cpu'
     conda "bioconda::htslib=1.22.1 bioconda::ucsc-bigbedtobed bioconda::ucsc-bedtogenepred bioconda::ucsc-genepredtogtf"
-    publishDir "${params.outputDir}/features"
+    publishDir "${params.outputDir}/features", mode: 'copy'
 
     input:
         path(cpg_file)
@@ -159,7 +159,7 @@ process normalize_refseq_features {
     label 'medium_cpu'
     tag { feature }
     conda "bioconda::subread=2.1.1 bioconda::bedtools=2.31.1 conda-forge::grep conda-forge::gawk conda-forge::gzip"
-    publishDir "${params.outputDir}/features"
+    publishDir "${params.outputDir}/features", mode: 'copy'
 
     input:
         tuple path(refseq_gtf), path(assembly_report), path(genome_fai), val(feature)
@@ -209,7 +209,7 @@ process normalize_refseq_features {
 process download_dfam_annotations {
     label 'low_cpu'
     conda "conda-forge::curl conda-forge::grep conda-forge::gawk bioconda::ucsc-bedtogenepred bioconda::ucsc-genepredtogtf"
-    publishDir "${params.outputDir}/features"
+    publishDir "${params.outputDir}/features", mode: 'copy'
 
     input:
         val(dfam_url)

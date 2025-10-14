@@ -3,7 +3,7 @@ process methylDackel_mbias {
     errorStrategy 'retry'
     tag "${library}"
     conda "bioconda::methyldackel=0.6.1 bioconda::samtools=1.21 conda-forge::pigz=2.8 conda-forge::sed=4.9"
-    publishDir "${params.outputDir}/methylDackelExtracts/mbias"
+    publishDir "${params.outputDir}/methylDackelExtracts/mbias", mode: 'copy'
 
     input:
         tuple val(library), path(md_bam), path(md_bai)

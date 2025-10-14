@@ -2,7 +2,7 @@ process idx_stats {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/idxstats"
+    publishDir "${params.outputDir}/stats/idxstats", mode: 'copy'
 
     input:
         tuple val(library), path(bam), path(bai)

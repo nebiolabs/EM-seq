@@ -2,7 +2,7 @@ process fastqc {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::fastqc=0.11.8"
-    publishDir "${params.outputDir}/stats/fastqc"
+    publishDir "${params.outputDir}/stats/fastqc", mode: 'copy'
 
     input:
         tuple val(library), path(bam), path(bai)
