@@ -130,7 +130,7 @@ process normalize_cpg_islands {
         """
         # Create chromosome mapping from assembly report (RefSeq accession -> chr name)
         grep -v '^#' ${assembly_report} \
-        | awk -F'\t' '\$5 != "na" {print \$7"\\t"\$1}' \
+        | awk -F'\t' '\$5 != "na" {print \$5"\\t"\$1}' \
         > chr_mapping.txt
 
         # Convert bigBed to BED
