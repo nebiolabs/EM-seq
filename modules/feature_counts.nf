@@ -39,7 +39,7 @@ process combine_counts {
     """
     # Construct the header
     echo -n 'File\t' > combined_feature_counts.tsv
-    grep -hve '^\\s*\$' -e '^#' ${count_files[0]} | head -n 1 >> combined_feature_counts.tsv
+    grep -hve '^\\s*\$' -e '^#' ${count_files[0]} | sed -n '1p' >> combined_feature_counts.tsv
 
     # Add a column containing the name of the file being processed
     for f in ${count_files}; do
