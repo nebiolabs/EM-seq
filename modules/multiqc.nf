@@ -11,7 +11,7 @@ process multiqc {
 
     script:
     """
-    cat <<-CONFIG > multiqc_config.yaml 
+    cat <<-CONFIG > multiqc_config.yaml
     title: EM-seq Alignment Summary - ${params.flowcell}
     extra_fn_clean_exts:
         - '.md'
