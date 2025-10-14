@@ -222,18 +222,18 @@ process download_dfam_annotations {
     """
     curl -fsSL "${dfam_url}" \
     | grep -v '^#' \
-    | gawk '\$17==1 {
+    | gawk -v OFS='\\t' -v FS='\\t' '\$17==1 {
         score = int(\$16 * 20)
         if (score < 0) score = 0
         if (score > 1000) score = 1000
         start = \$10 < \$11 ? \$10 - 1 : \$11 - 1
         end = \$10 < \$11 ? \$11 : \$10
         print \$1, start, end, \$3, score, \$9
-    }' OFS="\t" \
+    }' \
     | bedToGenePred /dev/stdin /dev/stdout \
     | genePredToGtf file /dev/stdin /dev/stdout \
-    | gawk '{print \$1,"dfam_repeats", \$3, \$4, \$5, \$6, \$7, \$8, \$9}' FS="\t" OFS="\t" \
-    | gawk -v OFS='\\t' -v FS='\\t' '\$3=="transcript" {\$3="dfam_repeat"} {print}' \
+    | gawk -v OFS='\\t' -v FS='\\t' '{print \$1,"dfam_repeats", \$3, \$4, \$5, \$6, \$7, \$8, \$9}' \
+    | sed -r 's/\\ttranscript\\t/\\tdfam_repeat\\t/' \
     > dfam.gtf
     """
 }
