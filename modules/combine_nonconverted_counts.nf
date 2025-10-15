@@ -1,6 +1,6 @@
 process combine_nonconverted_counts {
     label 'process_single'
-    publishDir "${params.outputDir}/stats/nonconverted_counts"
+    publishDir "${params.outputDir}/stats/nonconverted_counts", mode: 'copy'
 
     input:
         tuple val(library), path(nonconverted_counts)
@@ -23,6 +23,6 @@ process combine_nonconverted_counts {
             }
         }
     ' ${nonconverted_counts} > ${library}.nonconverted_counts.for_agg.tsv
-    
+
     """
 }

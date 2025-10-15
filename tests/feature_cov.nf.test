@@ -1,0 +1,30 @@
+nextflow_pipeline {
+
+    name "Test feature_cov workflow"
+    script "feature_cov.nf"
+    tag "pipeline"
+    options "-stub-run"
+
+    test("feature_cov workflow basic run") {
+        when {
+            params.genome = 'test'
+            params.bam_files_glob = "$projectDir/tests/fixtures/aligned_bam/*.md.bam"
+            params.outputDir = "${launchDir}/test_output/feature_cov"
+        }
+
+        then {
+            def combined_counts = path("${launchDir}/test_output/feature_cov/combined_feature_counts.tsv").exists()
+            def epd_gtf = path("${launchDir}/test_output/feature_cov/features/epd_promoter_lifted.gtf").exists()
+            def cpg_gtf = path("${launchDir}/test_output/feature_cov/features/cpg_island.gtf").exists()
+            def dfam_gtf = path("${launchDir}/test_output/feature_cov/features/dfam.gtf").exists()
+
+            assertAll(
+                { assert workflow.success },
+                { assert combined_counts },
+                { assert epd_gtf },
+                { assert cpg_gtf },
+                { assert dfam_gtf }
+            )
+        }
+    }
+}

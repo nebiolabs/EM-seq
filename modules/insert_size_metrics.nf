@@ -2,7 +2,7 @@ process insert_size_metrics {
     label 'medium_cpu'
     tag { library }
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
-    publishDir "${params.outputDir}/stats/insert_size"
+    publishDir "${params.outputDir}/stats/insert_size", mode: 'copy'
 
     input:
         tuple val(library), path(bam), path(bai)

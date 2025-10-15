@@ -2,10 +2,10 @@ def format_ngs_agg_opts(optlist) {
     '''
     optlist: list of lists of format:
         [
-            [ opt1_name, Channel( val(library), results1 ) ], 
-            [ opt2_name, Channel( val(library), results2 ) ], 
+            [ opt1_name, Channel( val(library), results1 ) ],
+            [ opt2_name, Channel( val(library), results2 ) ],
         ]
-    
+
     Returns a channel of format: [lib, [opt1, opt2], [results1, results2]]
     '''
 
@@ -26,10 +26,10 @@ def format_ngs_agg_opts(optlist) {
 process aggregate_results {
     tag { library }
     conda "bioconda::samtools=1.9 git=2.40.1"
-    publishDir "${params.outputDir}/aggregate_results"
+    publishDir "${params.outputDir}/aggregate_results", mode: 'copy'
     label 'process_single'
 
-    input:         
+    input:
 	tuple val(library), val(ngs_agg_opts), path(ngs_agg_paths)
     val(workflow_name)
 
@@ -53,7 +53,7 @@ process aggregate_results {
         --commit_hash \$GIT_HASH \\
         --contact_email "${params.email}" \\
         ${opt_val} \\
-    
+
     """
     stub:
     def opt_val = [ngs_agg_opts, ngs_agg_paths].transpose().collect{ opt, fp -> "${opt} ${fp}" }.join(' ')

@@ -1,4 +1,16 @@
-nextflow.preview.topic = true
+// Require Nextflow version 24.04 or later for topic channels support
+if( !nextflow.version.matches('>=24.04') ) {
+    error "This workflow requires Nextflow version 24.04 or later. Please upgrade your Nextflow installation:\n" +
+          "  Current version: ${nextflow.version}\n" +
+          "  Required version: 24.04+\n" +
+          "  Upgrade with: nextflow self-update\n" +
+          "  Or install latest: curl -s https://get.nextflow.io | bash"
+}
+
+// Enable topic preview flag for versions < 25.04 (graduated from preview in 25.04)
+if( nextflow.version.matches('>=24.04') && nextflow.version.matches('<25.04') ) {
+    nextflow.preview.topic = true
+}
 
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
