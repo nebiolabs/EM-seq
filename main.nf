@@ -96,7 +96,6 @@ workflow {
                 }
             }
         }
-        passed_bams.combine(fastq_chunks, by:0).view()
         alignReads( passed_bams.combine(fastq_chunks, by:0), params.reference_list.bwa_index )
         mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
         md_bams = mergeAndMarkDuplicates.out.md_bams
