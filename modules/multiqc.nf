@@ -16,6 +16,8 @@ process multiqc {
     extra_fn_clean_exts:
         - '.md'
         - '_combined_fastp'
+    use_filename_as_sample_name:
+        - picard/gcbias
     custom_plot_config:
         picard_insert_size:
             xmax: 1000

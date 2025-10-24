@@ -74,8 +74,8 @@ workflow {
             .flatMap { library, fq_files ->                 
                 def fq_list = fq_files instanceof List ? fq_files : [fq_files]
                 
-                fq_list.findAll { it.baseName.contains('.1.trimmed') }.collect { fq1 ->
-                    def chunk_name = fq1.baseName.split(".1.trimmed")[0]
+                fq_list.findAll { it.baseName.contains('.1.trimmed.fastq') }.collect { fq1 ->
+                    def chunk_name = fq1.baseName.split(".1.trimmed.fastq")[0]
                     [library, chunk_name, fq1]
                 }
             }
@@ -85,18 +85,17 @@ workflow {
             .flatMap { library, fq_files ->
                 def fq_list = fq_files instanceof List ? fq_files : [fq_files]                
                 def chunk_groups = fq_list.groupBy { 
-                    it.baseName.replaceAll(/\.[12]\.trimmed$/, '') 
+                    it.baseName.replaceAll(/\.[12]\.trimmed\.fastq$/, '') 
                 }
                 
                 chunk_groups.collect { chunk_prefix, files ->
-                    def r1 = files.find { it.baseName.contains('.1.trimmed') }
-                    def r2 = files.find { it.baseName.contains('.2.trimmed') }
+                    def r1 = files.find { it.baseName.contains('.1.trimmed.fastq') }
+                    def r2 = files.find { it.baseName.contains('.2.trimmed.fastq') }
                     
                     [library, chunk_prefix, [r1, r2]]
                 }
             }
         }
-        
         alignReads( passed_bams.combine(fastq_chunks, by:0), params.reference_list.bwa_index )
         mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
         md_bams = mergeAndMarkDuplicates.out.md_bams
