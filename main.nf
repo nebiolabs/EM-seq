@@ -1,5 +1,15 @@
-nextflow.preview.topic = true
+if( !nextflow.version.matches('>=24.04') ) {
+    error "This workflow requires Nextflow version 24.04 or later. Please upgrade your Nextflow installation:\n" +
+          "  Current version: ${nextflow.version}\n" +
+          "  Required version: 24.04+\n" +
+          "  Upgrade with: nextflow self-update\n" +
+          "  Or install latest: curl -s https://get.nextflow.io | bash"
+}
 
+// Enable topic preview flag for versions < 25.04 (graduated from preview in 25.04)
+if( nextflow.version.matches('>=24.04') && nextflow.version.matches('<25.04') ) {
+    nextflow.preview.topic = true
+}
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
 include { fastp }                                             from './modules/fastp'
@@ -26,8 +36,17 @@ include { tasmanian }                                         from './modules/ta
 include { aggregate_results }                                 from './modules/aggregate_results.nf'
 include { multiqc }                                           from './modules/multiqc.nf'
 
-if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
+// Validate genome parameter
+if (!params.genome) {
+    def availableGenomes = params.genomes ? params.genomes.keySet().join(", ") : "none"
+    error "ERROR: --genome parameter is required.\n" +
+          "Available genomes: ${availableGenomes}\n" +
+          "Example: nextflow run main.nf --genome test --ubam_dir ./data"
+}
+
+if (params.genomes && !params.genomes.containsKey(params.genome)) {
+    error "ERROR: Genome '${params.genome}' not found.\n" +
+          "Available genomes: ${params.genomes.keySet().join(", ")}"
 }
 
 bams = Channel.fromPath(params.ubam_dir + '/*.bam', checkIfExists: true)
@@ -71,9 +90,9 @@ workflow {
         fastp( passed_bams )
         if (params.single_end) {
             fastq_chunks = fastp.out.trimmed_fastq
-            .flatMap { library, fq_files ->                 
+            .flatMap { library, fq_files ->
                 def fq_list = fq_files instanceof List ? fq_files : [fq_files]
-                
+
                 fq_list.findAll { it.baseName.contains('.1.trimmed.fastq') }.collect { fq1 ->
                     def chunk_name = fq1.baseName.split(".1.trimmed.fastq")[0]
                     [library, chunk_name, fq1]
@@ -83,15 +102,15 @@ workflow {
         else {
             fastq_chunks = fastp.out.trimmed_fastq
             .flatMap { library, fq_files ->
-                def fq_list = fq_files instanceof List ? fq_files : [fq_files]                
-                def chunk_groups = fq_list.groupBy { 
-                    it.baseName.replaceAll(/\.[12]\.trimmed\.fastq$/, '') 
+                def fq_list = fq_files instanceof List ? fq_files : [fq_files]
+                def chunk_groups = fq_list.groupBy {
+                    it.baseName.replaceAll(/\.[12]\.trimmed\.fastq$/, '')
                 }
-                
+
                 chunk_groups.collect { chunk_prefix, files ->
                     def r1 = files.find { it.baseName.contains('.1.trimmed.fastq') }
                     def r2 = files.find { it.baseName.contains('.2.trimmed.fastq') }
-                    
+
                     [library, chunk_prefix, [r1, r2]]
                 }
             }
@@ -130,9 +149,9 @@ workflow {
                 intersect_bed_with_methylkit.out.region_summary.collect(),
                 "region_summaries"
             )
-            
+
         }
-        
+
         ///////// Collect statistics ///////
         gc_bias(  md_bams, genome_fa, genome_fai )
         idx_stats(  md_bams )
@@ -158,7 +177,7 @@ workflow {
         ['--tasmanian', tasmanian.out.for_agg ],
         ['--combined_mbias_records', methylDackel_mbias.out.for_agg ]
         ]
-        
+
         multiqc_opts = agg_opts.clone()
         if (!params.single_end) {
             insert_size_metrics( md_bams )

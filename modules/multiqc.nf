@@ -11,10 +11,11 @@ process multiqc {
 
     script:
     """
-    cat <<-CONFIG > multiqc_config.yaml 
+    cat <<-CONFIG > multiqc_config.yaml
     title: EM-seq Alignment Summary - ${params.flowcell}
     extra_fn_clean_exts:
         - '.md'
+        - '.good_mapq'
         - '_combined_fastp'
     use_filename_as_sample_name:
         - picard/gcbias
@@ -52,6 +53,6 @@ process multiqc {
     disable_version_detection: true
 CONFIG
 
-    multiqc -ip . 
+    multiqc -ip .
     """
 }
