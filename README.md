@@ -13,7 +13,7 @@ Complete EM-seq processing pipeline that accepts UBAM inputs:
 - Optional BED file intersection for targeted analysis (bedtools)
 
 ### Fastq to uBam pipeline (`fastq_to_ubam.nf`)
-If your files are in fastq format you will need to convert them to uBams prior to running the main pipeline, e.g.:
+If your files are in fastq format, you will need to convert them to uBams prior to running the main pipeline, e.g.:
 ```bash
 nextflow run fastq_to_ubam.nf \
   --input_glob "tests/fixtures/fastq/emseq-test*{.ds.1,.ds.2}.fastq.gz" \
@@ -75,6 +75,11 @@ Pre-built reference genomes with methylation spike-in controls:
 - **T2T CHM13**: https://neb-em-seq-sra.s3.amazonaws.com/T2T_chm13v2.0%2Bbs_controls.fa
 - **GRCh38**: https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bbs_controls.fa
 - Create your own reference by appending the [control sequences](methylation_controls.fa) to your preferred genome fasta (e.g. `cat genome.fa methylation_controls.fa > genome+methylation_controls.fa`)
+   | Sequence | Methylation State                                | Purpose |
+   |----------|--------------------------------------------------|---------|
+   | lambda   | All Cs are unmodified (included in kits)         | confirmation that APOBEC enzyme is working optimially (unprotected C->T)  |
+   | pUC19c   | All CpG sites contain 5mC (included EM-seq kits) | confirmation that TET2 + T4-BGT step is protecting 5mC (5mC -> 5ghmC/5caC |
+   | T4       | All Cs are 5hmC (included in the 5-hmC Seq kits) | confirmation that T4-BGT is protecting 5hmC optimally (5hmC -> 5ghmC)     |
 
 ## Requirements
 - [Nextflow](https://www.nextflow.io/)
