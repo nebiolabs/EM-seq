@@ -1,0 +1,12 @@
+[workspace]
+authors = ["Brad Langhorst <langhorst@neb.com>"]
+channels = ["conda-forge", "bioconda"]
+name = "legacy"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+matplotlib = ">=3.10.8,<4"
+nextflow = "22.10.*"

@@ -16,13 +16,13 @@ def argparser():
 	parser.add_argument("--prefix", required = True, help = "Prefix for the output file")
 	parser.add_argument("--annotation", required = True, help = "Annotation GTF file")
 	parser.add_argument("--plot", required = False, help = "Whether you want to plot the results or not")
-	
+
 	args = parser.parse_args()
 	return args
 
 def write_fasta(fasta_dict, file_handle, string):
 	''' Writes a dict of sequences into a fasta file'''
-	
+
 	print("Writing {}".format(file_handle))
 	out = open(file_handle, "w")
 	for chrom in fasta_dict:
@@ -30,7 +30,7 @@ def write_fasta(fasta_dict, file_handle, string):
 			out.write(">{}\n{}\n".format(chrom, fasta_dict[chrom]))
 		else:
 			out.write(">{}\n{}\n".format(chrom, "".join(map(str, fasta_dict[chrom]))))
-			
+
 
 def parse_fasta(fasta):
 	''' Parses a fasta file and stores it in a dictionary'''
@@ -61,7 +61,7 @@ def parse_fasta(fasta):
 	return fasta_dict
 
 def convert_to_binary(fasta_dict):
-	''' 
+	'''
 	Reads a fasta dictionary and converts it to 'binary', in which
 	every CG position is a 1, and all other bases are 0s
 	'''
@@ -78,9 +78,9 @@ def convert_to_binary(fasta_dict):
 		for pos in cgs:
 			bin_dict[chrom][pos] = 1
 			bin_dict[chrom][pos + 1] = 1
-	
+
 	return bin_dict, cpg_bin_dict
-		
+
 def parse_binary_fasta(binary_fasta):
 	''' Parses a pre-made 'binary' fasta, assuming the sequences are on one line each'''
 
@@ -107,11 +107,11 @@ def parse_binary_fasta(binary_fasta):
 			else:
 				bin_dict[chrom] = line.strip()
 		binary_fasta.close()
-	
+
 	return bin_dict, cpg_bin_dict
 
 def make_cpg_dict(bin_dict):
-	''' 
+	'''
 	'''
 
 	print("Making the CpG dict")
@@ -123,16 +123,16 @@ def make_cpg_dict(bin_dict):
 	return cpg_bin_dict
 
 def parse_all_bins(all_bins_file):
-	
+
 	print("Parsing the bins file")
 	file = open(all_bins_file, "r")
 	for line in file:
 		all_bins = line.strip().split("\t")
-	
+
 	all_bins = [int(x) for x in all_bins]
-	
+
 	return(all_bins)
-	
+
 
 
 def parse_annotation(annotation):
@@ -160,8 +160,8 @@ def parse_annotation(annotation):
 					end = start + 4000
 					tss_dict[chrom].append(((start, end), line[6]))
 	annotation.close()
-	
-	return tss_dict	
+
+	return tss_dict
 
 def parse_methylkit(methylkit, cpg_bin_dict):
 	''' Turns any 0s in cpg_bin_dict to 1s if present in methylkit file'''
@@ -173,22 +173,20 @@ def parse_methylkit(methylkit, cpg_bin_dict):
 		methylkit_file = open(methylkit, "r")
 	for line in methylkit_file:
 		if methylkit.endswith(".gz"):
-			line = str(line, "utf-8")		
+			line = str(line, "utf-8")
 		if not line.startswith("chrBase"):
 			line  = line.split("\t")
 			pos = int(line[2]) - 1
 			chrom = line[1]
-			# cpg_bin_dict[chrom][pos] = 1
-			if chrom == "chr13":
+			if chrom in cpg_bin_dict:
 				cpg_bin_dict[chrom][pos] = 1
-	
-	# for chrom in cpg_bin_dict:
-	for chrom in ["chr13"]:
+
+	for chrom in cpg_bin_dict:
 		temp = "".join(map(str, cpg_bin_dict[chrom]))
 		cpg_bin_dict[chrom] = temp
-		
+
 	return cpg_bin_dict
-		
+
 
 def calculate_meth_bin(tss_dict, cpg_bin_dict):
 	'''
@@ -199,7 +197,6 @@ def calculate_meth_bin(tss_dict, cpg_bin_dict):
 
 	methylation_bins = [0 for x in range(400)]
 	for chrom in tss_dict:
-# 	for chrom in ["chr13"]:
 		print(chrom)
 		for pos in tss_dict[chrom]:
 			meth_slice = cpg_bin_dict[chrom][pos[0][0]:pos[0][1]]
@@ -212,17 +209,16 @@ def calculate_meth_bin(tss_dict, cpg_bin_dict):
 					else:
 						methylation_bins[399 - my_bin] += 1
 				my_bin += 1
-	
+
 	return methylation_bins
-	
+
 def calculate_both_bins(tss_dict, bin_dict, cpg_bin_dict):
 	''' Will calculate both all_bins and methylation_bins if neither is specified'''
 
 	print("Calculating the bins...")
 	all_bins = [0] * 400
 	methylation_bins = [0] * 400
-	# for chrom in tss_dict:
-	for chrom in ["chr13"]:
+	for chrom in tss_dict:
 		print(chrom)
 		for pos in tss_dict[chrom]:
 			my_slice = bin_dict[chrom][pos[0][0]:pos[0][1]]
@@ -235,7 +231,7 @@ def calculate_both_bins(tss_dict, bin_dict, cpg_bin_dict):
 					else:
 						all_bins[399 - my_bin] += 1
 				my_bin += 1
-		
+
 			my_bin = 0
 			for x in range(0,len(meth_slice), 10):
 				if "1" in meth_slice[x:x+10]:
@@ -244,25 +240,33 @@ def calculate_both_bins(tss_dict, bin_dict, cpg_bin_dict):
 					else:
 						methylation_bins[399 - my_bin] += 1
 				my_bin += 1
-	
+
 	return all_bins, methylation_bins
 
 def normalize_bins(all_bins, methylation_bins):
 	''' Normalizes the methylation bin to percent of bins covered that have CpGs'''
-	
-	print("Normalizing the bins")	
-	normal_all_bins = [(all_bins[x] / all_bins[x]) * 100 for x in range(len(all_bins))]
-	normal_methylation_bins = [(methylation_bins[x] / all_bins[x]) * 100 for x in range(len(all_bins))]
 
-	return(normal_all_bins, normal_methylation_bins)	
+	print("Normalizing the bins")
+	normal_all_bins = [100 if all_bins[x] != 0 else 0 for x in range(len(all_bins))]
+	normal_methylation_bins = [(methylation_bins[x] / all_bins[x]) * 100 if all_bins[x] != 0 else 0 for x in range(len(all_bins))]
 
-def plot_bins(all_bins, methylation_bins):
-	''' Plots the bins simply'''
-	
+	return(normal_all_bins, normal_methylation_bins)
+
+def plot_bins(all_bins, methylation_bins, prefix, suffix=""):
+	''' Plots the bins and saves to file'''
+
 	print("Plotting!")
-	plt.plot(all_bins)
-	plt.plot(methylation_bins)
-	plt.show()
+	plt.figure(figsize=(10, 6))
+	plt.plot(all_bins, label='All CpG bins')
+	plt.plot(methylation_bins, label='Methylation bins')
+	plt.xlabel('Bin position (10bp bins around TSS +/- 2kb)')
+	plt.ylabel('Count')
+	plt.title(f'TSS CpG Distribution{suffix}')
+	plt.legend()
+	output_file = f"{prefix}{suffix}_plot.png"
+	plt.savefig(output_file, dpi=150, bbox_inches='tight')
+	print(f"Saved plot to {output_file}")
+	plt.close()
 
 def write_files(all_bins, methylation_bins, normal_methylation_bins, prefix):
 	''' Writes the bins to tab delimited files'''
@@ -272,25 +276,25 @@ def write_files(all_bins, methylation_bins, normal_methylation_bins, prefix):
 	out = open("{}_allbins_raw.tab".format(prefix), "w")
 	out.write("\t".join(map(str, all_bins)))
 	out.close()
-	
+
 	out = open("{}_methylation_raw.tab".format(prefix), "w")
 	out.write("\t".join(map(str, methylation_bins)))
 	out.close()
-	
+
 	out = open("{}_methylation_normalized.tab".format(prefix), "w")
 	out.write("\t".join(map(str, normal_methylation_bins)))
 	out.close()
-	
-	
+
+
 
 def run_script():
 	print("Running script...")
 	args = argparser()
-	
+
 	if args.fasta == None and args.binary_fasta == None:
 		print("Need either a fasta or the 'binary' fasta file!")
 		sys.exit()
-	
+
 	if args.binary_fasta:
 		bin_dict = parse_fasta(args.binary_fasta)
 		if args.binary_methylkit:
@@ -302,27 +306,24 @@ def run_script():
 		fasta_dict = parse_fasta(args.fasta)
 		bin_dict, cpg_bin_dict = convert_to_binary(fasta_dict)
 		write_fasta(bin_dict, "{}_cpgs.fa".format(args.prefix), False)
-	
+
 	tss_dict = parse_annotation(args.annotation)
 	write_fasta(cpg_bin_dict, "{}_covered_cpgs.fa".format(args.prefix), False)
-	
+
 	if args.all_bins:
 		all_bins = parse_all_bins(args.all_bins)
 		methylation_bins = calculate_meth_bin(tss_dict, cpg_bin_dict)
 	else:
 		all_bins, methylation_bins = calculate_both_bins(tss_dict, bin_dict, cpg_bin_dict)
-	
+
 	normal_all_bins, normal_methylation_bins = normalize_bins(all_bins, methylation_bins)
-	
+
 	write_files(all_bins, methylation_bins, normal_methylation_bins, args.prefix)
-	
+
 	if args.plot:
-		plot_bins(all_bins, methylation_bins)
-		plot_bins(normal_all_bins, normal_methylation_bins)
-	
+		plot_bins(all_bins, methylation_bins, args.prefix, "_raw")
+		plot_bins(normal_all_bins, normal_methylation_bins, args.prefix, "_normalized")
+
 if __name__ == "__main__":
 	run_script()
 	print("All done!")
-	
-
-
