@@ -14,6 +14,7 @@ process fastp {
         tuple val("${task.process}"), val('fastp'), eval('fastp --version 2>&1 | cut -f 2 -d " "'), topic: versions
     
     script:
+    def fastp_path = params.fastp_path ? params.fastp_path : ''
     def fastp_args = params.single_end ? "--out1 ${library}.1.trimmed.fastq.gz" : "--interleaved_in --out1 ${library}.1.trimmed.fastq.gz --out2 ${library}.2.trimmed.fastq.gz"
     """
     set +o pipefail
@@ -24,7 +25,7 @@ process fastp {
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
     samtools fastq -n ${bam} | \\
-    fastp --stdin \\
+    ${fastp_path}fastp --stdin \\
                     -l 2 -Q \${trim_polyg} \\
                     --thread 1 \\
                     --overrepresentation_analysis \\
