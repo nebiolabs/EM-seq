@@ -1,4 +1,9 @@
-nextflow.preview.topic = true
+// Enable topic feature if available (Nextflow 24.x and earlier)
+try {
+    nextflow.preview.topic = true
+} catch (MissingPropertyException e) {
+    // Topic feature not available in this Nextflow version
+}
 
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
