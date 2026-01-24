@@ -20,7 +20,18 @@ process FastqToBamPaired {
     """
     set +o pipefail
 
-    barcode=\$(zcat ${read1} | head -n 1 | cut -d ":" -f 10)
+    barcode=\$(zcat ${read1} | head -n 1 | awk -F: '{
+        candidate = \$10
+        if (candidate == "" || candidate ~ / /) {
+            candidate = \$NF
+        }
+        gsub(/ .*/, "", candidate)
+        if (candidate ~ /^[ACGTN+-]+\$/) {
+            print candidate
+        } else {
+            print "UNKNOWN"
+        }
+    }')
 
     set -o pipefail
 
@@ -46,7 +57,18 @@ process FastqToBamSingle {
     """
     set +o pipefail
 
-    barcode=\$(zcat ${read1} | head -n 1 | cut -d ":" -f 10)
+    barcode=\$(zcat ${read1} | head -n 1 | awk -F: '{
+        candidate = \$10
+        if (candidate == "" || candidate ~ / /) {
+            candidate = \$NF
+        }
+        gsub(/ .*/, "", candidate)
+        if (candidate ~ /^[ACGTN+-]+\$/) {
+            print candidate
+        } else {
+            print "UNKNOWN"
+        }
+    }')
 
     set -o pipefail
 
