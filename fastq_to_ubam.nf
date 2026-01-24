@@ -5,22 +5,11 @@ input_glob = params.input_glob ?: ['*.{1,2}.fastq.gz']
 read_format = params.read_format ?: 'paired-end'
 params.outdir = './ubam'
 
-process FastqToBamPaired {
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
-    publishDir "${params.outdir}", mode: 'copy'
-    memory { params.max_memory ?: 300.GB }
-    
-    input:
-        tuple val(library), path(read1), path(read2)
-    
-    output:
-        path('*.bam')
-
-    script:
+def extractBarcode(fastqFile) {
     """
     set +o pipefail
 
-    barcode=\$(zcat ${read1} | head -n 1 | awk -F: '{
+    barcode=\$(zcat ${fastqFile} | head -n 1 | awk -F: '{
         candidate = \$10
         if (candidate == "" || candidate ~ / /) {
             candidate = \$NF
@@ -34,6 +23,23 @@ process FastqToBamPaired {
     }')
 
     set -o pipefail
+    """
+}
+
+process FastqToBamPaired {
+    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
+    publishDir "${params.outdir}", mode: 'copy'
+    memory { params.max_memory ?: 300.GB }
+    
+    input:
+        tuple val(library), path(read1), path(read2)
+    
+    output:
+        path('*.bam')
+
+    script:
+    """
+    ${extractBarcode(read1)}
 
     picard FastqToSam TMP_DIR=/state/partition1/sge_tmp F1=${read1} F2=${read2} OUTPUT=temp.bam SM=${library} LB=${library} CN="New England Biolabs" PU=Illumina QUIET=true
 
@@ -55,22 +61,7 @@ process FastqToBamSingle {
 
     script:
     """
-    set +o pipefail
-
-    barcode=\$(zcat ${read1} | head -n 1 | awk -F: '{
-        candidate = \$10
-        if (candidate == "" || candidate ~ / /) {
-            candidate = \$NF
-        }
-        gsub(/ .*/, "", candidate)
-        if (candidate ~ /^[ACGTN+-]+\$/) {
-            print candidate
-        } else {
-            print "UNKNOWN"
-        }
-    }')
-
-    set -o pipefail
+    ${extractBarcode(read1)}
 
     picard FastqToSam F1=${read1} OUTPUT=temp.bam SM=${library} LB=${library} CN="New England Biolabs" PU=Illumina QUIET=true
 
