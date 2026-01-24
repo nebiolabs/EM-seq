@@ -37,18 +37,7 @@ process mapping {
     shell:
     '''
     inst_name=$(zcat -f '!{fq_set.insert_read1}' | head -n 1 | cut -f 1 -d ':' | sed 's/^@//')
-    fastq_barcode=$(zcat -f '!{fq_set.insert_read1}' | head -n 1 | awk -F: '{
-        candidate = $10
-        if (candidate == "" || candidate ~ / /) {
-            candidate = $NF
-        }
-        gsub(/ .*/, "", candidate)
-        if (candidate ~ /^[ACGTN+-]+$/) {
-            print candidate
-        } else {
-            print "UNKNOWN"
-        }
-    }')
+    fastq_barcode=$(zcat -f '!{fq_set.insert_read1}' | head -n 1 | sed -r 's/.*://')
 
     if [[ "${inst_name:0:2}" == 'A0' || "${inst_name:0:2}" == 'NS' || \
        [[ "${inst_name:0:2}" == 'NB' || "${inst_name:0:2}" == 'VH' || "${inst_name: -2:2}" == 'NX' ]] ; then
