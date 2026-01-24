@@ -90,7 +90,7 @@ nextflow_pipeline {
 
     test("fastq to uBam workflow - validates standard barcode extraction") {
         when {
-            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test1.{ds.1,ds.2}.fastq.gz"
+            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test1*{.ds.1,.ds.2}.fastq.gz"
         }
 
         then {
