@@ -61,10 +61,13 @@ process FastqToBamPaired {
     
     output:
         path('*.bam')
+        path('*.barcode.txt')
 
     script:
     """
     ${extractBarcode(read1)}
+    
+    echo "\$barcode" > ${library}.barcode.txt
 
     picard FastqToSam TMP_DIR=/state/partition1/sge_tmp F1=${read1} F2=${read2} OUTPUT=temp.bam SM=${library} LB=${library} CN="New England Biolabs" PU=Illumina QUIET=true
 
@@ -83,10 +86,13 @@ process FastqToBamSingle {
     
     output:
         path('*.bam')
+        path('*.barcode.txt')
 
     script:
     """
     ${extractBarcode(read1)}
+    
+    echo "\$barcode" > ${library}.barcode.txt
 
     picard FastqToSam F1=${read1} OUTPUT=temp.bam SM=${library} LB=${library} CN="New England Biolabs" PU=Illumina QUIET=true
 
