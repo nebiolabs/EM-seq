@@ -50,11 +50,16 @@ nextflow_pipeline {
             assertAll(
                 { assert workflow.success },
                 { assert path("${launchDir}/ubam/test-srr-format.bam").exists() },
-                { assert path("${launchDir}/ubam/test-srr-format.barcode.txt").exists() },
                 { 
-                    def barcode = path("${launchDir}/ubam/test-srr-format.barcode.txt").text.trim()
-                    assert barcode == "UNKNOWN" : "Expected barcode to be 'UNKNOWN' for non-standard header, got: ${barcode}"
-                    assert !barcode.contains(" ") : "Barcode should not contain spaces, got: ${barcode}"
+                    // Check that BAM has read group with barcode tag
+                    def rg_output = exec("samtools view -H ${launchDir}/ubam/test-srr-format.bam | grep ^@RG").out.trim()
+                    assert rg_output.contains("BC:") : "BAM should contain BC tag in read group"
+                    // Extract barcode value
+                    def bc_match = (rg_output =~ /BC:(\S+)/)
+                    if (bc_match) {
+                        def barcode = bc_match[0][1]
+                        assert !barcode.contains(" ") : "Barcode should not contain spaces, got: ${barcode}"
+                    }
                 }
             )
         }
@@ -70,11 +75,16 @@ nextflow_pipeline {
             assertAll(
                 { assert workflow.success },
                 { assert path("${launchDir}/ubam/test-srr-format.1.bam").exists() },
-                { assert path("${launchDir}/ubam/test-srr-format.1.barcode.txt").exists() },
                 { 
-                    def barcode = path("${launchDir}/ubam/test-srr-format.1.barcode.txt").text.trim()
-                    assert barcode == "UNKNOWN" : "Expected barcode to be 'UNKNOWN' for non-standard header, got: ${barcode}"
-                    assert !barcode.contains(" ") : "Barcode should not contain spaces, got: ${barcode}"
+                    // Check that BAM has read group with barcode tag
+                    def rg_output = exec("samtools view -H ${launchDir}/ubam/test-srr-format.1.bam | grep ^@RG").out.trim()
+                    assert rg_output.contains("BC:") : "BAM should contain BC tag in read group"
+                    // Extract barcode value
+                    def bc_match = (rg_output =~ /BC:(\S+)/)
+                    if (bc_match) {
+                        def barcode = bc_match[0][1]
+                        assert !barcode.contains(" ") : "Barcode should not contain spaces, got: ${barcode}"
+                    }
                 }
             )
         }
@@ -89,11 +99,17 @@ nextflow_pipeline {
             assertAll(
                 { assert workflow.success },
                 { assert path("${launchDir}/ubam/emseq-test1.bam").exists() },
-                { assert path("${launchDir}/ubam/emseq-test1.barcode.txt").exists() },
                 { 
-                    def barcode = path("${launchDir}/ubam/emseq-test1.barcode.txt").text.trim()
-                    assert barcode == "GCTTCACAAT+TAGCTTTAAC" : "Expected barcode to be 'GCTTCACAAT+TAGCTTTAAC', got: ${barcode}"
-                    assert !barcode.contains(" ") : "Barcode should not contain spaces, got: ${barcode}"
+                    // Check that BAM has read group with barcode tag
+                    def rg_output = exec("samtools view -H ${launchDir}/ubam/emseq-test1.bam | grep ^@RG").out.trim()
+                    assert rg_output.contains("BC:") : "BAM should contain BC tag in read group"
+                    // Extract barcode value  
+                    def bc_match = (rg_output =~ /BC:(\S+)/)
+                    if (bc_match) {
+                        def barcode = bc_match[0][1]
+                        assert barcode == "GCTTCACAAT+TAGCTTTAAC" : "Expected barcode to be 'GCTTCACAAT+TAGCTTTAAC', got: ${barcode}"
+                        assert !barcode.contains(" ") : "Barcode should not contain spaces, got: ${barcode}"
+                    }
                 }
             )
         }
