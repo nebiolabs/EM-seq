@@ -18,12 +18,16 @@ process FastqToBamPaired {
 
     script:
     """
+    # Extract most frequent barcode from first 10k reads
+    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
+    
     samtools import -i \
         -r ID:${library} \
         -r SM:${library} \
         -r LB:${library} \
         -r PL:ILLUMINA \
         -r CN:"New England Biolabs" \
+        -r BC:\${barcode} \
         -1 ${read1} \
         -2 ${read2} \
         -o ${library}.bam
@@ -43,12 +47,16 @@ process FastqToBamSingle {
 
     script:
     """
+    # Extract most frequent barcode from first 10k reads
+    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
+    
     samtools import -i \
         -r ID:${library} \
         -r SM:${library} \
         -r LB:${library} \
         -r PL:ILLUMINA \
         -r CN:"New England Biolabs" \
+        -r BC:\${barcode} \
         ${read1} \
         -o ${library}.bam
     """
