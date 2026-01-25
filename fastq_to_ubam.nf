@@ -20,18 +20,32 @@ process FastqToBamPaired {
     """
     # Extract most frequent barcode from first 10k reads
     # Split on : and take last field, then remove everything after any space
-    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | awk '{print \$1}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
+    # Filter to only valid barcodes (matching [ACGTN+-]+)
+    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | awk '{print \$1}' | grep -E '^[ACGTN+-]+\$' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
     
-    samtools import -i \
-        -r ID:${library} \
-        -r SM:${library} \
-        -r LB:${library} \
-        -r PL:ILLUMINA \
-        -r CN:"New England Biolabs" \
-        -r BC:\${barcode} \
-        -1 ${read1} \
-        -2 ${read2} \
-        -o ${library}.bam
+    # Only add BC tag if a valid barcode was found
+    if [ -n "\${barcode}" ]; then
+        samtools import -i \
+            -r ID:${library} \
+            -r SM:${library} \
+            -r LB:${library} \
+            -r PL:ILLUMINA \
+            -r CN:"New England Biolabs" \
+            -r BC:\${barcode} \
+            -1 ${read1} \
+            -2 ${read2} \
+            -o ${library}.bam
+    else
+        samtools import -i \
+            -r ID:${library} \
+            -r SM:${library} \
+            -r LB:${library} \
+            -r PL:ILLUMINA \
+            -r CN:"New England Biolabs" \
+            -1 ${read1} \
+            -2 ${read2} \
+            -o ${library}.bam
+    fi
     """
 }
 
@@ -50,17 +64,30 @@ process FastqToBamSingle {
     """
     # Extract most frequent barcode from first 10k reads
     # Split on : and take last field, then remove everything after any space
-    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | awk '{print \$1}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
+    # Filter to only valid barcodes (matching [ACGTN+-]+)
+    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | awk '{print \$1}' | grep -E '^[ACGTN+-]+\$' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
     
-    samtools import -i \
-        -r ID:${library} \
-        -r SM:${library} \
-        -r LB:${library} \
-        -r PL:ILLUMINA \
-        -r CN:"New England Biolabs" \
-        -r BC:\${barcode} \
-        ${read1} \
-        -o ${library}.bam
+    # Only add BC tag if a valid barcode was found
+    if [ -n "\${barcode}" ]; then
+        samtools import -i \
+            -r ID:${library} \
+            -r SM:${library} \
+            -r LB:${library} \
+            -r PL:ILLUMINA \
+            -r CN:"New England Biolabs" \
+            -r BC:\${barcode} \
+            ${read1} \
+            -o ${library}.bam
+    else
+        samtools import -i \
+            -r ID:${library} \
+            -r SM:${library} \
+            -r LB:${library} \
+            -r PL:ILLUMINA \
+            -r CN:"New England Biolabs" \
+            ${read1} \
+            -o ${library}.bam
+    fi
     """
 }
 
