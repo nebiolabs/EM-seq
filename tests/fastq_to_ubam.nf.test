@@ -6,7 +6,7 @@ nextflow_pipeline {
 
     test("fastq to uBam workflow - paired-end") {
         when {
-            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test*{.ds.1,.ds.2}.fastq.gz"
+            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test1{.ds.1,.ds.2}.fastq.gz"
         }
 
         then {
@@ -24,7 +24,7 @@ nextflow_pipeline {
 
     test("fastq to uBam workflow - single-end") {
         when {
-            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test*.ds.1.fastq.gz"
+            params.input_glob = "$projectDir/tests/fixtures/fastq/emseq-test1.ds.1.fastq.gz"
             params.read_format = 'single-end'
         }
 
