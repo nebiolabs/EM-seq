@@ -19,7 +19,8 @@ process FastqToBamPaired {
     script:
     """
     # Extract most frequent barcode from first 10k reads
-    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
+    # Split on : and take last field, then remove everything after any space
+    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | awk '{print \$1}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
     
     samtools import -i \
         -r ID:${library} \
@@ -48,7 +49,8 @@ process FastqToBamSingle {
     script:
     """
     # Extract most frequent barcode from first 10k reads
-    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
+    # Split on : and take last field, then remove everything after any space
+    barcode=\$(zcat ${read1} | sed -n '1~4p' | head -n 10000 | awk -F: '{print \$NF}' | awk '{print \$1}' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
     
     samtools import -i \
         -r ID:${library} \
