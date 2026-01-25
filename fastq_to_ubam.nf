@@ -76,7 +76,7 @@ process FastqToBamSingle {
             -r PL:ILLUMINA \
             -r CN:"New England Biolabs" \
             -r BC:\${barcode} \
-            ${read1} \
+            -0 ${read1} \
             -o ${library}.bam
     else
         samtools import -i \
@@ -85,7 +85,7 @@ process FastqToBamSingle {
             -r LB:${library} \
             -r PL:ILLUMINA \
             -r CN:"New England Biolabs" \
-            ${read1} \
+            -0 ${read1} \
             -o ${library}.bam
     fi
     """
