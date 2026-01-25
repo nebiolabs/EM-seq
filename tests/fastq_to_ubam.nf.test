@@ -40,4 +40,29 @@ nextflow_pipeline {
         )
         }
     }
+
+    test("fastq to uBam workflow - non-standard SRA headers (issue #15)") {
+        // Test that FASTQ files with SRA-style headers (e.g., @SRR... length=111)
+        // are handled gracefully without breaking due to spaces in extracted barcode
+        when {
+            params.input_glob = "$projectDir/tests/fixtures/fastq_sra/sra-test{.1,.2}.fastq.gz"
+        }
+
+        then {
+            def ubam = bam("${launchDir}/ubam/sra-test.bam").getStatistics()
+            // Read the BAM header to verify barcode is set to 'unknown' (not containing spaces)
+            def bamHeader = bam("${launchDir}/ubam/sra-test.bam").getHeader()
+            def rgLine = bamHeader.find { it.startsWith('@RG') }
+
+            assertAll(
+                { assert workflow.success },
+                // Verify the barcode field doesn't contain spaces (which would break commands)
+                { assert rgLine.contains('BC:unknown') : "Expected BC:unknown for non-standard headers, got: ${rgLine}" },
+                { assert snapshot(workflow.trace,
+                    ["ubam", ubam],
+                ).match()
+            }
+        )
+        }
+    }
 }
