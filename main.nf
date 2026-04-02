@@ -43,6 +43,15 @@ params.reference_list = params.genomes[genome]
 genome_fa = Channel.value(params.reference_list.genome_fa)
 genome_fai = Channel.value(params.reference_list.genome_fai)
 
+// Validate reference indices exist before running
+def ref = params.reference_list.bwa_index
+if (!file("${ref}.bwameth.c2t.amb").exists()) {
+    exit 1, "bwameth index not found for ${ref}. Run: bwameth.py index ${ref}"
+}
+if (!file("${params.reference_list.genome_fa}.fai").exists()) {
+    exit 1, "Fasta index (.fai) not found for ${params.reference_list.genome_fa}. Run: samtools faidx ${params.reference_list.genome_fa}"
+}
+
 def checkFileSize (path) {
     return path.toFile().length() >= 200   // Minimum size in bytes for a read file to be considered valid
 }
