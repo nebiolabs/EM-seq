@@ -3,8 +3,8 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 57,
-                "tasksSucceeded": 57
+                "tasksCount": 59,
+                "tasksSucceeded": 59
             },
             [
                 "bwameth_file_1",
@@ -356,7 +356,8 @@
                     "--fastqc emseq-test1.md_fastqc.zip ",
                     "--nonconverted_read_counts emseq-test1.nonconverted_counts.for_agg.tsv ",
                     "--tasmanian emseq-test1.tasmanian.csv ",
-                    "--combined_mbias_records emseq-test1.combined_mbias.tsv",
+                    "--combined_mbias_records emseq-test1.combined_mbias.tsv ",
+                    "--fgbio_switchbacks emseq-test1.switchbacks.summary.txt",
                     "--workflow EM-seq"
                 ]
             ]
@@ -371,8 +372,8 @@
         "content": [
             {
                 "tasksFailed": 0,
-                "tasksCount": 49,
-                "tasksSucceeded": 49
+                "tasksCount": 51,
+                "tasksSucceeded": 51
             },
             [
                 "bwameth_file_1",
@@ -687,6 +688,7 @@
                     "--nonconverted_read_counts emseq-test1.nonconverted_counts.for_agg.tsv ",
                     "--tasmanian emseq-test1.tasmanian.csv ",
                     "--combined_mbias_records emseq-test1.combined_mbias.tsv ",
+                    "--fgbio_switchbacks emseq-test1.switchbacks.summary.txt ",
                     "--insert emseq-test1.insertsize_metrics",
                     "--workflow EM-seq"
                 ]
