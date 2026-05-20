@@ -9,6 +9,7 @@ process find_switchback_reads {
 
     output:
         tuple val(library), path("${library}.switchbacks.summary.txt"), emit: for_agg
+        tuple val(library), path("${library}.switchbacks.bam")
         tuple val("${task.process}"), val('fgbio'), eval('fgbio --version 2>&1 | head -n 1'), topic: versions
 
     script:
