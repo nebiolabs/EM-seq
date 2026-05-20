@@ -28,6 +28,7 @@ include { fastqc }                                            from './modules/fa
 include { insert_size_metrics }                               from './modules/insert_size_metrics'
 include { picard_metrics }                                    from './modules/picard_metrics'
 include { tasmanian }                                         from './modules/tasmanian'
+include { find_switchback_reads }                             from './modules/find_switchback_reads'
 include { aggregate_results }                                 from './modules/aggregate_results.nf'
 include { multiqc }                                           from './modules/multiqc.nf'
 
@@ -155,6 +156,7 @@ workflow {
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
         combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
+        find_switchback_reads( md_bams )
 
         //////// Collect files for internal summaries //////////
         agg_opts = [
@@ -170,7 +172,8 @@ workflow {
         ['--fastqc', fastqc.out.for_agg],
         ['--nonconverted_read_counts', combine_nonconverted_counts.out.for_agg ],
         ['--tasmanian', tasmanian.out.for_agg ],
-        ['--combined_mbias_records', methylDackel_mbias.out.for_agg ]
+        ['--combined_mbias_records', methylDackel_mbias.out.for_agg ],
+        ['--fgbio_switchbacks', find_switchback_reads.out.for_agg ]
         ]
         
         multiqc_opts = agg_opts.clone()
