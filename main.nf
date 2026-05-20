@@ -156,7 +156,7 @@ workflow {
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
         combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
-        find_switchback_reads( md_bams )
+        find_switchback_reads( md_bams, genome_fa )
 
         //////// Collect files for internal summaries //////////
         agg_opts = [

@@ -6,6 +6,7 @@ process find_switchback_reads {
 
     input:
         tuple val(library), path(bam), path(bai)
+        val(genome_fa)
 
     output:
         tuple val(library), path("${library}.switchbacks.summary.txt"), emit: for_agg
@@ -17,6 +18,7 @@ process find_switchback_reads {
     fgbio -Xmx${task.memory.toGiga()}g FindSwitchbackReads \\
         --input ${bam} \\
         --output ${library}.switchbacks.bam \\
-        --metrics ${library}.switchbacks
+        --metrics ${library}.switchbacks \\
+        --ref ${genome_fa}
     """
 }
