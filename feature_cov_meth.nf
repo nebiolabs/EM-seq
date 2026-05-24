@@ -11,7 +11,7 @@ params.context = 'CpG'  // methylation context(s) to analyse; comma-separated fo
 
 // Path to locally cached reference files used by the --mouse and --human_t2t2 shortcuts.
 // Override with --local_ref_files_path for a different location.
-params.local_ref_files_path = '${HOME}/nebnext_projects/em-seq/em-seq_ref_files'
+params.local_ref_files_path = "${HOME}/nebnext_projects/em-seq/em-seq_ref_files"
 
 // Genome-specific params declared once with null defaults.
 // Set these on the CLI for a custom assembly; --mouse and --human_t2t2 pre-populate them.
