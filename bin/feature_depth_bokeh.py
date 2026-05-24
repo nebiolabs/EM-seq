@@ -104,7 +104,6 @@ def main():
         separator='\t',
         schema_overrides=overrides,
     )
-    all_cols = lf.collect_schema().names()
 
     long_lf = (
         lf.select(['File', 'Geneid', 'Chr', *sample_cols])
