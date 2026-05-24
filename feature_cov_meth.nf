@@ -129,7 +129,7 @@ process clean_epd_gtf {
       CrossMap gff ${chain_file} epd_promoters_oldref.gtf epd_promoters_newref.gtf
 
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[\$1]=\$2; next} {\$1=dict[\$1]; print}' \
-      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print \$10,\$5}' | tr -d '\\r')  \
+      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${ref.cpg_chr_lookup}}' | tr -d '\\r')  \
       <(zcat -f epd_promoters_newref.gtf | grep -v '^#') > epd_promoters.gtf
     """
 }
