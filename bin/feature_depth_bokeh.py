@@ -46,25 +46,72 @@ DEFAULT_STRIP_SUFFIX = r'(\.[a-z]+)*\.bam$'
 ID_COLS = ['File', 'Geneid', 'Chr', 'Start', 'End', 'Strand', 'Length']
 
 
-def parse_lib(name):
-    """Split a library name into group and replicate.
+def analyze_name_components(libraries):
+    """Choose which name-component positions to use for group and subgroup labels.
 
-    Names are tokenised on '_' and '-'; the last token is taken as the
-    replicate identifier and everything before it becomes the group label.
-    This generic split works with any naming convention without hard-coding
-    enzyme names or other project-specific components.
+    All library names are tokenised on '_' and '-'.  At each component position
+    the number of distinct values across all libraries is counted.  Positions
+    where every library shares the same value carry no information and are
+    skipped.  The remaining positions are ranked by ascending distinct-value
+    count:
+
+    * fewest distinct values  → ``group``    (top bold separator + label)
+    * second fewest distinct  → ``subgroup`` (angled annotation above replicates)
+
+    The last component  serves as ``replicate`` (x-axis tick label)
+    if it looks like a replicate
+        r'^(?:rep(?:licate)?|r)?\d+$'
+        r'|^[A-Za-z]$'
+
+    Returns ``(group_idx, subgroup_idx)``.  Either may be ``None`` when there
+    are not enough informative positions.
     """
+    if not libraries:
+        return None, None
+
+    all_parts = [re.split(r'[_\-]', lib) for lib in libraries]
+    max_len = max(len(p) for p in all_parts)
+    # Pad shorter splits so positions align across all libraries
+    padded = [p + [''] * (max_len - len(p)) for p in all_parts]
+
+    # Only exclude the last position from frequency ranking if every library's
+    # last component looks like a replicate identifier (digits, rep1, r2, A, …).
+    # If the last component is something meaningful like 'control' or 'treated'
+    # it should compete normally for the group/subgroup roles.
+    last_vals = [re.split(r'[_\-]', lib)[-1] for lib in libraries]
+    exclude_last = all(RE_REPLICATE_LIKE.match(v) for v in last_vals)
+    search_end = max_len - 1 if exclude_last else max_len
+
+    informative = []
+    for i in range(search_end):
+        n_distinct = len({row[i] for row in padded})
+        if n_distinct > 1:          # skip positions identical across all libraries
+            informative.append((n_distinct, i))
+
+    informative.sort()              # ascending: fewest distinct values first
+    group_idx    = informative[0][1] if len(informative) >= 1 else None
+    subgroup_idx = informative[1][1] if len(informative) >= 2 else None
+    return group_idx, subgroup_idx
+
+
+def get_component(name, idx):
+    """Return the *idx*-th component of *name* (split on '_' or '-'), or ''."""
+    if idx is None:
+        return ''
     parts = re.split(r'[_\-]', name)
-    replicate = parts[-1] if len(parts) > 1 else name
-    group = '_'.join(parts[:-1]) if len(parts) > 1 else name
-    return {
-        'library': name,
-        'group': group,
-        'replicate': replicate,
-    }
+    return parts[idx] if idx < len(parts) else ''
 
 
-_RE_METACHAR = re.compile(r'[\\^$.|?*+(){}[\]]')
+RE_METACHAR = re.compile(r'[\\^$.|?*+(){}[\]]')
+
+# Matches component values that look like replicate identifiers:
+#   pure digits (1, 2, 12), optional rep/r prefix + digits (rep1, r2, REP3,
+#   replicate1), or a single letter (A, B, a, b).
+RE_REPLICATE_LIKE = re.compile(
+    r'^(?:rep(?:licate)?|r)?\d+$'
+    r'|^[A-Za-z]$',
+    re.IGNORECASE,
+)
 
 
 def build_strip_re(raw):
@@ -75,7 +122,7 @@ def build_strip_re(raw):
     so plain strings like '.ds.md.bam' work without requiring the user to
     escape dots or add a '$'.
     """
-    if _RE_METACHAR.search(raw):
+    if RE_METACHAR.search(raw):
         return raw
     return re.escape(raw) + '$'
 
@@ -185,12 +232,20 @@ def main():
         print('[feature_depth_bokeh] no depth cap applied', file=sys.stderr)
 
     libraries = long['library'].unique().to_list()
-    meta_rows = [parse_lib(lib) for lib in libraries]
+    group_idx, subgroup_idx = analyze_name_components(libraries)
+
+    meta_rows = []
+    for lib in libraries:
+        parts = re.split(r'[_\-]', lib)
+        replicate = parts[-1] if len(parts) > 1 else lib
+        group    = get_component(lib, group_idx) or lib   # fall back to full name if no grouping
+        subgroup = get_component(lib, subgroup_idx)
+        meta_rows.append({'library': lib, 'group': group, 'subgroup': subgroup, 'replicate': replicate})
     meta = pl.DataFrame(meta_rows)
 
-    # Sort by group then replicate for a consistent, predictable x-axis ordering
+    # Sort by group → subgroup → replicate for a consistent, predictable x-axis ordering
     meta = (
-        meta.sort(['group', 'replicate'])
+        meta.sort(['group', 'subgroup', 'replicate'])
             .with_columns(pl.int_range(0, pl.len()).alias('idx'))
     )
 
@@ -204,7 +259,7 @@ def main():
     )
 
     long = long.join(
-        meta.select(['library', 'group', 'replicate', 'idx', 'color']),
+        meta.select(['library', 'group', 'subgroup', 'replicate', 'idx', 'color']),
         on='library',
         how='inner',
     )
@@ -227,7 +282,7 @@ def main():
     N = meta.height
     replicate_by_idx = {int(i): str(r) for i, r in zip(meta['idx'].to_list(), meta['replicate'].to_list())}
     ab_x = meta['idx'].to_list()
-    ab_text = meta['group'].to_list()
+    ab_text = meta['subgroup'].to_list()
 
     # Precompute per-(feature, library, threshold) counts of rows with
     # depth_orig >= threshold. Used for the in-HTML "show count above" widget.
@@ -445,6 +500,7 @@ def main():
                         depth=outliers['depth'].to_list(),
                         library=outliers['library'].to_list(),
                         group=outliers['group'].to_list(),
+                        subgroup=outliers['subgroup'].to_list(),
                         chrom=outliers['Chr'].to_list(),
                         geneid=outliers['Geneid'].cast(pl.Utf8).to_list(),
                     ))
@@ -455,6 +511,7 @@ def main():
                     p.add_tools(HoverTool(renderers=[r], tooltips=[
                         ('library', '@library'),
                         ('group', '@group'),
+                        ('subgroup', '@subgroup'),
                         ('chr', '@chrom'),
                         ('geneid', '@geneid'),
                         ('depth', '@depth'),
