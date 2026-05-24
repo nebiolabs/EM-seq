@@ -7,31 +7,61 @@ params.output_dir = 'cov_vs_meth.output'
 params.count_dup_reads = false
 params.mouse = false
 params.human_t2t2 = false
+params.context = 'CpG'  // methylation context(s) to analyse; comma-separated for multiple: 'CpG,CHG,CHH'
 
-local_ref_files_path = '/mnt/home/langhorst/nebnext_projects/em-seq/em-seq_ref_files'
+// Path to locally cached reference files used by the --mouse and --human_t2t2 shortcuts.
+// Override with --local_ref_files_path for a different location.
+params.local_ref_files_path = '/mnt/home/langhorst/nebnext_projects/em-seq/em-seq_ref_files'
+
+// All genome-specific params below can be set directly on the command line for custom assemblies.
+// --mouse and --human_t2t2 are convenience shortcuts that pre-populate them.
+// cpg_chr_lookup / refseq_chr_lookup are awk column specs (src_col,dest_col) that translate
+// assembly-report accession IDs to the chromosome naming used in BAMs and GTF/SAF files.
+params.genome                   = null
+params.ucsc_cpg_islands_gtf     = null
+params.cpg_chr_lookup           = null  // e.g. '$10,$5' (mouse) or '$10,$10' (T2T)
+params.refseq_gff_url           = null
+params.ncbi_assembly_report_url = null
+params.refseq_chr_lookup        = null  // e.g. '$7,$5' (mouse) or '$7,$10' (T2T)
+params.epd_promoter_bed_url     = null
+params.old_new_chain_url        = null
 
 feature_count_dup_option = params.count_dup_reads ? '' : '--ignoreDup'
 
 if (params.mouse) {
-    params.genome = "${local_ref_files_path}/grcm39+meth_controls.fa"
-    params.ucsc_cpg_islands_gtf = "${local_ref_files_path}/grcm39_cpg_islands.gtf.gz"
-    cpg_chr_lookup = '$10,$5' //switch from chr to genbank naming
-    params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz'
-    params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt'
-    refseq_chr_lookup = '$7,$5' //switch from NC -> genbank naming
-    params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
-    params.old_new_chain_url = 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
+    params.genome                   = params.genome                   ?: "${params.local_ref_files_path}/grcm39+meth_controls.fa"
+    params.ucsc_cpg_islands_gtf     = params.ucsc_cpg_islands_gtf     ?: "${params.local_ref_files_path}/grcm39_cpg_islands.gtf.gz"
+    params.cpg_chr_lookup           = params.cpg_chr_lookup           ?: '$10,$5'  // assembly report col10 (chrN) -> col5 (GenBank accession)
+    params.refseq_gff_url           = params.refseq_gff_url           ?: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz'
+    params.ncbi_assembly_report_url = params.ncbi_assembly_report_url ?: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt'
+    params.refseq_chr_lookup        = params.refseq_chr_lookup        ?: '$7,$5'   // NC_ accession -> GenBank chr name
+    params.epd_promoter_bed_url     = params.epd_promoter_bed_url     ?: 'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed'
+    params.old_new_chain_url        = params.old_new_chain_url        ?: 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz'
 }
 
 if (params.human_t2t2) {
-    params.genome = "${local_ref_files_path}/T2T_chm13v2.0+bs_controls.fa"
-    params.ucsc_cpg_islands_gtf = "${local_ref_files_path}/t2t2_ucsc_cpg_islands.gtf.gz"
-    cpg_chr_lookup = '$10,$10' //just use column 10 for T2T
-    params.refseq_gff_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz'
-    params.ncbi_assembly_report_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_assembly_report.txt'
-    refseq_chr_lookup = '$7,$10' //switch from NC -> chr1 naming
-    params.epd_promoter_bed_url = 'https://epd.expasy.org/ftp/epdnew/human/006/Hs_EPDnew_006_hg38.bed'
-    params.old_new_chain_url = 'https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHs1.over.chain.gz'
+    params.genome                   = params.genome                   ?: "${params.local_ref_files_path}/T2T_chm13v2.0+bs_controls.fa"
+    params.ucsc_cpg_islands_gtf     = params.ucsc_cpg_islands_gtf     ?: "${params.local_ref_files_path}/t2t2_ucsc_cpg_islands.gtf.gz"
+    params.cpg_chr_lookup           = params.cpg_chr_lookup           ?: '$10,$10'  // T2T: col10 used for both source and dest
+    params.refseq_gff_url           = params.refseq_gff_url           ?: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz'
+    params.ncbi_assembly_report_url = params.ncbi_assembly_report_url ?: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_assembly_report.txt'
+    params.refseq_chr_lookup        = params.refseq_chr_lookup        ?: '$7,$10'   // NC_ accession -> chr1-style name
+    params.epd_promoter_bed_url     = params.epd_promoter_bed_url     ?: 'https://epd.expasy.org/ftp/epdnew/human/006/Hs_EPDnew_006_hg38.bed'
+    params.old_new_chain_url        = params.old_new_chain_url        ?: 'https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHs1.over.chain.gz'
+}
+
+// Validate that all genome-specific params are set — either via a shortcut or directly on the CLI
+def _required_genome_params = [
+    'genome', 'ucsc_cpg_islands_gtf', 'cpg_chr_lookup',
+    'refseq_gff_url', 'ncbi_assembly_report_url', 'refseq_chr_lookup',
+    'epd_promoter_bed_url', 'old_new_chain_url'
+]
+def _missing = _required_genome_params.findAll { params[it] == null }
+if (_missing) {
+    error """\
+        Missing required genome parameters: ${_missing.join(', ')}
+        Use --mouse or --human_t2t2 for preset assemblies, or provide these params directly for a custom assembly.
+        """.stripIndent()
 }
 
 
@@ -126,7 +156,7 @@ process clean_cpg_islands_gtf {
     script:
     """
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[\$1]=\$2; next} {\$1=dict[\$1]; print}' \
-      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${cpg_chr_lookup}}' | tr -d '\\r')  \
+      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${params.cpg_chr_lookup}}' | tr -d '\\r')  \
       <(zcat -f ${ucsc_cpg_gtf} | grep -v '^#') \
       |  awk -v FS='\t' -v OFS='\t' '{print \$1,\$1":"\$4"-"\$5,\$3,\$4,\$5,\$6,\$7,\$8,\$9}' \
       > cpg_islands.uniqname.gtf
@@ -147,11 +177,11 @@ process cpg_island_counts{
 
     script:
     """
-     featureCounts --primary ${feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
-         -a ${gtf} \
-         --tmpDir ${params.tmp_dir} \
-         -T ${task.cpus} \
-         -o cpg_island_counts.tsv *.bam
+    featureCounts --primary ${feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
+        -a ${gtf} \
+        --tmpDir ${params.tmp_dir} \
+        -T ${task.cpus} \
+        -o cpg_island_counts.tsv *.bam
     """
 }
 
@@ -166,7 +196,7 @@ process refseq_feature_download {
 
     script:
     """
-        curl -fsSl ${url} | zcat -f > refseq.gff
+    curl -fsSl ${url} | zcat -f > refseq.gff
     """
 }
 
@@ -186,7 +216,9 @@ process refseq_feature_gffs {
     script:
     """
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[\$1]=\$2; next} {\$1=dict[\$1]; print}' \
-     <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${refseq_chr_lookup}}' | tr -d '\\r')  \
+     <(grep -v '^#' ${assembly_report} \
+       | awk -v OFS='\\t' -v FS='\\t' '{print ${params.refseq_chr_lookup}}' \
+       | tr -d '\\r')  \
      <(zcat -f ${gff} | grep -v '^#') \
     | grep "GeneID:" \
     | grep -P -v "_alt\\t" \
@@ -290,25 +322,6 @@ process refseq_feature_counts {
     """
 }
 
-process feature_violin {
-    cpus 1
-    memory '32 GB'
-    conda "scipy pandas matplotlib seaborn"
-    publishDir "${params.output_dir}/features/violin", mode: 'copy'
-
-    input:
-        path(methylation)
-
-    output:
-        tuple path("*.png"), path("*.svg"), path("*.tsv")
-
-    script:
-    """
-    #!/usr/bin/env python
-
-    """
-}
-
 process feature_depth_bokeh {
     cpus 1
     memory '8 GB'
@@ -330,8 +343,6 @@ process feature_depth_bokeh {
 process combine_counts {
     publishDir "${params.output_dir}", mode: 'copy'
 
-    errorStrategy { task.exitStatus == 141 ? 'ignore' : 'terminate' }
-
     input:
         path(feature_counts)
         path(cpg_counts)
@@ -342,15 +353,17 @@ process combine_counts {
 
    script:
    """
-   set +o pipefail
-
    echo -n 'File\t' > combined_feature_counts.tsv
-   grep -hve '^\\s*\$' -e '^#' ${cpg_counts} | head -n 1 >> combined_feature_counts.tsv
+   # Read the header directly with awk to avoid SIGPIPE from grep|head
+   awk '!/^[[:space:]]*\$/ && !/^#/ {print; exit}' ${cpg_counts} >> combined_feature_counts.tsv
 
    for f in ${feature_counts} ${cpg_counts} ${epd_counts}; do
        filebase=\$(basename "\${f}" _counts.tsv)
-       lines=\$(wc -l <(grep -ve '^\\s*\$' -e '^#' "\$f") | cut -f 1 -d ' ')
-       paste <( yes \${filebase} | head -n \$lines ) <(grep -ve '^\\s*\$' -e '^#' "\$f") | tail -n +2 >> combined_feature_counts.tsv
+       # Count data lines without piping through head/wc on process substitutions
+       lines=\$(grep -ve '^\\s*\$' -e '^#' "\${f}" | awk 'END{print NR}')
+       # Use awk to repeat filebase n times instead of 'yes | head' (avoids SIGPIPE)
+       paste <(awk -v n="\${lines}" -v name="\${filebase}" 'BEGIN{for(i=0;i<n;i++) print name}') \\
+             <(grep -ve '^\\s*\$' -e '^#' "\${f}") | tail -n +2 >> combined_feature_counts.tsv
    done
    """
 }
@@ -361,7 +374,7 @@ workflow {
     // Define channels
     methylkits = Channel.fromPath(params.mk_files)
         .map{ it -> tuple(it.baseName.split(".methylKit")[0], it.baseName.split(".methylKit")[0].split("_")[-1], it)}
-        .filter{it[1] == "CpG"}
+        .filter{ params.context.tokenize(',').contains(it[1]) }
 
     bams = Channel.fromFilePairs(params.bam_files_glob, checkIfExists: true)
     ucsc_cpg_islands_gtf = Channel.fromPath(params.ucsc_cpg_islands_gtf, checkIfExists: true).first()
@@ -400,9 +413,6 @@ workflow {
     all_bam_files = bams.map{ it -> it[1] }.flatten().collect()
 
     feature_counts = refseq_feature_counts(feature_saf_for_counts, all_bam_files)
-
-    // Violin plots
-    feature_violin(combined_methylation_out.collect())
 
     // Combine all counts
     combined_counts = combine_counts(feature_counts.collect(), cpg_counts, epd_counts)

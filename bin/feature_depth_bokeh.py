@@ -36,25 +36,53 @@ from bokeh.palettes import Category10, Viridis256
 from bokeh.plotting import figure
 from bokeh.util.hex import cartesian_to_axial, hexbin
 
-ENZYME_ORDER = ['Msp1+ApeK1', 'Msp1', 'Msp1+HaeIII']
+# Depth threshold options available in the HTML UI dropdown.
+# Each value counts features with depth_orig >= that threshold.
+# The largest value (9) is the highest selectable option; nothing is excluded above it.
 DEPTH_THRESHOLDS = [1, 2, 5, 7, 9]
-BAM_SUFFIX_RE = r'\.ds\.md\.bam$'
+# Strips any trailing combination of lowercase dot-tags before .bam
+# e.g. sample.ds.md.bam → sample, sample.sorted.dedup.bam → sample, sample.bam → sample
+DEFAULT_STRIP_SUFFIX = r'(\.[a-z]+)*\.bam$'
 ID_COLS = ['File', 'Geneid', 'Chr', 'Start', 'End', 'Strand', 'Length']
 
 
 def parse_lib(name):
-    parts = name.split('_')
+    """Split a library name into group and replicate.
+
+    Names are tokenised on '_' and '-'; the last token is taken as the
+    replicate identifier and everything before it becomes the group label.
+    This generic split works with any naming convention without hard-coding
+    enzyme names or other project-specific components.
+    """
+    parts = re.split(r'[_\-]', name)
+    replicate = parts[-1] if len(parts) > 1 else name
+    group = '_'.join(parts[:-1]) if len(parts) > 1 else name
     return {
         'library': name,
-        'enzyme': parts[2] if len(parts) > 2 else '',
-        'amount_buffer': '_'.join(parts[3:-1]) if len(parts) > 4 else '',
-        'replicate': parts[-1] if len(parts) > 1 else '',
+        'group': group,
+        'replicate': replicate,
     }
+
+
+_RE_METACHAR = re.compile(r'[\\^$.|?*+(){}[\]]')
+
+
+def build_strip_re(raw):
+    """Return a regex pattern that strips *raw* from library names.
+
+    If *raw* contains regex metacharacters it is used verbatim as a pattern.
+    Otherwise it is treated as a literal suffix and anchored to end-of-string,
+    so plain strings like '.ds.md.bam' work without requiring the user to
+    escape dots or add a '$'.
+    """
+    if _RE_METACHAR.search(raw):
+        return raw
+    return re.escape(raw) + '$'
 
 
 def chr_sort_key(c):
     s = str(c)
-    m = re.match(r'(?:chr)?(\d+|X|Y|M|MT)$', s)
+    m = re.match(r'(?:chr)?(\d+|X|Y|M|MT|Mt|Mito)$', s, re.IGNORECASE)
     if m:
         v = m.group(1)
         if v.isdigit():
@@ -88,7 +116,14 @@ def main():
     ap.add_argument('--depth-cap-percentile', type=float, default=99.0,
                     help='cap at this percentile of non-zero depths (default 99). '
                          'Ignored if --depth-cap is given. Pass 100 to disable.')
+    ap.add_argument('--strip-suffix', default=DEFAULT_STRIP_SUFFIX,
+                    help='Suffix to strip from BAM column names when building library labels. '
+                         'Plain text (e.g. ".ds.md.bam") is matched literally at end-of-string. '
+                         'A value containing regex metacharacters is used as a raw pattern '
+                         '(e.g. r"(\\.[a-z]+)*\\.bam$"). '
+                         'Default: strip any trailing lowercase dot-tags before .bam.')
     args = ap.parse_args()
+    strip_re = build_strip_re(args.strip_suffix)
 
     with open(args.counts_tsv) as fh:
         header_cols = fh.readline().rstrip('\n').split('\t')
@@ -114,7 +149,7 @@ def main():
               value_name='depth',
           )
           .with_columns([
-              pl.col('library').str.replace(BAM_SUFFIX_RE, ''),
+              pl.col('library').str.replace(strip_re, ''),
               pl.col('depth').cast(pl.Float64, strict=False),
           ])
           .filter(pl.col('depth').is_not_null())
@@ -153,23 +188,23 @@ def main():
     meta_rows = [parse_lib(lib) for lib in libraries]
     meta = pl.DataFrame(meta_rows)
 
-    enz_rank = {e: i for i, e in enumerate(ENZYME_ORDER)}
+    # Sort by group then replicate for a consistent, predictable x-axis ordering
     meta = (
-        meta.with_columns(
-            pl.col('enzyme').replace_strict(enz_rank, default=99, return_dtype=pl.Int32).alias('enz_rank')
-        )
-        .sort(['enz_rank', 'amount_buffer', 'replicate'])
-        .with_columns(pl.int_range(0, pl.len()).alias('idx'))
+        meta.sort(['group', 'replicate'])
+            .with_columns(pl.int_range(0, pl.len()).alias('idx'))
     )
 
-    palette = Category10[max(3, len(ENZYME_ORDER))]
-    color_map = {e: palette[i] for i, e in enumerate(ENZYME_ORDER)}
+    groups = meta['group'].unique(maintain_order=False).sort().to_list()
+    n_groups = len(groups)
+    palette_size = max(3, min(n_groups, 10))
+    palette = Category10[palette_size]
+    color_map = {g: palette[i % palette_size] for i, g in enumerate(groups)}
     meta = meta.with_columns(
-        pl.col('enzyme').replace_strict(color_map, default='#888888', return_dtype=pl.Utf8).alias('color')
+        pl.col('group').replace_strict(color_map, default='#888888', return_dtype=pl.Utf8).alias('color')
     )
 
     long = long.join(
-        meta.select(['library', 'enzyme', 'amount_buffer', 'replicate', 'idx', 'color']),
+        meta.select(['library', 'group', 'replicate', 'idx', 'color']),
         on='library',
         how='inner',
     )
@@ -192,7 +227,7 @@ def main():
     N = meta.height
     replicate_by_idx = {int(i): str(r) for i, r in zip(meta['idx'].to_list(), meta['replicate'].to_list())}
     ab_x = meta['idx'].to_list()
-    ab_text = meta['amount_buffer'].to_list()
+    ab_text = meta['group'].to_list()
 
     # Precompute per-(feature, library, threshold) counts of rows with
     # depth_orig >= threshold. Used for the in-HTML "show count above" widget.
@@ -309,7 +344,7 @@ def main():
                     y_range=Range1d(start=y_bot, end=y_top),
                     title=f'{feature}: depth per library  (no non-zero counts; '
                           f'{sub_all.height} rows total, all zero)',
-                    width=1500, height=300,
+                    width=FIG_W, height=300,
                     tools='pan,box_zoom,wheel_zoom,reset,save',
                 )
                 p.add_layout(Label(
@@ -409,7 +444,7 @@ def main():
                         y=outliers['y'].to_list(),
                         depth=outliers['depth'].to_list(),
                         library=outliers['library'].to_list(),
-                        enzyme=outliers['enzyme'].to_list(),
+                        group=outliers['group'].to_list(),
                         chrom=outliers['Chr'].to_list(),
                         geneid=outliers['Geneid'].cast(pl.Utf8).to_list(),
                     ))
@@ -419,7 +454,7 @@ def main():
                     )
                     p.add_tools(HoverTool(renderers=[r], tooltips=[
                         ('library', '@library'),
-                        ('enzyme', '@enzyme'),
+                        ('group', '@group'),
                         ('chr', '@chrom'),
                         ('geneid', '@geneid'),
                         ('depth', '@depth'),
@@ -502,8 +537,8 @@ def main():
             p.add_layout(count_label)
             col_labels[col_key].append(count_label)
 
-            for enzyme in ENZYME_ORDER:
-                grp = meta.filter(pl.col('enzyme') == enzyme)
+            for grp_name in groups:
+                grp = meta.filter(pl.col('group') == grp_name)
                 if grp.is_empty():
                     continue
                 x_start = float(grp['idx'].min())
@@ -515,7 +550,7 @@ def main():
                 ))
                 p.add_layout(Label(
                     x=(x_start + x_end) / 2, y=enz_label_y,
-                    text=enzyme,
+                    text=grp_name,
                     text_font_size='11pt', text_font_style='bold',
                     text_align='center', text_color='#333333',
                 ))
