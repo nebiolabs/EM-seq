@@ -24,6 +24,37 @@ nextflow run fastq_to_ubam.nf \
 | `--input_glob` | glob for your gzipped fastq files | `['*.{1,2}.fastq.gz']` |
 | `--read_format` | 'paired-end' or 'single-end' | `'paired-end'` |
 
+### Feature Coverage & Methylation Analysis (`feature_cov_meth.nf`)
+Quantifies read depth and CpG methylation across major genomic feature categories — exons, CDS, genes, mRNA, CpG islands, and EPD promoters — for a set of aligned BAM files.
+
+**Outputs**
+- `feature_depth_bokeh.html` — interactive per-feature depth plot (switchable in-browser between hex-density and violin display, log/linear y-axis, per-feature or shared y-range, and a depth-threshold counter)
+
+![Feature depth per library — hex-density view showing read depth across genomic feature categories](example_feature_cov.png)
+
+- `combined_feature_counts.tsv` — merged featureCounts table across all feature types
+- Per-sample methylation TSVs under `<output_dir>/features/<sample>/<context>/`
+
+**Usage**
+```bash
+nextflow run feature_cov_meth.nf \
+  --bam_files_glob '*.md.{bam,bam.bai}' \
+  --mk_files '*.methylKit.gz' \
+  --human_t2t2
+```
+Use `--mouse` for GRCm39, `--human_t2t2` for T2T CHM13v2.0, or supply all genome params manually for a custom assembly.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--mouse` | GRCm39 reference shortcuts | `false` |
+| `--human_t2t2` | T2T CHM13v2.0 reference shortcuts | `false` |
+| `--local_ref_files_path` | Root path to locally cached reference files | *(set in config)* |
+| `--context` | Methylation context(s), comma-separated (`CpG`, `CHG`, `CHH`) | `CpG` |
+| `--count_dup_reads` | Include duplicate reads in feature counts | `false` |
+| `--output_dir` | Output directory | `cov_vs_meth.output` |
+
+For custom assemblies set `--genome`, `--ucsc_cpg_islands_gtf`, `--refseq_gff_url`, `--ncbi_assembly_report_url`, `--epd_promoter_bed_url`, `--old_new_chain_url`, `--cpg_chr_lookup`, and `--refseq_chr_lookup` directly.
+
 ## Quick Start
 1. Install [miniforge](https://conda-forge.org/download/) and [bioconda](https://bioconda.github.io/) (see [Requirements](<README#Requirements>))
 2. Install [Nextflow](https://www.nextflow.io/) (e.g. conda install nextflow, or see [Nextflow installation guide](https://www.nextflow.io/docs/latest/getstarted.html#installation))
@@ -120,4 +151,3 @@ nf-test test
 ```bash
 nf-test test --updateSnapshot
 ```
-
