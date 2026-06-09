@@ -265,6 +265,7 @@ process refseq_feature_gffs {
 process feature_methylation {
     tag {feature}
     conda "bedtools=2.29.2 htslib=1.9"
+    memory '32 GB'
 
     input:
         tuple val(feature), val(feature_gff), val(sample_id), val(context), path(methylkit)
@@ -337,7 +338,7 @@ process refseq_feature_counts {
 
 process feature_depth_bokeh {
     cpus 1
-    memory '8 GB'
+    memory '32 GB'
     conda "bokeh polars numpy"
     publishDir "${params.output_dir}", mode: 'copy'
 
