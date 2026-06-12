@@ -1,7 +1,7 @@
 process fastp {
 	tag "${library}"
     label 'low_cpu'
-    conda "bioconda::samtools=1.21 bioconda::fastp=1.0.1"
+    conda "bioconda::samtools=1.21 bioconda::fastp=1.1.0"
     publishDir "${params.outputDir}/fastp"
 
     input:
@@ -14,7 +14,6 @@ process fastp {
         tuple val("${task.process}"), val('fastp'), eval('fastp --version 2>&1 | cut -f 2 -d " "'), topic: versions
     
     script:
-    def fastp_path = params.fastp_path ? params.fastp_path : ''
     def fastp_args = params.single_end ? "--out1 ${library}.1.trimmed.fastq.gz" : "--interleaved_in --out1 ${library}.1.trimmed.fastq.gz --out2 ${library}.2.trimmed.fastq.gz"
     """
     set +o pipefail
@@ -24,8 +23,8 @@ process fastp {
     trim_polyg=\$(echo "\${inst_name}" | awk '{if (\$1~/^A0|^NB|^NS|^VH/) {print "--trim_poly_g"} else {print ""}}')
     echo \${trim_polyg} | awk '{ if (length(\$1)>0) { print "2-color instrument: poly-g trim mode on" } }'
     
-    samtools fastq -n ${bam} | \\
-    ${fastp_path}fastp --stdin \\
+    samtools fastq -T RX -n ${bam} | \\
+    fastp --stdin \\
                     -l 2 -Q \${trim_polyg} \\
                     --thread 1 \\
                     --overrepresentation_analysis \\
