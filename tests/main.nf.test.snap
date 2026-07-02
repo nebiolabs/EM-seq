@@ -38,7 +38,7 @@
                 "fastp",
                 [
                     "\t\"summary\": {",
-                    "\t\t\"fastp_version\": \"1.0.1\",",
+                    "\t\t\"fastp_version\": \"1.3.6\",",
                     "\t\t\"sequencing\": \"single end (76 cycles)\",",
                     "\t\t\"before_filtering\": {",
                     "\t\t\t\"total_reads\": 9534,",
@@ -65,11 +65,11 @@
                     "\t\t\"passed_filter_reads\": 9530,",
                     "\t\t\"low_quality_reads\": 0,",
                     "\t\t\"too_many_N_reads\": 0,",
+                    "\t\t\"adapter_dimer_reads\": 0,",
                     "\t\t\"too_short_reads\": 4,",
                     "\t\t\"too_long_reads\": 0",
                     "\t},",
-                    "\t\"duplication\": {",
-                    "\t\t\"rate\": 0.000839102"
+                    "\t\"duplication\": {"
                 ]
             ],
             [
@@ -316,7 +316,7 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.4"
         },
-        "timestamp": "2026-06-29T13:14:13.81276"
+        "timestamp": "2026-07-02T13:08:19.546823"
     },
     "EM-seq workflow uBam": {
         "content": [
@@ -357,7 +357,7 @@
                 "fastp",
                 [
                     "\t\"summary\": {",
-                    "\t\t\"fastp_version\": \"1.0.1\",",
+                    "\t\t\"fastp_version\": \"1.3.6\",",
                     "\t\t\"sequencing\": \"paired end (76 cycles + 76 cycles)\",",
                     "\t\t\"before_filtering\": {",
                     "\t\t\t\"total_reads\": 9534,",
@@ -386,9 +386,9 @@
                     "\t\t\"passed_filter_reads\": 9526,",
                     "\t\t\"low_quality_reads\": 0,",
                     "\t\t\"too_many_N_reads\": 0,",
+                    "\t\t\"adapter_dimer_reads\": 0,",
                     "\t\t\"too_short_reads\": 8,",
-                    "\t\t\"too_long_reads\": 0",
-                    "\t},"
+                    "\t\t\"too_long_reads\": 0"
                 ]
             ],
             [
@@ -678,6 +678,6 @@
             "nf-test": "0.9.0",
             "nextflow": "24.04.4"
         },
-        "timestamp": "2026-06-29T13:12:54.465912"
+        "timestamp": "2026-07-02T13:07:10.231101"
     }
 }
