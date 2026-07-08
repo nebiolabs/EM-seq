@@ -11,14 +11,14 @@ nextflow_pipeline {
             params.genome = 'test'
             params.email = 'foo@example.com'
             params.flowcell = "test_pipeline"
-            params.fastq_split_lines = 4000
+            params.bamslice_chunk_size = 250000
             params.enable_neb_agg = true
-            
+
         }
 
         then {
-            def bwameth_file_1 = bam("${launchDir}/test_output/bwameth_align/0001.emseq-test1.aln.bam").getStatistics()
-            def bwameth_file_2 = bam("${launchDir}/test_output/bwameth_align/0002.emseq-test1.aln.bam").getStatistics()
+            def bwameth_file_1 = bam("${launchDir}/test_output/bwameth_align/emseq-test1_0_250000.aln.bam").getStatistics()
+            def bwameth_file_2 = bam("${launchDir}/test_output/bwameth_align/emseq-test1_250000_421605.aln.bam").getStatistics()
             def fastqc = path("${launchDir}/test_output/stats/fastqc/emseq-test1.md_fastqc.html").exists()
             def fastp = path("${launchDir}/test_output/fastp/emseq-test1.fastp.json").text.tokenize('\n')[1..33]
             def markdup = bam("${launchDir}/test_output/markduped_bams/emseq-test1.md.bam").getStatistics()
@@ -30,7 +30,7 @@ nextflow_pipeline {
             def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test1.alignment_summary_metrics.txt").text.tokenize('\n')[5..8]
             def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test1_CpG.methylKit.gz").md5
             def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test1.combined_mbias.tsv").md5
-            def nonconverted = path("${launchDir}/test_output/bwameth_align/0001.emseq-test1.nonconverted_counts.tsv").text.tokenize('\n')
+            def nonconverted = path("${launchDir}/test_output/bwameth_align/emseq-test1_0_250000.nonconverted_counts.tsv").text.tokenize('\n')
             def nonconverted_combined = path("${launchDir}/test_output/stats/nonconverted_counts/emseq-test1.nonconverted_counts.for_agg.tsv").text.tokenize('\n')
             def combined_summaries = path("${launchDir}/test_output/methylKit_intersections/positional_summaries_combined.tsv").exists()
             def positional_summary = path("${launchDir}/test_output/methylKit_intersections/emseq-test1_vs_emseq_test_regions_positional_summary.tsv").text.tokenize('\n')
@@ -77,15 +77,15 @@ nextflow_pipeline {
             params.genome = 'test'
             params.email = 'foo@example.com'
             params.flowcell = "test_pipeline"
-            params.fastq_split_lines = 4000
+            params.bamslice_chunk_size = 250000
             params.enable_neb_agg = true
             params.single_end = true
-            
+
         }
 
         then {
-            def bwameth_file_1 = bam("${launchDir}/test_output/bwameth_align/0001.emseq-test1.aln.bam").getStatistics()
-            def bwameth_file_2 = bam("${launchDir}/test_output/bwameth_align/0002.emseq-test1.aln.bam").getStatistics()
+            def bwameth_file_1 = bam("${launchDir}/test_output/bwameth_align/emseq-test1_0_250000.aln.bam").getStatistics()
+            def bwameth_file_2 = bam("${launchDir}/test_output/bwameth_align/emseq-test1_250000_421605.aln.bam").getStatistics()
             def fastqc = path("${launchDir}/test_output/stats/fastqc/emseq-test1.md_fastqc.html").exists()
             def fastp = path("${launchDir}/test_output/fastp/emseq-test1.fastp.json").text.tokenize('\n')[1..33]
             def markdup = bam("${launchDir}/test_output/markduped_bams/emseq-test1.md.bam").getStatistics()
@@ -96,7 +96,7 @@ nextflow_pipeline {
             def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test1.alignment_summary_metrics.txt").text.tokenize('\n')[5..8]
             def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test1_CpG.methylKit.gz").md5
             def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test1.combined_mbias.tsv").md5
-            def nonconverted = path("${launchDir}/test_output/bwameth_align/0001.emseq-test1.nonconverted_counts.tsv").text.tokenize('\n')
+            def nonconverted = path("${launchDir}/test_output/bwameth_align/emseq-test1_0_250000.nonconverted_counts.tsv").text.tokenize('\n')
             def nonconverted_combined = path("${launchDir}/test_output/stats/nonconverted_counts/emseq-test1.nonconverted_counts.for_agg.tsv").text.tokenize('\n')
             def combined_summaries = path("${launchDir}/test_output/methylKit_intersections/positional_summaries_combined.tsv").exists()
             def positional_summary = path("${launchDir}/test_output/methylKit_intersections/emseq-test1_vs_emseq_test_regions_positional_summary.tsv").text.tokenize('\n')

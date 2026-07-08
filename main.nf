@@ -8,6 +8,7 @@ try {
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
 include { fastp }                                             from './modules/fastp'
+include { mergeFastpJson }                                    from './modules/merge_fastp_json'
 include { alignReads }                                        from './modules/align_reads'
 include { mergeAndMarkDuplicates }                            from './modules/merge_and_mark_duplicates'
 include { methylDackel_mbias }                                from './modules/methyldackel_mbias'
@@ -83,32 +84,30 @@ workflow {
         }
 
         ///////// Trim, align and mark duplicates //////////
-        fastp( passed_bams )
-        if (params.single_end) {
-            fastq_chunks = fastp.out.trimmed_fastq
-            .flatMap { library, fq_files ->                 
-                def fq_list = fq_files instanceof List ? fq_files : [fq_files]
-                
-                fq_list.findAll { it.baseName.contains('.1.trimmed.fastq') }.collect { fq1 ->
-                    def chunk_name = fq1.baseName.split(".1.trimmed.fastq")[0]
-                    [library, chunk_name, fq1]
-                }
+        // Split each uBAM into byte-range chunks so trimming runs in parallel per chunk.
+        chunk_size = params.bamslice_chunk_size as long
+        bam_chunks = passed_bams.flatMap { library, bam ->
+            def file_size = bam.size()
+            def chunks = []
+            for (long start = 0; start < file_size; start += chunk_size) {
+                long end = Math.min(start + chunk_size, file_size)
+                chunks << tuple(library, start, end)
             }
+            chunks
         }
-        else {
-            fastq_chunks = fastp.out.trimmed_fastq
-            .flatMap { library, fq_files ->
-                def fq_list = fq_files instanceof List ? fq_files : [fq_files]                
-                def chunk_groups = fq_list.groupBy { 
-                    it.baseName.replaceAll(/\.[12]\.trimmed\.fastq$/, '') 
-                }
-                
-                chunk_groups.collect { chunk_prefix, files ->
-                    def r1 = files.find { it.baseName.contains('.1.trimmed.fastq') }
-                    def r2 = files.find { it.baseName.contains('.2.trimmed.fastq') }
-                    
-                    [library, chunk_prefix, [r1, r2]]
-                }
+
+        fastp( passed_bams.combine(bam_chunks, by:0) )
+        mergeFastpJson( fastp.out.fastp_json.groupTuple() )
+
+        fastq_chunks = fastp.out.trimmed_fastq.map { library, chunk_name, fq_files ->
+            def fq_list = fq_files instanceof List ? fq_files : [fq_files]
+            if (params.single_end) {
+                tuple(library, chunk_name, fq_list[0])
+            }
+            else {
+                def r1 = fq_list.find { it.name.contains('.1.trimmed.fastq') }
+                def r2 = fq_list.find { it.name.contains('.2.trimmed.fastq') }
+                tuple(library, chunk_name, [r1, r2])
             }
         }
         alignReads( passed_bams.combine(fastq_chunks, by:0), params.reference_list.bwa_index )
@@ -163,7 +162,7 @@ workflow {
         ['--bam', mergeAndMarkDuplicates.out.md_bams.map{ tuple(it[0], it[1]) }],
         ['--bai', mergeAndMarkDuplicates.out.md_bams.map{ tuple(it[0], it[2]) }],
         ['--metadata_bam_file', bams],
-        ['--fastp', fastp.out.fastp_json],
+        ['--fastp', mergeFastpJson.out.merged_json],
         ['--aln', picard_metrics.out.for_agg ],
         ['--gc', gc_bias.out.for_agg ],
         ['--dup', mergeAndMarkDuplicates.out.log],
