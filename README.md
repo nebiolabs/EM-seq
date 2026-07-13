@@ -59,7 +59,7 @@ For custom assemblies set `--genome`, `--ucsc_cpg_islands_gtf`, `--refseq_gff_ur
 1. Install [miniforge](https://conda-forge.org/download/) and [bioconda](https://bioconda.github.io/) (see [Requirements](<README#Requirements>))
 2. Install [Nextflow](https://www.nextflow.io/) (e.g. conda install nextflow, or see [Nextflow installation guide](https://www.nextflow.io/docs/latest/getstarted.html#installation))
 3. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Modify `nextflow.config` as needed for your environment, e.g. if running locally, change executor block to 'local' and set, e.g. `--max_cpus 10 --max_memory 30.GB`. 
-4. Download or prepare a genome reference FASTA file (see [Reference Genomes](<README#reference-genomes>))
+4. Download or prepare a genome reference FASTA file (see [Reference Genomes](#reference-genomes))
 5. Create a bwameth index for the fasta and add it to your references in conf/references.config
 6. Run the pipeline with appropriate parameters (see [Basic Usage](<README#Basic Usage>))
 7. Examine results in the EM-seq_output directory
