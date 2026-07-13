@@ -56,12 +56,12 @@ Use `--mouse` for GRCm39, `--human_t2t2` for T2T CHM13v2.0, or supply all genome
 For custom assemblies set `--genome`, `--ucsc_cpg_islands_gtf`, `--refseq_gff_url`, `--ncbi_assembly_report_url`, `--epd_promoter_bed_url`, `--old_new_chain_url`, `--cpg_chr_lookup`, and `--refseq_chr_lookup` directly.
 
 ## Quick Start
-1. Install [miniforge](https://conda-forge.org/download/) and [bioconda](https://bioconda.github.io/) (see [Requirements](<README#Requirements>))
+1. Install [miniforge](https://conda-forge.org/download/) and [bioconda](https://bioconda.github.io/) (see [Requirements](#requirements))
 2. Install [Nextflow](https://www.nextflow.io/) (e.g. conda install nextflow, or see [Nextflow installation guide](https://www.nextflow.io/docs/latest/getstarted.html#installation))
 3. Clone this repository (`git clone https://github.com/nebiolabs/EM-seq.git`). Modify `nextflow.config` as needed for your environment, e.g. if running locally, change executor block to 'local' and set, e.g. `--max_cpus 10 --max_memory 30.GB`. 
 4. Download or prepare a genome reference FASTA file (see [Reference Genomes](#reference-genomes))
 5. Create a bwameth index for the fasta and add it to your references in conf/references.config
-6. Run the pipeline with appropriate parameters (see [Basic Usage](<README#Basic Usage>))
+6. Run the pipeline with appropriate parameters (see [Basic Usage](#basic-usage))
 7. Examine results in the EM-seq_output directory
    - `EM-seq-Alignment-Summary-<FLOWCELL_ID>_multiqc_report.html` in em-seq_output for overall QC summary
    - Mbias files `em-seq_output/methylDackelExtracts/mbias` (to identify sample-dependent positional biases)
