@@ -130,7 +130,8 @@ Analysis methods in this repository were used in the following publication:
 Vaisvila R, Ponnaluri VKC, Sun Z, et al. **Enzymatic methyl sequencing detects DNA methylation at single-base resolution from picograms of DNA.** *Genome Res.* 2021;31(7):1280-1289. doi:[10.1101/gr.266551.120](https://doi.org/10.1101/gr.266551.120)
 
 ## Related Projects
-You may also be interested in the [nf-core methylseq project](https://nf-co.re/methylseq/2.5.0)
+ - We have a related project to call variants in EM-seq converted libraries: [EM-seq variant calling](https://github.com/nebiolabs/EM-seq_variant_calling)
+ - You may also be interested in the [nf-core methylseq project](https://nf-co.re/methylseq/2.5.0)
 
 ## Developer documentation
 ### Production:
