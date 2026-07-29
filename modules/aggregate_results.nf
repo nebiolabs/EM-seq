@@ -10,14 +10,14 @@ def format_ngs_agg_opts(optlist) {
     '''
 
     // Initialize agg channel with first opt/value pair
-    agg_tuple = Channel.of(optlist[0][0]).combine(optlist[0][1]).map{opt, lib, val -> [lib, [opt, val]]}
+    def agg_tuple = channel.of(optlist[0][0]).combine(optlist[0][1]).map{opt, lib, val -> [lib, [opt, val]]}
     // Add remaining opt/value pairs
-    for(item in optlist[1..-1]) {
-        lib_opt_val = Channel.of(item[0]).combine(item[1]).map{opt, lib, val -> [lib, [opt, val]]}
+    optlist[1..-1].each { item ->
+        def lib_opt_val = channel.of(item[0]).combine(item[1]).map{opt, lib, val -> [lib, [opt, val]]}
         agg_tuple = agg_tuple.join(lib_opt_val)
     }
     // Transpose to change from (lib, [opt1, val1], [opt2, val2]) to (lib, [opt1, opt2], [val1, val2])
-    agg_tuple = agg_tuple.map{[it[0], *it[1..-1].transpose()]}
+    agg_tuple = agg_tuple.map{ row -> [row[0]] + row[1..-1].transpose() }
 
     return agg_tuple
 }

@@ -4,9 +4,9 @@ process tasmanian {
     publishDir "${params.outputDir}/stats/tasmanian"
     conda "bioconda::samtools=1.22 bioconda::tasmanian-mismatch=1.0.9"
 
-    errorStrategy { retry < 1 ? 'retry' : 'terminate' }
+    errorStrategy { task.attempt <= 1 ? 'retry' : 'terminate' }
     maxRetries 1
-    memory { retry > 0 ? '16 GB' : '8 GB' }
+    memory { task.attempt > 1 ? '16 GB' : '8 GB' }
 
     input:
         tuple val(library), path(bam), path(bai)

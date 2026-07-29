@@ -11,7 +11,7 @@ params.context = 'CpG'  // methylation context(s) to analyse; comma-separated fo
 
 // Path to locally cached reference files used by the --mouse and --human_t2t2 shortcuts.
 // Override with --local_ref_files_path for a different location.
-params.local_ref_files_path = "${HOME}/nebnext_projects/em-seq/em-seq_ref_files"
+params.local_ref_files_path = "${System.getenv('HOME')}/nebnext_projects/em-seq/em-seq_ref_files"
 
 // Genome-specific params declared once with null defaults.
 // Set these on the CLI for a custom assembly; --mouse and --human_t2t2 pre-populate them.
@@ -26,55 +26,60 @@ params.refseq_chr_lookup        = null  // e.g. '$7,$5' (mouse) or '$7,$10' (T2T
 params.epd_promoter_bed_url     = null
 params.old_new_chain_url        = null
 
-feature_count_dup_option = params.count_dup_reads ? '' : '--ignoreDup'
-
-// Preset maps for known assemblies. Using local maps rather than re-assigning params
-// avoids Nextflow lint warnings about params being defined multiple times.
-def mouse_preset = [
-    genome:                   "${params.local_ref_files_path}/grcm39+meth_controls.fa",
-    ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/grcm39_cpg_islands.gtf.gz",
-    cpg_chr_lookup:           '$10,$5',  // assembly report col10 (chrN) -> col5 (GenBank accession)
-    refseq_gff_url:           'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz',
-    ncbi_assembly_report_url: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt',
-    refseq_chr_lookup:        '$7,$5',   // NC_ accession -> GenBank chr name
-    epd_promoter_bed_url:     'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed',
-    old_new_chain_url:        'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz',
-]
-def t2t_preset = [
-    genome:                   "${params.local_ref_files_path}/T2T_chm13v2.0+bs_controls.fa",
-    ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/t2t2_ucsc_cpg_islands.gtf.gz",
-    cpg_chr_lookup:           '$10,$10',  // T2T: col10 used for both source and dest
-    refseq_gff_url:           'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz',
-    ncbi_assembly_report_url: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_assembly_report.txt',
-    refseq_chr_lookup:        '$7,$10',   // NC_ accession -> chr1-style name
-    epd_promoter_bed_url:     'https://epd.expasy.org/ftp/epdnew/human/006/Hs_EPDnew_006_hg38.bed',
-    old_new_chain_url:        'https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHs1.over.chain.gz',
-]
-def preset = params.mouse ? mouse_preset : (params.human_t2t2 ? t2t_preset : [:])
+params.feature_count_dup_option = params.count_dup_reads ? '' : '--ignoreDup'
 
 // Resolve effective values: CLI param > preset default > null.
-// Collected into a single `ref` map so references throughout the file are
-// unambiguous (ref.genome, ref.cpg_chr_lookup, …) and won't shadow
+// Collected into a single `params.ref` map so references throughout the file are
+// unambiguous (params.ref.genome, params.ref.cpg_chr_lookup, …) and won't shadow
 // bash variables inside process script blocks.
-def ref = [
-    genome:                   params.genome                   ?: preset.genome,
-    ucsc_cpg_islands_gtf:     params.ucsc_cpg_islands_gtf     ?: preset.ucsc_cpg_islands_gtf,
-    cpg_chr_lookup:           params.cpg_chr_lookup           ?: preset.cpg_chr_lookup,
-    refseq_gff_url:           params.refseq_gff_url           ?: preset.refseq_gff_url,
-    ncbi_assembly_report_url: params.ncbi_assembly_report_url ?: preset.ncbi_assembly_report_url,
-    refseq_chr_lookup:        params.refseq_chr_lookup        ?: preset.refseq_chr_lookup,
-    epd_promoter_bed_url:     params.epd_promoter_bed_url     ?: preset.epd_promoter_bed_url,
-    old_new_chain_url:        params.old_new_chain_url        ?: preset.old_new_chain_url,
-]
+def resolveGenomeRefs() {
+    // Preset maps for known assemblies. Using local maps rather than re-assigning params
+    // avoids Nextflow lint warnings about params being defined multiple times.
+    def mouse_preset = [
+        genome:                   "${params.local_ref_files_path}/grcm39+meth_controls.fa",
+        ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/grcm39_cpg_islands.gtf.gz",
+        cpg_chr_lookup:           '$10,$5',  // assembly report col10 (chrN) -> col5 (GenBank accession)
+        refseq_gff_url:           'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz',
+        ncbi_assembly_report_url: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt',
+        refseq_chr_lookup:        '$7,$5',   // NC_ accession -> GenBank chr name
+        epd_promoter_bed_url:     'https://epd.expasy.org/ftp/epdnew/M_musculus/003/Mm_EPDnew_003_mm10.bed',
+        old_new_chain_url:        'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz',
+    ]
+    def t2t_preset = [
+        genome:                   "${params.local_ref_files_path}/T2T_chm13v2.0+bs_controls.fa",
+        ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/t2t2_ucsc_cpg_islands.gtf.gz",
+        cpg_chr_lookup:           '$10,$10',  // T2T: col10 used for both source and dest
+        refseq_gff_url:           'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz',
+        ncbi_assembly_report_url: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_assembly_report.txt',
+        refseq_chr_lookup:        '$7,$10',   // NC_ accession -> chr1-style name
+        epd_promoter_bed_url:     'https://epd.expasy.org/ftp/epdnew/human/006/Hs_EPDnew_006_hg38.bed',
+        old_new_chain_url:        'https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHs1.over.chain.gz',
+    ]
+    def preset = params.mouse ? mouse_preset : (params.human_t2t2 ? t2t_preset : [:])
 
-// Validate all required genome values are set
-def missing = ref.findAll { k, v -> v == null }.keySet().toList()
-if (missing) {
-    error """\
-        Missing required genome parameters: ${missing.join(', ')}
-        Use --mouse or --human_t2t2 for preset assemblies, or provide these params directly for a custom assembly.
-        """.stripIndent()
+    def ref = [
+        genome:                   params.genome                   ?: preset.genome,
+        ucsc_cpg_islands_gtf:     params.ucsc_cpg_islands_gtf     ?: preset.ucsc_cpg_islands_gtf,
+        cpg_chr_lookup:           params.cpg_chr_lookup           ?: preset.cpg_chr_lookup,
+        refseq_gff_url:           params.refseq_gff_url           ?: preset.refseq_gff_url,
+        ncbi_assembly_report_url: params.ncbi_assembly_report_url ?: preset.ncbi_assembly_report_url,
+        refseq_chr_lookup:        params.refseq_chr_lookup        ?: preset.refseq_chr_lookup,
+        epd_promoter_bed_url:     params.epd_promoter_bed_url     ?: preset.epd_promoter_bed_url,
+        old_new_chain_url:        params.old_new_chain_url        ?: preset.old_new_chain_url,
+    ]
+
+    // Validate all required genome values are set
+    def missing = ref.findAll { _k, v -> v == null }.keySet().toList()
+    if (missing) {
+        error """\
+            Missing required genome parameters: ${missing.join(', ')}
+            Use --mouse or --human_t2t2 for preset assemblies, or provide these params directly for a custom assembly.
+            """.stripIndent()
+    }
+    return ref
 }
+
+params.ref = resolveGenomeRefs()
 
 
 process fetch_chain_file {
@@ -129,7 +134,7 @@ process clean_epd_gtf {
       CrossMap gff ${chain_file} epd_promoters_oldref.gtf epd_promoters_newref.gtf
 
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[\$1]=\$2; next} {\$1=dict[\$1]; print}' \
-      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${ref.cpg_chr_lookup}}' | tr -d '\\r')  \
+      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${params.ref.cpg_chr_lookup}}' | tr -d '\\r')  \
       <(zcat -f epd_promoters_newref.gtf | grep -v '^#') > epd_promoters.gtf
     """
 }
@@ -147,7 +152,7 @@ process epd_promoter_counts{
 
     script:
     """
-    featureCounts --primary ${feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
+    featureCounts --primary ${params.feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
         -a ${gtf} \
         --tmpDir ${params.tmp_dir} \
         -T ${task.cpus} \
@@ -168,7 +173,7 @@ process clean_cpg_islands_gtf {
     script:
     """
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[\$1]=\$2; next} {\$1=dict[\$1]; print}' \
-      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${ref.cpg_chr_lookup}}' | tr -d '\\r')  \
+      <(grep -v '^#' ${assembly_report} | awk -v OFS='\\t' -v FS='\\t' '{print ${params.ref.cpg_chr_lookup}}' | tr -d '\\r')  \
       <(zcat -f ${ucsc_cpg_gtf} | grep -v '^#') \
       |  awk -v FS='\t' -v OFS='\t' '{print \$1,\$1":"\$4"-"\$5,\$3,\$4,\$5,\$6,\$7,\$8,\$9}' \
       > cpg_islands.uniqname.gtf
@@ -189,7 +194,7 @@ process cpg_island_counts{
 
     script:
     """
-    featureCounts --primary ${feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
+    featureCounts --primary ${params.feature_count_dup_option} -Q 10 -M -f -o -O --fraction -p -P -B -C \
         -a ${gtf} \
         --tmpDir ${params.tmp_dir} \
         -T ${task.cpus} \
@@ -229,7 +234,7 @@ process refseq_feature_gffs {
     """
     awk -v OFS='\\t' -v FS='\\t' 'NR==FNR {dict[\$1]=\$2; next} {\$1=dict[\$1]; print}' \
      <(grep -v '^#' ${assembly_report} \
-       | awk -v OFS='\\t' -v FS='\\t' '{print ${ref.refseq_chr_lookup}}' \
+       | awk -v OFS='\\t' -v FS='\\t' '{print ${params.ref.refseq_chr_lookup}}' \
        | tr -d '\\r')  \
      <(zcat -f ${gff} | grep -v '^#') \
     | grep "GeneID:" \
@@ -250,7 +255,7 @@ process refseq_feature_gffs {
     # need to switch to bed for intersection later
     tail -n +2 flat_name_converted.saf \
      | awk -v OFS='\\t' -v FS='\\t' '{print \$2,\$3-1,\$4,\$1,"-",\$5}' \
-     | bedtools sort -faidx ${ref.genome}.fai -i /dev/stdin > ${feature}_flat.bed
+     | bedtools sort -faidx ${params.ref.genome}.fai -i /dev/stdin > ${feature}_flat.bed
 
     # filters by feature type
     awk -v type=${feature} -v OFS='\\t' -v FS='\\t' '(\$3==type) { print}' name_converted.gff > ${feature}.gff
@@ -292,7 +297,7 @@ process feature_methylation {
 }
 
 process combine_feature_methylation {
-    publishDir "${params.output_dir}/features/${sample_id}/${context}", mode: 'copy'
+    publishDir { "${params.output_dir}/features/${sample_id}/${context}" }, mode: 'copy'
 
     input:
         tuple val(sample_id), val(context), path(methylation_files)
@@ -326,7 +331,7 @@ process refseq_feature_counts {
 
     script:
     """
-    featureCounts --primary ${feature_count_dup_option} -Q 10 -M -f -O --fraction -p -P -B -C \
+    featureCounts --primary ${params.feature_count_dup_option} -Q 10 -M -f -O --fraction -p -P -B -C \
     -a ${feature_saf} -F SAF\
     -t ${feature} \
     -g 'ID' \
@@ -386,23 +391,23 @@ process combine_counts {
 workflow {
 
     // Define channels
-    methylkits = Channel.fromPath(params.mk_files)
+    methylkits = channel.fromPath(params.mk_files)
         .map{ it -> tuple(it.baseName.split(".methylKit")[0], it.baseName.split(".methylKit")[0].split("_")[-1], it)}
-        .filter{ params.context.tokenize(',').contains(it[1]) }
+        .filter{ _sample_id, context, _methylkit -> params.context.tokenize(',').contains(context) }
 
-    bams = Channel.fromFilePairs(params.bam_files_glob, checkIfExists: true)
+    bams = channel.fromFilePairs(params.bam_files_glob, checkIfExists: true)
 
     // Run processes
-    chain_file        = fetch_chain_file(Channel.value(ref.old_new_chain_url))
-    ncbi_assembly_report = fetch_refseq_assembly_report(Channel.value(ref.ncbi_assembly_report_url))
-    epd_promoters_gtf = clean_epd_gtf(Channel.value(ref.epd_promoter_bed_url), ncbi_assembly_report, chain_file)
+    chain_file        = fetch_chain_file(channel.value(params.ref.old_new_chain_url))
+    ncbi_assembly_report = fetch_refseq_assembly_report(channel.value(params.ref.ncbi_assembly_report_url))
+    epd_promoters_gtf = clean_epd_gtf(channel.value(params.ref.epd_promoter_bed_url), ncbi_assembly_report, chain_file)
     epd_counts        = epd_promoter_counts(epd_promoters_gtf, bams.map{ it -> it[1] }.collect())
-    cpg_islands_gtf   = clean_cpg_islands_gtf(Channel.fromPath(ref.ucsc_cpg_islands_gtf, checkIfExists: true).first(), ncbi_assembly_report)
+    cpg_islands_gtf   = clean_cpg_islands_gtf(channel.fromPath(params.ref.ucsc_cpg_islands_gtf, checkIfExists: true).first(), ncbi_assembly_report)
     cpg_counts        = cpg_island_counts(cpg_islands_gtf, bams.map{ it -> it[1] }.collect())
-    refseq_gff        = refseq_feature_download(Channel.value(ref.refseq_gff_url))
+    refseq_gff        = refseq_feature_download(channel.value(params.ref.refseq_gff_url))
 
     // Define feature types
-    refseq_feature_types = Channel.of('exon', 'CDS', 'gene', 'mRNA', 'mRNAexon', 'mRNAexon1')
+    refseq_feature_types = channel.of('exon', 'CDS', 'gene', 'mRNA', 'mRNAexon', 'mRNAexon1')
 
     // Process RefSeq features
     refseq_outputs = refseq_feature_gffs(refseq_gff, ncbi_assembly_report, refseq_feature_types)
@@ -416,7 +421,7 @@ workflow {
         .combine(methylkits)
 
     feature_methylation_out = feature_methylation(feature_methylation_ch)
-    combined_methylation_out = combine_feature_methylation(feature_methylation_out.groupTuple(by: [0,1]))
+    combine_feature_methylation(feature_methylation_out.groupTuple(by: [0,1]))
 
     // Feature counts
     all_bam_files = bams.map{ it -> it[1] }.flatten().collect()

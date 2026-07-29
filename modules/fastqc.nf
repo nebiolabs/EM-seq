@@ -12,7 +12,7 @@ process fastqc {
         tuple val(library), path('*_fastqc.html'), emit: html
         tuple val("${task.process}"), val('fastqc'), eval('fastqc --version | cut -f 2 -d " "'), topic: versions
 
-    shell:
+    script:
     """
     fastqc -f bam ${bam}
     """

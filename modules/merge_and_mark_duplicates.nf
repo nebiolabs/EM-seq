@@ -6,7 +6,7 @@ process mergeAndMarkDuplicates {
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22"
     memory {
     try {
-        def totalFileSize = bams.collect { it.size() }.sum() / (1024 * 1024 * 1024)
+        def totalFileSize = bams.collect { bam_file -> bam_file.size() }.sum() / (1024 * 1024 * 1024)
         def calculatedMemory = totalFileSize < 2 ? '32.GB' : totalFileSize < 8 ? '64.GB' : '128.GB'
         return params.max_memory ?: calculatedMemory
     }
