@@ -1,8 +1,8 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-input_glob = params.input_glob ?: ['*.{1,2}.fastq.gz']
-read_format = params.read_format ?: 'paired-end'
+params.input_glob = params.input_glob ?: ['*.{1,2}.fastq.gz']
+params.read_format = params.read_format ?: 'paired-end'
 params.outdir = './ubam'
 
 // Shared shell function to extract and validate barcode from FASTQ header
