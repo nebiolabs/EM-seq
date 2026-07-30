@@ -24,9 +24,9 @@ jobs:
           post-cleanup: 'all'
 
       - name: Setup Nextflow latest-edge
-        uses: nf-core/setup-nextflow@v1
+        uses: nf-core/setup-nextflow@v2
         with:
-          version: 24.04.4
+          version: latest
 
       - name: Install nf-test
         uses: nf-core/setup-nf-test@v1
