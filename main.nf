@@ -1,3 +1,5 @@
+nextflow.preview.topic = true
+
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
 include { fastp }                                             from './modules/fastp'
