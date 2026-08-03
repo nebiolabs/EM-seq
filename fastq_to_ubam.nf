@@ -1,13 +1,14 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-input_glob = params.input_glob ?: ['*.{1,2}.fastq.gz']
-read_format = params.read_format ?: 'paired-end'
+params.input_glob = params.input_glob ?: ['*.{1,2}.fastq.gz']
+params.read_format = params.read_format ?: 'paired-end'
 params.outdir = './ubam'
 
 // Shared shell function to extract and validate barcode from FASTQ header
 // Samples first 10k reads and returns the most frequent valid barcode
-def extractBarcodeFunction = '''
+String extractBarcodeFunction() {
+return  '''
 extract_barcode() {
     local fastq_file="$1"
 
@@ -23,7 +24,7 @@ extract_barcode() {
     echo "${barcode:-unknown}"
 }
 '''
-
+}
 process FastqToBamPaired {
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
     publishDir "${params.outdir}", mode: 'copy'
@@ -38,7 +39,7 @@ process FastqToBamPaired {
     script:
     """
     set +o pipefail
-    ${extractBarcodeFunction}
+    ${extractBarcodeFunction()}
     barcode=\$(extract_barcode "${read1}")
     set -o pipefail
 
@@ -63,7 +64,7 @@ process FastqToBamSingle {
     script:
     """
     set +o pipefail
-    ${extractBarcodeFunction}
+    ${extractBarcodeFunction()}
     barcode=\$(extract_barcode "${read1}")
     set -o pipefail
 
@@ -76,12 +77,12 @@ process FastqToBamSingle {
 
 workflow {
 
-    if (read_format == 'paired-end') {
-        fastq_files = Channel.fromFilePairs(input_glob, flat: true)
+    if (params.read_format == 'paired-end') {
+        fastq_files = Channel.fromFilePairs(params.input_glob, flat: true)
         FastqToBamPaired(fastq_files)
     }
-    else if (read_format == 'single-end') {
-        fastq_files = Channel.fromPath(input_glob).map{it-> [it.baseName.split('.fastq')[0], it]}
+    else if (params.read_format == 'single-end') {
+        fastq_files = Channel.fromPath(params.input_glob).map{it-> [it.baseName.split('.fastq')[0], it]}
         FastqToBamSingle(fastq_files)
     }
     else {
