@@ -31,7 +31,6 @@ process aggregate_results {
 
     input:         
 	tuple val(library), val(ngs_agg_opts), path(ngs_agg_paths)
-    val(workflow_name)
 
     output:
         path("*arguments.txt")
@@ -49,7 +48,6 @@ process aggregate_results {
     RAILS_ENV=production \
     ${params.path_to_ngs_agg}/bin/bundle exec \
     ${params.path_to_ngs_agg}/aggregate_results.rb \\
-        --workflow "${workflow_name}" \\
         --commit_hash \$GIT_HASH \\
         --contact_email "${params.email}" \\
         ${opt_val} \\
@@ -59,6 +57,5 @@ process aggregate_results {
     def opt_val = [ngs_agg_opts, ngs_agg_paths].transpose().collect{ opt, fp -> "${opt} ${fp}" }.join(' ')
     """
     echo "${opt_val}" | sed 's/--/\\n--/g' > ${library}.arguments.txt
-    echo "--workflow ${workflow_name}" >> ${library}.arguments.txt
     """
 }
