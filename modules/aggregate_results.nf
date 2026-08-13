@@ -29,8 +29,11 @@ process aggregate_results {
     publishDir "${params.outputDir}/aggregate_results"
     label 'process_single'
 
-    input:         
+    input:
 	tuple val(library), val(ngs_agg_opts), path(ngs_agg_paths)
+    val(workflow_name)
+    val(workflow_version)
+    val(workflow_name_modifier)
 
     output:
         path("*arguments.txt")
@@ -38,6 +41,9 @@ process aggregate_results {
     script:
     def opt_val = [ngs_agg_opts, ngs_agg_paths].transpose().collect{ opt, fp -> "${opt} ${fp}" }.join(' ')
     opt_val = opt_val.replaceFirst(/fastqc.zip/, "fastqc/fastqc_data.txt")
+
+    def workflow_name_modifier_arg = workflow_name_modifier ? "--workflow_name_modifier \"${workflow_name_modifier}\"" : ''
+
     """
     echo "${opt_val}" | sed 's/--/\\n--/g' > ${library}.arguments.txt
     unzip -o *fastqc.zip
@@ -48,10 +54,13 @@ process aggregate_results {
     RAILS_ENV=production \
     ${params.path_to_ngs_agg}/bin/bundle exec \
     ${params.path_to_ngs_agg}/aggregate_results.rb \\
+        --workflow "${workflow_name}" \\
+        --workflow_version "${workflow_version}" \\
+        ${workflow_name_modifier_arg} \\
         --commit_hash \$GIT_HASH \\
         --contact_email "${params.email}" \\
         ${opt_val} \\
-    
+
     """
     stub:
     def opt_val = [ngs_agg_opts, ngs_agg_paths].transpose().collect{ opt, fp -> "${opt} ${fp}" }.join(' ')

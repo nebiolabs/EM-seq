@@ -155,8 +155,6 @@ workflow {
 
         //////// Collect files for internal summaries //////////
         agg_opts = [
-        ['--workflow', "${params.workflow}"],
-        ['--workflow_version', 'unspecified'],
         ['--bam', mergeAndMarkDuplicates.out.md_bams.map{ row -> tuple(row[0], row[1]) }],
         ['--bai', mergeAndMarkDuplicates.out.md_bams.map{ row -> tuple(row[0], row[2]) }],
         ['--metadata_bam_file', bams],
@@ -180,13 +178,9 @@ workflow {
             agg_opts << ['--insert', insert_size_metrics.out.for_agg]
         }
 
-        if (params.workflow_name_modifier) {
-            agg_opts << ['--workflow_name_modifier', params.workflow_name_modifier]
-        }
-
         if (params.enable_neb_agg) {
             agg_tuple = format_ngs_agg_opts(agg_opts)
-            aggregate_results( agg_tuple )
+            aggregate_results( agg_tuple, "${params.workflow}", 'unspecified', params.workflow_name_modifier ?: '' )
         }
 
         ////////// MultiQC analysis ///////////
