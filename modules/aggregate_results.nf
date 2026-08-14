@@ -66,5 +66,6 @@ process aggregate_results {
     def opt_val = [ngs_agg_opts, ngs_agg_paths].transpose().collect{ opt, fp -> "${opt} ${fp}" }.join(' ')
     """
     echo "${opt_val}" | sed 's/--/\\n--/g' > ${library}.arguments.txt
+    echo "--workflow ${workflow_name}" >> ${library}.arguments.txt
     """
 }
