@@ -169,8 +169,8 @@ workflow {
         if (params.enable_neb_agg) {
             agg_tuple = format_ngs_agg_opts(agg_opts)
             workflow_name_modifier = params.workflow_name_modifier ? "-${params.workflow_name_modifier}" : ""
-            aggregate_results( agg_tuple, "${params.workflow}${workflow_name_modifier}" )
-        }
+            aggregate_results( agg_tuple, "${params.workflow}", 'unspecified', params.workflow_name_modifier ?: '' )
+            }
 
         ////////// MultiQC analysis ///////////
         multiqc_tuple = format_ngs_agg_opts(multiqc_opts)
