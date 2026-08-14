@@ -52,7 +52,7 @@ process aggregate_results {
     ${params.path_to_ngs_agg}/bin/bundle exec \
     ${params.path_to_ngs_agg}/aggregate_results.rb \\
         --workflow "${workflow_name}" \\
-        --version "${workflow_version}" \\
+        --workflow_version "${workflow_version}" \\
         --workflow_name_modifier "${workflow_name_modifier}" \\
         --commit_hash \$GIT_HASH \\
         --contact_email "${params.email}" \\
