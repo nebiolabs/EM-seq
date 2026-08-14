@@ -1,3 +1,4 @@
+nextflow.preview.topic = true
 include { registerEmailNotifications }                        from './lib/notifications.nf'
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
