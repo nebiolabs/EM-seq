@@ -1,3 +1,4 @@
+include { registerEmailNotifications }                        from './lib/notifications.nf'
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
 include { fastp }                                             from './modules/fastp'
@@ -32,6 +33,9 @@ def checkFileSize (path) {
 
 workflow {
     main:
+
+        // Registered before any other validation so ALL errors are caught
+        registerEmailNotifications()
 
         if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
           exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
@@ -176,8 +180,7 @@ workflow {
 
         if (params.enable_neb_agg) {
             agg_tuple = format_ngs_agg_opts(agg_opts)
-            workflow_name_modifier = params.workflow_name_modifier ? "-${params.workflow_name_modifier}" : ""
-            aggregate_results( agg_tuple, "${params.workflow}${workflow_name_modifier}" )
+            aggregate_results( agg_tuple, "${params.workflow}", 'unspecified', params.workflow_name_modifier ?: '' )
         }
 
         ////////// MultiQC analysis ///////////
