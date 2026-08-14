@@ -32,6 +32,8 @@ process aggregate_results {
     input:         
 	tuple val(library), val(ngs_agg_opts), path(ngs_agg_paths)
     val(workflow_name)
+    val(workflow_version)
+    val(workflow_name_modifier)
 
     output:
         path("*arguments.txt")
@@ -50,6 +52,8 @@ process aggregate_results {
     ${params.path_to_ngs_agg}/bin/bundle exec \
     ${params.path_to_ngs_agg}/aggregate_results.rb \\
         --workflow "${workflow_name}" \\
+        --version "${workflow_version}" \\
+        --workflow_name_modifier "${workflow_name_modifier}" \\
         --commit_hash \$GIT_HASH \\
         --contact_email "${params.email}" \\
         ${opt_val} \\
