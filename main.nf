@@ -42,6 +42,11 @@ workflow {
           exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
         }
 
+        if (!params.adapter_set || !params.adapters.containsKey(params.adapter_set)) {
+            exit 1, "Must specify valid adapter_set. Currently the available adapter sets are ${params.adapters.keySet().join(", ")}"
+        }
+        adapter_fasta = params.adapters[params.adapter_set].fasta
+
          bams = channel.fromPath(params.ubam_dir + '/*.bam', checkIfExists: true)
                .map{it -> tuple(it.baseName, it)}
 
@@ -93,7 +98,7 @@ workflow {
             }
         }
 
-        fastp( passed_bams.combine(bam_chunks, by:0) )
+        fastp( passed_bams.combine(bam_chunks, by:0), adapter_fasta )
         mergeFastpJson( fastp.out.fastp_json.groupTuple() )
 
         fastq_chunks = fastp.out.trimmed_fastq.map { library, chunk_name, fq_files ->

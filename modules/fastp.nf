@@ -6,6 +6,7 @@ process fastp {
 
     input:
         tuple val(library), path(bam), val(start_offset), val(end_offset)
+        each path(adapter_fasta)
 
     output:
         tuple val(library), val("${library}_${start_offset}_${end_offset}"), path("${library}_${start_offset}_${end_offset}*.trimmed.fastq.gz"), emit: trimmed_fastq
@@ -29,6 +30,7 @@ process fastp {
     fastp --stdin \\
                     -l 2 -Q \${trim_polyg} \\
                     --thread 1 \\
+                    --adapter_fasta ${adapter_fasta} \\
                     --overrepresentation_analysis \\
                     -j "${chunk}.fastp.json" \\
                     ${fastp_args}

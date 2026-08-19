@@ -13,6 +13,7 @@ nextflow_pipeline {
             params.flowcell = "test_pipeline"
             params.bamslice_chunk_size = 250000
             params.enable_neb_agg = true
+            params.adapter_set = "test"
 
         }
 
@@ -80,6 +81,7 @@ nextflow_pipeline {
             params.bamslice_chunk_size = 250000
             params.enable_neb_agg = true
             params.single_end = true
+            params.adapter_set = "test"
 
         }
 
