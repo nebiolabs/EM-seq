@@ -87,7 +87,7 @@ nextflow run main.nf \
 | `--flowcell` | Flowcell identifier | Optional |
 | `--outputDir` | Output directory | `em-seq_output` |
 | `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
-| `--adapter_set` | adapter set found in conf/adapter_sequences.config (`Illumina`, `Element`, `MGI`, `synthetic_inserts`, `Nextera-mosaic`) | Required |
+| `--adapter_set` | adapter set found in conf/adapter_sequences.config (`Illumina`, `Element`, `MGI`,  `Nextera-mosaic`) | Required |
 
 ### References Config
 
