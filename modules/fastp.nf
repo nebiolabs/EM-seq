@@ -6,7 +6,7 @@ process fastp {
 
     input:
         tuple val(library), path(bam), val(start_offset), val(end_offset)
-        each path(adapter_fasta)
+        path(adapter_fasta)
 
     output:
         tuple val(library), val("${library}_${start_offset}_${end_offset}"), path("${library}_${start_offset}_${end_offset}*.trimmed.fastq.gz"), emit: trimmed_fastq
