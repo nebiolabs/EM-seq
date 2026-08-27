@@ -15,15 +15,11 @@ process gc_bias {
         tuple val("${task.process}"), val('picard'), eval('picard CollectGcBiasMetrics --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 
     script:
+    def prefix = group ? "${library}.${group}" : "${library}"
+    // The group rides in ACCUMULATION_LEVEL because GcBias.parse in ngs-aggregate_results already
+    // reads that column and maps picard's own labels to 'all'. Anchoring on 'All Reads' leaves the
+    // ACCUMULATION_LEVEL header line alone; \t is GNU sed, which is what the conda env provides.
+    def relabel_group = group ? "sed -i 's/^All Reads\\t/${group}\\t/' ${prefix}.gc_metrics" : ''
     """
-    samtools view -H ${bam} | grep "^@SQ" \
-    | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" \
-    | awk -F":|\\t" '{print \$3"\\t"0"\\t"\$5}' > include_regions.bed
-
-    samtools view -h -L include_regions.bed ${bam} | \
-    picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \
-        --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
-        -I /dev/stdin -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \
-        --CHART /dev/null -R ${genome_fa}
     """
 }
