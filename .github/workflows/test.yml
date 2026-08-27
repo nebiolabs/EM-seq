@@ -25,10 +25,12 @@ jobs:
           micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
           post-cleanup: 'all'
 
-      - name: Setup Nextflow latest-edge
+      # Pinned, not 'latest': main.nf needs `nextflow.preview.topic`, which 25.x removed once
+      # topic channels became stable. 24.10.5 is what the cluster runs, so CI matches production.
+      - name: Setup Nextflow
         uses: nf-core/setup-nextflow@v2
         with:
-          version: latest
+          version: "24.10.5"
 
       - name: Install nf-test
         uses: nf-core/setup-nf-test@v1
