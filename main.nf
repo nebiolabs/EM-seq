@@ -17,7 +17,8 @@ include { group_bed_intersections }                           from './modules/gr
 include { concatenate_files as concat_intersections;
           concatenate_files as concat_positional_summaries;
           concatenate_files as concat_region_summaries;}      from './modules/concatenate_files'
-include { gc_bias }                                           from './modules/gc_bias'
+include { gc_bias_curves }                                    from './subworkflows/gc_bias_curves.nf'
+include { hasContigGroups }                                   from './lib/contig_groups.nf'
 include { idx_stats }                                         from './modules/idx_stats'
 include { flagstats }                                        from './modules/flagstats'
 include { fastqc }                                            from './modules/fastqc'
@@ -150,7 +151,7 @@ workflow {
         }
         
         ///////// Collect statistics ///////
-        gc_bias(  md_bams, genome_fa, genome_fai )
+        gc_bias_curves( md_bams )
         idx_stats(  md_bams )
         flagstats( md_bams )
         fastqc( md_bams )
@@ -166,7 +167,7 @@ workflow {
         ['--metadata_bam_file', bams],
         ['--fastp', mergeFastpJson.out.merged_json],
         ['--aln', picard_metrics.out.for_agg ],
-        ['--gc', gc_bias.out.for_agg ],
+        ['--gc', gc_bias_curves.out.for_agg ],
         ['--dup', mergeAndMarkDuplicates.out.log],
         ['--idx_stats', idx_stats.out.for_agg],
         ['--flagstat', flagstats.out.for_agg],
@@ -182,6 +183,14 @@ workflow {
             insert_size_metrics( md_bams )
             multiqc_opts << ['--insert', insert_size_metrics.out.high_mapq]
             agg_opts << ['--insert', insert_size_metrics.out.for_agg]
+        }
+
+        if (hasContigGroups(reference_list)) {
+            // A static property of the reference, not a process output, so it is attached to every
+            // library; ngs-agg upserts on (genome_id, contig_name), making the repeat a no-op.
+            agg_opts << ['--genome_contigs', md_bams.map { library, _bam, _bai ->
+                tuple(library, file("${reference_list.gc_groups_dir}/contig_groups.tsv"))
+            }]
         }
 
         if (params.enable_neb_agg) {
