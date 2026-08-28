@@ -32,6 +32,8 @@ jobs:
         with:
           version: "24.10.5"
 
+      # Pinned: nf-test serialises the workflow.trace map in a version-dependent key order, so
+      # every tests/*.snap must be generated with the same version this installs.
       - name: Install nf-test
         uses: nf-core/setup-nf-test@v1
         with:
