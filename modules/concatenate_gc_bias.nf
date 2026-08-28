@@ -14,9 +14,11 @@ process concatenate_gc_bias {
 
     script:
     """
-    head -n 1 ${files[0]} > ${library}.gc_metrics.combined.tsv
+    head -n 1 "${files[0]}" > "${library}.gc_metrics.combined.tsv"
     for file in ${files}; do
-        tail -n +2 \$file >> ${library}.gc_metrics.combined.tsv
+        if [ -s "\$file" ]; then
+            tail -n +2 "\$file" >> "${library}.gc_metrics.combined.tsv"
+        fi
     done
     """
 }

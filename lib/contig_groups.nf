@@ -14,12 +14,28 @@ def readContigGroups(genome, reference_list) {
         error "Genome '${genome}' sets gc_groups_dir='${dir}' but ${tsv} is missing."
     }
 
+    // Columns are read positionally, so a reordering in reference_builder.nf must fail loudly
+    // here rather than silently grouping by the wrong field.
+    def lines = tsv.readLines()
+    def required = ['contig_name', 'sequence_length', 'frac_gc', 'contig_group']
+    def header = lines ? lines[0].split('\t', -1)*.trim() : []
+    if (header.size() < required.size() || header[0..<required.size()] != required) {
+        error "${tsv}: first four columns must be ${required.join(', ')}; got ${header}"
+    }
+
     // [:] is a LinkedHashMap, so group order follows first appearance in the TSV.
     def grouped = [:]
-    tsv.readLines().drop(1).findAll { it?.trim() }.each { line ->
+    lines.drop(1).eachWithIndex { line, idx ->
+        if (!line?.trim()) {
+            return
+        }
         // -1 keeps trailing empty fields: an ungrouped contig's row ends in an empty
         // contig_group, and the default split would drop it and make the row look truncated.
         def fields = line.split('\t', -1)
+        if (fields.size() < required.size()) {
+            error "${tsv} line ${idx + 2}: expected at least ${required.size()} tab-separated " +
+                  "fields, got ${fields.size()}: ${fields}"
+        }
         def group = fields[3]?.trim()
         if (!group) {
             return  // ungrouped contigs get no curve of their own
@@ -40,6 +56,12 @@ def readContigGroups(genome, reference_list) {
             bed        : file("${dir}/${name}.bed"),
             contig_list: file("${dir}/${name}.contigs.txt"),
         ]
+    }
+
+    // Every contig ungrouped would leave groupTuple(size: 0) waiting forever, which surfaces as
+    // a run that "succeeds" having aggregated nothing.
+    if (groups.isEmpty()) {
+        error "Genome '${genome}' sets gc_groups_dir='${dir}' but ${tsv} assigns no contig to a group."
     }
 
     validateContigGroupArtifacts(genome, dir, groups)

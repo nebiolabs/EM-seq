@@ -21,7 +21,8 @@ process gc_bias {
     def prefix = group ? "${library}.${group}" : "${library}"
     // The group rides in ACCUMULATION_LEVEL because GcBias.parse in ngs-aggregate_results already
     // reads that column and maps picard's own labels to 'all'. Anchoring on 'All Reads' leaves the
-    // ACCUMULATION_LEVEL header line alone; \t is GNU sed, which is what the conda env provides.
+    // ACCUMULATION_LEVEL header line alone. The group needs no escaping: reference_builder.nf
+    // constrains contig_group to [A-Za-z0-9_.-]+, so it cannot contain sed metacharacters.
     def relabel_group = group ? "sed -i 's/^All Reads\\t/${group}\\t/' ${prefix}.gc_metrics" : ''
     """
     picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \\
