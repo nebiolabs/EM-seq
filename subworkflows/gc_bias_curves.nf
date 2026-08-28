@@ -57,4 +57,9 @@ workflow gc_bias_curves {
 
     emit:
         for_agg = gc_curves
+        // MultiQC gets the whole-reference file only. Its picard/gcbias module is configured
+        // with use_filename_as_sample_name, so every metrics block in the merged file resolves
+        // to one sample name and the last silently wins -- the report would plot a single
+        // arbitrary organism's curve labelled as the library.
+        for_multiqc = gc_bias.out.for_agg
 }

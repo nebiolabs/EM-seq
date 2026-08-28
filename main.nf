@@ -178,7 +178,8 @@ workflow {
         ['--fgbio_switchbacks', find_switchback_reads.out.for_agg ]
         ]
         
-        multiqc_opts = agg_opts.clone()
+        // Same options as the aggregate except --gc; see gc_bias_curves' for_multiqc.
+        multiqc_opts = agg_opts.collect { it[0] == '--gc' ? ['--gc', gc_bias_curves.out.for_multiqc] : it }
         if (!params.single_end) {
             insert_size_metrics( md_bams )
             multiqc_opts << ['--insert', insert_size_metrics.out.high_mapq]
