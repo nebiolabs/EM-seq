@@ -46,7 +46,7 @@ def resolveGenomeRefs() {
         old_new_chain_url:        'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz',
     ]
     def t2t_preset = [
-        genome:                   "${params.local_ref_files_path}/T2T_chm13v2.0+bs_controls.fa",
+        genome:                   "${params.local_ref_files_path}/T2T_chm13v2.0+meth_controls.fa",
         ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/t2t2_ucsc_cpg_islands.gtf.gz",
         cpg_chr_lookup:           '$10,$10',  // T2T: col10 used for both source and dest
         refseq_gff_url:           'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz',
