@@ -131,11 +131,11 @@ built separately and are not part of this repository.
 Pre-built reference genomes with methylation spike-in controls, plus matching UCSC CpG island
 annotations. These are the same references NEB uses internally:
 
-| Species | Assembly | Genome FASTA | CpG islands |
+| Species | Assembly | Genome FASTA | CpG islands gtf |
 |---|---|---|---|
-| Human | T2T CHM13v2.0 | [T2T_chm13v2.0+meth_controls.fa.gz](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/T2T_chm13v2.0%2Bmeth_controls.fa.gz) | [human_t2t_cpg_islands.gtf](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_t2t_cpg_islands.gtf) |
-| Human | GRCh38 | [grch38_core+meth_controls.fa.gz](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grch38_core%2Bmeth_controls.fa.gz) | [human_grch38_cpg_islands.gtf](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_grch38_cpg_islands.gtf) |
-| Mouse | GRCm39 | [grcm39+meth_controls.fa.gz](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39%2Bmeth_controls.fa.gz) | [grcm39_cpg_islands.gtf](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39_cpg_islands.gtf) |
+| Human | T2T CHM13v2.0 | [T2T_chm13v2.0+meth_controls](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/T2T_chm13v2.0%2Bmeth_controls.fa.gz) | [t2t_cpg_islands](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_t2t_cpg_islands.gtf) |
+| Human | GRCh38 | [grch38_core+meth_controls](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grch38_core%2Bmeth_controls.fa.gz) | [grch38_cpg_islands](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_grch38_cpg_islands.gtf) |
+| Mouse | GRCm39 | [grcm39+meth_controls](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39%2Bmeth_controls.fa.gz) | [grcm39_cpg_islands](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39_cpg_islands.gtf) |
 
 Download and unzip the FASTA, then add its paths to `conf/references.config` (see
 [References Config](#references-config)). The pipeline reads the reference from disk and never
