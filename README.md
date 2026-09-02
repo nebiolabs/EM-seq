@@ -104,9 +104,10 @@ Modify the conf/references.config file to specify your genome files
 
 
 ## Reference Genomes
-Pre-built reference genomes with methylation spike-in controls:
-- **T2T CHM13**: https://neb-em-seq-sra.s3.amazonaws.com/T2T_chm13v2.0%2Bbs_controls.fa
-- **GRCh38**: https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bbs_controls.fa
+Pre-built reference genomes with methylation spike-in controls + CpG Island Annotation files:
+- **T2T CHM13**: [T2T_chm13v2.0+  meth_controls](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/T2T_chm13v2.0%2Bmeth_controls.fa.gz) [CpG Islands](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_t2t_cpg_islands.gtf)
+- **GRCh38**: [GRCh39 + meth controls](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grch38_core%2Bmeth_controls.fa.gz) [CpG Islands](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_grch38_cpg_islands.gtf)
+- **GRCm39**: [GRCm39 + meth_controls](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39%2Bmeth_controls.fa.gz) [CpG Islands](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39_cpg_islands.gtf)
 - Create your own reference by appending the [control sequences](assets/methylation_controls.fa) to your preferred genome fasta (e.g. `cat genome.fa methylation_controls.fa > genome+methylation_controls.fa`)
    | Sequence | Methylation State                                | Purpose |
    |----------|--------------------------------------------------|---------|
