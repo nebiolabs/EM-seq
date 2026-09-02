@@ -88,6 +88,7 @@ nextflow run main.nf \
 | `--outputDir` | Output directory | `em-seq_output` |
 | `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
 | `--adapter_set` | adapter set found in conf/adapter_sequences.config (`Illumina`, `Element`, `MGI`,  `Nextera-mosaic`) | Required |
+| `--multiqc_gc_group` | contig group whose GC bias curve MultiQC plots (see [GC bias curves](#gc-bias-curves)) | largest group |
 
 ### References Config
 
@@ -96,6 +97,28 @@ Modify the conf/references.config file to specify your genome files
 - `genome_fai` path to your genome fasta fai file 
 - `bwameth_index` path to your genome fasta file where bwameth indices exist 
 - `target_bed` BED file for targeted analysis, Optional 
+- `gc_groups_dir` directory of per-organism GC bias references, Optional (see below)
+
+### GC bias curves
+
+Picard measures GC bias by comparing where reads start against the GC of every window in the
+reference it is given, so a composite reference reports one curve blended across every organism in
+it. Setting `gc_groups_dir` for a genome adds a separate curve per organism alongside the
+whole-reference one. The directory holds a `contig_groups.tsv` assigning each contig to a group,
+plus a `<group>.fa`/`.fa.fai`/`.dict`/`.bed`/`.contigs.txt` per group; it is validated against
+`genome_fai` at startup.
+
+MultiQC plots a single curve per library. By default that is the curve of the group with the most
+windows -- the host organism for the `+meth_controls` references -- because the whole-reference curve
+counts the spike-in controls, and pUC19 (51% GC), lambda (50%) and Xp12 (68%) pull it noticeably
+away from a host-only curve. Use `--multiqc_gc_group <name>` to plot a different group.
+
+Without `gc_groups_dir` you get the whole-reference curve alone, controls included; the run warns
+that it is not directly comparable to a host-only curve.
+
+Group definitions for the two references above ship in
+[`assets/contig_groups/`](assets/contig_groups/); the per-group FASTA subsets they refer to are
+built separately and are not part of this repository.
 
 ### Advanced Options
 - `--tmp_dir` - Temporary directory (default: `/tmp`)
@@ -104,15 +127,47 @@ Modify the conf/references.config file to specify your genome files
 
 
 ## Reference Genomes
-Pre-built reference genomes with methylation spike-in controls:
-- **T2T CHM13**: https://neb-em-seq-sra.s3.amazonaws.com/T2T_chm13v2.0%2Bbs_controls.fa
-- **GRCh38**: https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bbs_controls.fa
+
+Pre-built reference genomes with methylation spike-in controls. These are the same references NEB
+uses internally, gzipped for download:
+
+| Species | Assembly | Download |
+|---|---|---|
+| Human | T2T CHM13v2.0 | [T2T_chm13v2.0+meth_controls.fa.gz](https://neb-em-seq-sra.s3.amazonaws.com/T2T_chm13v2.0%2Bmeth_controls.fa.gz) |
+| Human | GRCh38 | [grch38_core+meth_controls.fa.gz](https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bmeth_controls.fa.gz) |
+| Mouse | GRCm39 | [grcm39+meth_controls.fa.gz](https://neb-em-seq-sra.s3.amazonaws.com/grcm39%2Bmeth_controls.fa.gz) |
+
+Download and unzip the FASTA, then add its paths to `conf/references.config` (see
+[References Config](#references-config)). The pipeline reads the reference from disk and never
+fetches it, so it also needs a `.fai` and a bwameth index alongside; `main.nf` checks for both at
+startup and prints the command to build whichever is missing.
+
+Per-organism GC bias curves for these references are configured by the group definitions in
+[`assets/contig_groups/`](assets/contig_groups/) — see [GC bias curves](#gc-bias-curves).
+
+> If you already have one of these references from before September 2026, re-download it. The
+> `phage_lambda`, `phage_T4` and `phage_Xp12` control sequences were corrected to match RefSeq, so
+> an older copy gives control metrics that are not comparable. You must rebuild the bwameth index
+> and the `.fai` after replacing the FASTA.
+
 - Create your own reference by appending the [control sequences](assets/methylation_controls.fa) to your preferred genome fasta (e.g. `cat genome.fa methylation_controls.fa > genome+methylation_controls.fa`)
    | Sequence | Methylation State                                | Purpose |
    |----------|--------------------------------------------------|---------|
    | lambda   | All Cs are unmodified (included in kits)         | confirmation that APOBEC enzyme is working optimially (unprotected C->T)  |
    | pUC19c   | All CpG sites contain 5mC (included EM-seq kits) | confirmation that TET2 + T4-BGT step is protecting 5mC (5mC -> 5ghmC/5caC |
    | T4       | All Cs are 5hmC (included in the 5-hmC Seq kits) | confirmation that T4-BGT is protecting 5hmC optimally (5hmC -> 5ghmC)     |
+
+### CpG island annotations
+
+UCSC CpG island tracks for use with `feature_cov_meth.nf`'s `--ucsc_cpg_islands_gtf`:
+- **T2T CHM13v2.0**: https://neb-em-seq-sra.s3.amazonaws.com/human_t2t_cpg_islands.gtf
+- **GRCh38**: https://neb-em-seq-sra.s3.amazonaws.com/human_grch38_cpg_islands.gtf
+- **GRCm39**: https://neb-em-seq-sra.s3.amazonaws.com/grcm39_cpg_islands.gtf
+
+Pass the downloaded file with `--ucsc_cpg_islands_gtf`, or save the downloads under
+`--local_ref_files_path` (default `~/nebnext_projects/em-seq/em-seq_ref_files`) keeping their
+names, and the `--mouse` and `--human_t2t2` shortcuts will find them. GRCh38 has no shortcut, so
+it always needs these parameters passed explicitly.
 
 ## Requirements
 - [Nextflow](https://www.nextflow.io/)
