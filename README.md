@@ -116,7 +116,7 @@ away from a host-only curve. Use `--multiqc_gc_group <name>` to plot a different
 Without `gc_groups_dir` you get the whole-reference curve alone, controls included; the run warns
 that it is not directly comparable to a host-only curve.
 
-Group definitions for the two references above ship in
+Group definitions for the published references ship in
 [`assets/contig_groups/`](assets/contig_groups/); the per-group FASTA subsets they refer to are
 built separately and are not part of this repository.
 
@@ -128,19 +128,25 @@ built separately and are not part of this repository.
 
 ## Reference Genomes
 
-Pre-built reference genomes with methylation spike-in controls. These are the same references NEB
-uses internally, gzipped for download:
+Pre-built reference genomes with methylation spike-in controls, plus matching UCSC CpG island
+annotations. These are the same references NEB uses internally:
 
-| Species | Assembly | Download |
-|---|---|---|
-| Human | T2T CHM13v2.0 | [T2T_chm13v2.0+meth_controls.fa.gz](https://neb-em-seq-sra.s3.amazonaws.com/T2T_chm13v2.0%2Bmeth_controls.fa.gz) |
-| Human | GRCh38 | [grch38_core+meth_controls.fa.gz](https://neb-em-seq-sra.s3.amazonaws.com/grch38_core%2Bmeth_controls.fa.gz) |
-| Mouse | GRCm39 | [grcm39+meth_controls.fa.gz](https://neb-em-seq-sra.s3.amazonaws.com/grcm39%2Bmeth_controls.fa.gz) |
+| Species | Assembly | Genome FASTA | CpG islands |
+|---|---|---|---|
+| Human | T2T CHM13v2.0 | [T2T_chm13v2.0+meth_controls.fa.gz](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/T2T_chm13v2.0%2Bmeth_controls.fa.gz) | [human_t2t_cpg_islands.gtf](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_t2t_cpg_islands.gtf) |
+| Human | GRCh38 | [grch38_core+meth_controls.fa.gz](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grch38_core%2Bmeth_controls.fa.gz) | [human_grch38_cpg_islands.gtf](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/human_grch38_cpg_islands.gtf) |
+| Mouse | GRCm39 | [grcm39+meth_controls.fa.gz](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39%2Bmeth_controls.fa.gz) | [grcm39_cpg_islands.gtf](https://neb-em-seq-sra.s3.us-east-1.amazonaws.com/grcm39_cpg_islands.gtf) |
 
 Download and unzip the FASTA, then add its paths to `conf/references.config` (see
 [References Config](#references-config)). The pipeline reads the reference from disk and never
 fetches it, so it also needs a `.fai` and a bwameth index alongside; `main.nf` checks for both at
 startup and prints the command to build whichever is missing.
+
+The CpG island files are only used by `feature_cov_meth.nf`. Pass one with
+`--ucsc_cpg_islands_gtf`, or save the downloads under `--local_ref_files_path` (default
+`~/nebnext_projects/em-seq/em-seq_ref_files`) keeping their names, and the `--mouse` and
+`--human_t2t2` shortcuts will find them. GRCh38 has no shortcut, so it always needs these
+parameters passed explicitly.
 
 Per-organism GC bias curves for these references are configured by the group definitions in
 [`assets/contig_groups/`](assets/contig_groups/) — see [GC bias curves](#gc-bias-curves).
@@ -156,18 +162,6 @@ Per-organism GC bias curves for these references are configured by the group def
    | lambda   | All Cs are unmodified (included in kits)         | confirmation that APOBEC enzyme is working optimially (unprotected C->T)  |
    | pUC19c   | All CpG sites contain 5mC (included EM-seq kits) | confirmation that TET2 + T4-BGT step is protecting 5mC (5mC -> 5ghmC/5caC |
    | T4       | All Cs are 5hmC (included in the 5-hmC Seq kits) | confirmation that T4-BGT is protecting 5hmC optimally (5hmC -> 5ghmC)     |
-
-### CpG island annotations
-
-UCSC CpG island tracks for use with `feature_cov_meth.nf`'s `--ucsc_cpg_islands_gtf`:
-- **T2T CHM13v2.0**: https://neb-em-seq-sra.s3.amazonaws.com/human_t2t_cpg_islands.gtf
-- **GRCh38**: https://neb-em-seq-sra.s3.amazonaws.com/human_grch38_cpg_islands.gtf
-- **GRCm39**: https://neb-em-seq-sra.s3.amazonaws.com/grcm39_cpg_islands.gtf
-
-Pass the downloaded file with `--ucsc_cpg_islands_gtf`, or save the downloads under
-`--local_ref_files_path` (default `~/nebnext_projects/em-seq/em-seq_ref_files`) keeping their
-names, and the `--mouse` and `--human_t2t2` shortcuts will find them. GRCh38 has no shortcut, so
-it always needs these parameters passed explicitly.
 
 ## Requirements
 - [Nextflow](https://www.nextflow.io/)
