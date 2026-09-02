@@ -2,9 +2,9 @@
     "EM-seq workflow uBam - single-end": {
         "content": [
             {
-                "tasksCount": 53,
+                "tasksCount": 52,
                 "tasksFailed": 0,
-                "tasksSucceeded": 53
+                "tasksSucceeded": 52
             },
             [
                 "bwameth_file_1",
@@ -531,9 +531,9 @@
     "EM-seq workflow uBam": {
         "content": [
             {
-                "tasksCount": 55,
+                "tasksCount": 54,
                 "tasksFailed": 0,
-                "tasksSucceeded": 55
+                "tasksSucceeded": 54
             },
             [
                 "bwameth_file_1",
