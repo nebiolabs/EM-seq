@@ -157,8 +157,6 @@ nf-test test --updateSnapshot
 ```
 
 ## Upgrade
-This pipeline uses topic channels, which became a stable Nextflow feature in v25.04.
-On older versions (including v24.x), topic channels are only available as a preview
-feature behind `nextflow.preview.topic = true`. `main.nf` checks the running Nextflow
-version at startup and sets that flag automatically when needed — no manual edits
-required, on any version.
+As of July, 2026, Nextflow v24 or older is not supported anymore. 
+If using Nextlfow version 24 is your only option, 
+please add `nextflow.preview.topic = true` as the top line in *main.nf* 
