@@ -37,7 +37,7 @@ def resolveGenomeRefs() {
     // avoids Nextflow lint warnings about params being defined multiple times.
     def mouse_preset = [
         genome:                   "${params.local_ref_files_path}/grcm39+meth_controls.fa",
-        ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/grcm39_cpg_islands.gtf.gz",
+        ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/grcm39_cpg_islands.gtf",
         cpg_chr_lookup:           '$10,$5',  // assembly report col10 (chrN) -> col5 (GenBank accession)
         refseq_gff_url:           'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gff.gz',
         ncbi_assembly_report_url: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Mus_musculus/annotation_releases/109/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_assembly_report.txt',
@@ -46,8 +46,8 @@ def resolveGenomeRefs() {
         old_new_chain_url:        'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/liftOver/mm10ToMm39.over.chain.gz',
     ]
     def t2t_preset = [
-        genome:                   "${params.local_ref_files_path}/T2T_chm13v2.0+bs_controls.fa",
-        ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/t2t2_ucsc_cpg_islands.gtf.gz",
+        genome:                   "${params.local_ref_files_path}/T2T_chm13v2.0+meth_controls.fa",
+        ucsc_cpg_islands_gtf:     "${params.local_ref_files_path}/human_t2t_cpg_islands.gtf",
         cpg_chr_lookup:           '$10,$10',  // T2T: col10 used for both source and dest
         refseq_gff_url:           'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.gff.gz',
         ncbi_assembly_report_url: 'https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/annotation_releases/110/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_assembly_report.txt',

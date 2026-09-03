@@ -28,6 +28,7 @@ nextflow_pipeline {
             def idxstats = path("${launchDir}/test_output/stats/idxstats/emseq-test1.idxstat").text.tokenize('\n')
             def flagstats = path("${launchDir}/test_output/stats/flagstats/emseq-test1.flagstat").text.tokenize('\n')
             def gc_bias = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics").text.tokenize('\n')[5..-1]
+            def gc_bias_groups = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics.combined.tsv").text.tokenize('\n').findAll { !it.startsWith('#') && it.trim() }
             def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test1.alignment_summary_metrics.txt").text.tokenize('\n')[5..8]
             def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test1_CpG.methylKit.gz").md5
             def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test1.combined_mbias.tsv").md5
@@ -54,6 +55,7 @@ nextflow_pipeline {
                     ["idxstats", idxstats],
                     ["flagstats", flagstats],
                     ["gc_bias", gc_bias],
+                    ["gc_bias_groups", gc_bias_groups],
                     ["alignment_metrics", alignment_metrics],
                     ["methyldackel_extract", methyldackel_extract],
                     ["mbias", mbias],
@@ -95,6 +97,7 @@ nextflow_pipeline {
             def idxstats = path("${launchDir}/test_output/stats/idxstats/emseq-test1.idxstat").text.tokenize('\n')
             def flagstats = path("${launchDir}/test_output/stats/flagstats/emseq-test1.flagstat").text.tokenize('\n')
             def gc_bias = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics").text.tokenize('\n')[5..-1]
+            def gc_bias_groups = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics.combined.tsv").text.tokenize('\n').findAll { !it.startsWith('#') && it.trim() }
             def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test1.alignment_summary_metrics.txt").text.tokenize('\n')[5..8]
             def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test1_CpG.methylKit.gz").md5
             def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test1.combined_mbias.tsv").md5
@@ -120,6 +123,7 @@ nextflow_pipeline {
                     ["idxstats", idxstats],
                     ["flagstats", flagstats],
                     ["gc_bias", gc_bias],
+                    ["gc_bias_groups", gc_bias_groups],
                     ["alignment_metrics", alignment_metrics],
                     ["methyldackel_extract", methyldackel_extract],
                     ["mbias", mbias],

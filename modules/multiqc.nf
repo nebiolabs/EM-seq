@@ -43,6 +43,8 @@ process multiqc {
         samtools_idxstats_always:
             - plasmid_puc19c
             - phage_lambda
+            - phage_T4
+            - phage_Xp12
         FastQC:
             percent_duplicates: False
             total_sequences: False
