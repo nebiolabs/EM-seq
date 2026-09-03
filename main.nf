@@ -1,4 +1,4 @@
-// nextflow.preview.topic = true
+nextflow.preview.topic = true
 
 include { registerEmailNotifications }                        from './lib/notifications.nf'
 include { createVersionsFile }                                from './lib/versions.nf'
