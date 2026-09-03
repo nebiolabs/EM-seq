@@ -2,8 +2,8 @@
     "EM-seq workflow uBam - single-end": {
         "content": [
             {
-                "tasksFailed": 0,
                 "tasksCount": 47,
+                "tasksFailed": 0,
                 "tasksSucceeded": 47
             },
             [
@@ -313,7 +313,7 @@
             ]
         ],
         "meta": {
-            "nf-test": "0.9.0",
+            "nf-test": "0.9.5",
             "nextflow": "24.10.5"
         },
         "timestamp": "2026-08-20T15:14:15.067200906"
@@ -321,8 +321,8 @@
     "EM-seq workflow uBam": {
         "content": [
             {
-                "tasksFailed": 0,
                 "tasksCount": 49,
+                "tasksFailed": 0,
                 "tasksSucceeded": 49
             },
             [
@@ -675,7 +675,7 @@
             ]
         ],
         "meta": {
-            "nf-test": "0.9.0",
+            "nf-test": "0.9.5",
             "nextflow": "24.10.5"
         },
         "timestamp": "2026-08-20T15:13:32.113269349"
