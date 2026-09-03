@@ -207,4 +207,4 @@ nf-test test --updateSnapshot
 ## Upgrade
 As of July, 2026, Nextflow v24 or older is not supported anymore. 
 If using Nextlfow version 24 is your only option, 
-please add `nextflow.preview.topic = true` as the top line in *main.nf* 
+please uncomment `nextflow.preview.topic = true` as the top line in *main.nf* 
