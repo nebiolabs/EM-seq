@@ -2,7 +2,7 @@ process tasmanian {
     label 'medium_cpu'
     tag { library }
     publishDir "${params.outputDir}/stats/tasmanian"
-    conda "bioconda::tasmanian-mismatch=2.0.3"
+    conda "bioconda::tasmanian-mismatch=2.0.5"
 
     errorStrategy { task.attempt <= 1 ? 'retry' : 'terminate' }
     maxRetries 1
@@ -15,7 +15,7 @@ process tasmanian {
 
     output:
         tuple val(library), path("${library}.tasmanian.csv"), emit: for_agg
-        tuple val("${task.process}"), val('tasmanian-mismatch'), val('*should be* 2.0.3'), topic: versions
+        tuple val("${task.process}"), val('tasmanian-mismatch'), val('2.0.5'), topic: versions
 
     script:
     """
