@@ -1,3 +1,4 @@
+// Nextflow v24 or older only: uncomment the line below (see README's Upgrade section)
 // nextflow.preview.topic = true
 
 include { registerEmailNotifications }                        from './lib/notifications.nf'
