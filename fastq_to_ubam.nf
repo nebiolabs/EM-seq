@@ -4,74 +4,60 @@ nextflow.enable.dsl=2
 params.input_glob = params.input_glob ?: ['*.{1,2}.fastq.gz']
 params.read_format = params.read_format ?: 'paired-end'
 params.outdir = './ubam'
+params.sequencing_center = params.sequencing_center ?: 'Unknown'
+params.max_memory = null
 
-// Shared shell function to extract and validate barcode from FASTQ header
-// Samples first 10k reads and returns the most frequent valid barcode
-String extractBarcodeFunction() {
-return  '''
-extract_barcode() {
-    local fastq_file="$1"
-
-    # Extract last colon-field from comment (after space) of first 10k read headers
-    # Filter to valid barcodes (nucleotides with optional +), count occurrences, return most frequent
-    barcode=$(zcat "$fastq_file" \
-        | head -n 40000 \
-        | awk 'NR % 4 == 1 {sub(/.*[[:space:]]/, ""); n=split($0,a,":"); print a[n]}' \
-        | grep -E '^[ACGTN+-]+$' \
-        | sort | uniq -c | sort -rn | head -1 | awk '{print $2}')
-
-    # Fallback to unknown if no valid barcode found
-    echo "${barcode:-unknown}"
-}
-'''
-}
-process FastqToBamPaired {
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
-    publishDir "${params.outdir}", mode: 'copy'
-    memory { params.max_memory ?: 300.GB }
+process DetectBarcode {
+    conda "bioconda::samtools=1.21"
+    cache 'lenient'
 
     input:
-        tuple val(library), path(read1), path(read2)
+        val(library)
+        path(fastq)
 
     output:
-        path('*.bam')
+        tuple val(library), stdout
 
     script:
     """
     set +o pipefail
-    ${extractBarcodeFunction()}
-    barcode=\$(extract_barcode "${read1}")
+    barcode=\$(zcat ${fastq} | sed -n '1~4p' | head -n 10000 | grep -oP '[GCATN+\\-]+\$' | sort | uniq -c | sort -rn | head -n 1 | awk '{print \$2}')
     set -o pipefail
+    echo "\${barcode:-unknown}"
+    """
+}
 
-    picard FastqToSam TMP_DIR=/state/partition1/sge_tmp F1=${read1} F2=${read2} OUTPUT=temp.bam SM=${library} LB=${library} CN="New England Biolabs" PU=Illumina QUIET=true
+process FastqToBamPaired {
+    conda "bioconda::fgbio=2.3.0"
+    publishDir "${params.outdir}", mode: 'copy'
+    memory { params.max_memory ?: 300.GB }
 
-    samtools reheader -c "sed \\"s/RG/RG\\tBC:\$barcode/\\"" temp.bam > ${library}.bam
-    rm temp.bam
+    input:
+        tuple val(library), path(read1), path(read2), val(barcode)
+
+    output:
+        path("${library}.bam")
+
+    script:
+    """
+    fgbio FastqToBam --input ${read1} ${read2} --output ${library}.bam --sample ${library} --library ${library} --barcode ${barcode.trim()} --sequencing-center "${params.sequencing_center}"
     """
 }
 
 process FastqToBamSingle {
-    conda "bioconda::picard=3.3.0 bioconda::samtools=1.21"
+    conda "bioconda::fgbio=2.3.0"
     publishDir "${params.outdir}", mode: 'copy'
     memory { params.max_memory ?: 300.GB }
 
     input:
-        tuple val(library), path(read1)
+        tuple val(library), path(read1), val(barcode)
 
     output:
-        path('*.bam')
+        path("${library}.bam")
 
     script:
     """
-    set +o pipefail
-    ${extractBarcodeFunction()}
-    barcode=\$(extract_barcode "${read1}")
-    set -o pipefail
-
-    picard FastqToSam F1=${read1} OUTPUT=temp.bam SM=${library} LB=${library} CN="New England Biolabs" PU=Illumina QUIET=true
-
-    samtools reheader -c "sed \\"s/RG/RG\\tBC:\$barcode/\\"" temp.bam > ${library}.bam
-    rm temp.bam
+    fgbio FastqToBam --input ${read1} --output ${library}.bam --sample ${library} --library ${library} --barcode ${barcode.trim()} --sequencing-center "${params.sequencing_center}"
     """
 }
 
@@ -79,11 +65,13 @@ workflow {
 
     if (params.read_format == 'paired-end') {
         fastq_files = Channel.fromFilePairs(params.input_glob, flat: true)
-        FastqToBamPaired(fastq_files)
+        barcodes = DetectBarcode(fastq_files.map{it -> it[0]}, fastq_files.map{it -> it[1]})
+        FastqToBamPaired(fastq_files.join(barcodes, by: 0))
     }
     else if (params.read_format == 'single-end') {
         fastq_files = Channel.fromPath(params.input_glob).map{it-> [it.baseName.split('.fastq')[0], it]}
-        FastqToBamSingle(fastq_files)
+        barcodes = DetectBarcode(fastq_files.map{it -> it[0]}, fastq_files.map{it -> it[1]})
+        FastqToBamSingle(fastq_files.join(barcodes, by: 0))
     }
     else {
         error "Unknown read format -- accepted is 'paired-end' or 'single-end'"
