@@ -50,10 +50,10 @@ process aggregate_results {
 
     export GIT_HASH=\$(git -C "${workflow.projectDir}" log -1 --pretty=format:"%H")
 
-    export RBENV_VERSION=\$(cat ${params.path_to_ngs_agg}/.ruby-version)
+    export RBENV_VERSION=\$(cat ${params.paths.path_to_ngs_agg}/.ruby-version)
     RAILS_ENV=production \
-    ${params.path_to_ngs_agg}/bin/bundle exec \
-    ${params.path_to_ngs_agg}/aggregate_results.rb \\
+    ${params.paths.path_to_ngs_agg}/bin/bundle exec \
+    ${params.paths.path_to_ngs_agg}/aggregate_results.rb \\
         --workflow "${workflow_name}" \\
         --workflow_version "${workflow_version}" \\
         ${workflow_name_modifier_arg} \\
