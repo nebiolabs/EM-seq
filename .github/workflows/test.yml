@@ -18,21 +18,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
           micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
           post-cleanup: 'all'
 
       - name: Setup Nextflow (minimum supported version)
-        uses: nf-core/setup-nextflow@v2
+        uses: nf-core/setup-nextflow@v3
         with:
           version: '25.04.0'
 
       - name: Install nf-test
-        uses: nf-core/setup-nf-test@v1
+        uses: nf-core/setup-nf-test@v2
         with:
           version: 0.9.5
 
@@ -49,21 +49,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
           micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
           post-cleanup: 'all'
 
       - name: Setup Nextflow (latest)
-        uses: nf-core/setup-nextflow@v2
+        uses: nf-core/setup-nextflow@v3
         with:
           version: latest
 
       - name: Install nf-test
-        uses: nf-core/setup-nf-test@v1
+        uses: nf-core/setup-nf-test@v2
         with:
           version: 0.9.5
 
