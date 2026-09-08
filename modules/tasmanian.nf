@@ -2,11 +2,7 @@ process tasmanian {
     label 'medium_cpu'
     tag { library }
     publishDir "${params.outputDir}/stats/tasmanian"
-    conda "bioconda::samtools=1.22 bioconda::tasmanian-mismatch=1.0.9"
-
-    errorStrategy { task.attempt <= 1 ? 'retry' : 'terminate' }
-    maxRetries 1
-    memory { task.attempt > 1 ? '16 GB' : '8 GB' }
+    conda "bioconda::tasmanian-mismatch=2.0.5"
 
     input:
         tuple val(library), path(bam), path(bai)
@@ -15,14 +11,11 @@ process tasmanian {
 
     output:
         tuple val(library), path("${library}.tasmanian.csv"), emit: for_agg
-        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
-        tuple val("${task.process}"), val('tasmanian'), val('*should be* 1.0.9'), topic: versions
+        tuple val("${task.process}"), val('tasmanian-mismatch'), eval('tasmanian-mismatch --version | cut -f 2 -d " "'), topic: versions
 
     script:
     """
-    set +e
-    set +o pipefail
-    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_fa} > ${library}.tasmanian.csv
+    tasmanian-mismatch --min-base-quality 20 --min-map-quality 30 \\
+        -F 3840 --threads ${task.cpus} -o ${library}.tasmanian.csv ${bam} ${genome_fa}
     """
-
 }

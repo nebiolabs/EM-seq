@@ -1,12 +1,14 @@
-// nextflow.preview.topic = true
+// Minimum version: topic channels are stable here, preview (and unsupported) before it.
+if (!nextflow.version.matches('>=25.04')) {
+    error "This pipeline requires Nextflow >=25.04. Found: ${nextflow.version}."
+}
 
 include { registerEmailNotifications }                        from './lib/notifications.nf'
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
-include { fastp }                                             from './modules/fastp'
 include { mergeFastpJson }                                    from './modules/merge_fastp_json'
-include { alignReads }                                        from './modules/align_reads'
-include { mergeAndMarkDuplicates }                            from './modules/merge_and_mark_duplicates'
+include { trimAndAlign }                                      from './modules/trim_and_align'
+include { mergeAndPicodup }                                   from './modules/merge_and_picodup'
 include { methylDackel_mbias }                                from './modules/methyldackel_mbias'
 include { methylDackel_extract }                              from './modules/methyldackel_extract'
 include { extract_cytosine_report }                           from './modules/extract_cytosine_report'
@@ -54,6 +56,7 @@ workflow {
          def reference_list = params.genomes[params.genome]
          genome_fa = channel.value(reference_list.genome_fa)
          genome_fai = channel.value(reference_list.genome_fai)
+         genome_dict = channel.value(reference_list.genome_dict)
 
         // Validate reference indices exist before running
         def ref = reference_list.bwa_index
@@ -62,6 +65,9 @@ workflow {
         }
         if (!file("${reference_list.genome_fa}.fai").exists()) {
             exit 1, "Fasta index (.fai) not found for ${reference_list.genome_fa}. Run: samtools faidx ${reference_list.genome_fa}"
+        }
+        if (!reference_list.genome_dict || !file(reference_list.genome_dict).exists()) {
+            exit 1, "Sequence dictionary not found for ${reference_list.genome_fa}. Run: samtools dict ${reference_list.genome_fa} -o <ref>.dict"
         }
 
         passed_bams = bams.filter { _library, bam -> checkFileSize(bam) }
@@ -99,23 +105,18 @@ workflow {
             }
         }
 
-        fastp( passed_bams.combine(bam_chunks, by:0), adapter_fasta )
-        mergeFastpJson( fastp.out.fastp_json.groupTuple() )
+        trimAndAlign(
+            passed_bams.combine(bam_chunks, by:0),
+            adapter_fasta,
+            reference_list.bwa_index,
+            genome_fa,
+            genome_fai,
+            genome_dict
+        )
+        mergeFastpJson( trimAndAlign.out.fastp_json.groupTuple() )
 
-        fastq_chunks = fastp.out.trimmed_fastq.map { library, chunk_name, fq_files ->
-            def fq_list = fq_files instanceof List ? fq_files : [fq_files]
-            if (params.single_end) {
-                tuple(library, chunk_name, fq_list[0])
-            }
-            else {
-                def r1 = fq_list.find { fq -> fq.name.contains('.1.trimmed.fastq') }
-                def r2 = fq_list.find { fq -> fq.name.contains('.2.trimmed.fastq') }
-                tuple(library, chunk_name, [r1, r2])
-            }
-        }
-        alignReads( passed_bams.combine(fastq_chunks, by:0), reference_list.bwa_index )
-        mergeAndMarkDuplicates( alignReads.out.bam_files.groupTuple() )
-        md_bams = mergeAndMarkDuplicates.out.md_bams
+        mergeAndPicodup( trimAndAlign.out.bam_files.groupTuple() )
+        md_bams = mergeAndPicodup.out.md_bams
 
         ///////// Methylation Calling //////////
         methylDackel_extract( md_bams, genome_fa, genome_fai )
@@ -157,18 +158,18 @@ workflow {
         fastqc( md_bams )
         picard_metrics( md_bams, genome_fa, genome_fai )
         tasmanian( md_bams, genome_fa, genome_fai )
-        combine_nonconverted_counts( alignReads.out.nonconverted_counts.groupTuple() )
+        combine_nonconverted_counts( trimAndAlign.out.nonconverted_counts.groupTuple() )
         find_switchback_reads( md_bams, genome_fa )
 
         //////// Collect files for internal summaries //////////
         agg_opts = [
-        ['--bam', mergeAndMarkDuplicates.out.md_bams.map{ row -> tuple(row[0], row[1]) }],
-        ['--bai', mergeAndMarkDuplicates.out.md_bams.map{ row -> tuple(row[0], row[2]) }],
+        ['--bam', mergeAndPicodup.out.md_bams.map{ row -> tuple(row[0], row[1]) }],
+        ['--bai', mergeAndPicodup.out.md_bams.map{ row -> tuple(row[0], row[2]) }],
         ['--metadata_bam_file', bams],
         ['--fastp', mergeFastpJson.out.merged_json],
         ['--aln', picard_metrics.out.for_agg ],
         ['--gc', gc_bias.out.for_agg ],
-        ['--dup', mergeAndMarkDuplicates.out.log],
+        ['--dup', mergeAndPicodup.out.log],
         ['--idx_stats', idx_stats.out.for_agg],
         ['--flagstat', flagstats.out.for_agg],
         ['--fastqc', fastqc.out.for_agg],
