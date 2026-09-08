@@ -56,4 +56,19 @@ process trimAndAlign {
 
     rm -f ${slice_path}
     """
+
+    stub:
+    chunk = "${library}_${start_offset}_${end_offset}"
+    // bamadap/picodup aren't on bioconda yet, so CI can't install real binaries; -stub-run
+    // instead replays real output this exact chunk produced on a genuine (local-machine)
+    // run of the real pipeline against these same fixtures, captured once under
+    // tests/fixtures/stub_outputs/. Regenerate those fixtures if trim_and_align.nf's
+    // logic, its conda pins, or the test fixtures themselves change.
+    def fixture_dir = "${workflow.projectDir}/tests/fixtures/stub_outputs/trim_and_align"
+    """
+    cp ${fixture_dir}/${chunk}.aln.bam .
+    cp ${fixture_dir}/${chunk}.fastp.json .
+    cp ${fixture_dir}/${chunk}.nonconverted_counts.tsv .
+    touch ${library}.log.bwamem
+    """
 }

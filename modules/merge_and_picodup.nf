@@ -39,4 +39,15 @@ process mergeAndPicodup {
 
     samtools index -@ ${task.cpus} ${library}.md.bam ${library}.md.bai
     """
+
+    stub:
+    // See the matching note in trim_and_align.nf: replays a real picodup run's output for
+    // this library, captured once under tests/fixtures/stub_outputs/, since bamadap/picodup
+    // aren't on bioconda yet and CI has no real binary to run.
+    def fixture_dir = "${workflow.projectDir}/tests/fixtures/stub_outputs/merge_and_picodup"
+    """
+    cp ${fixture_dir}/${library}.md.bam .
+    cp ${fixture_dir}/${library}.md.bai .
+    cp ${fixture_dir}/${library}.markdups_log .
+    """
 }
