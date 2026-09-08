@@ -2,32 +2,20 @@
     "EM-seq workflow uBam - single-end": {
         "content": [
             {
-                "tasksCount": 47,
+                "tasksCount": 41,
                 "tasksFailed": 0,
-                "tasksSucceeded": 47
+                "tasksSucceeded": 41
             },
             [
                 "bwameth_file_1",
                 {
-                    "maxReadLength": 76,
-                    "minReadLength": 44,
-                    "meanReadLength": 75,
+                    "maxReadLength": 150,
+                    "minReadLength": 53,
+                    "meanReadLength": 146,
                     "maxQuality": 60,
                     "minQuality": 0,
-                    "meanQuality": 10,
-                    "readCount": 702
-                }
-            ],
-            [
-                "bwameth_file_2",
-                {
-                    "maxReadLength": 76,
-                    "minReadLength": 52,
-                    "meanReadLength": 75,
-                    "maxQuality": 60,
-                    "minQuality": 0,
-                    "meanQuality": 8,
-                    "readCount": 399
+                    "meanQuality": 41,
+                    "readCount": 763
                 }
             ],
             [
@@ -38,35 +26,35 @@
                 "fastp",
                 [
                     "\t\"summary\": {",
-                    "\t\t\"fastp_version\": \"1.3.6\",",
-                    "\t\t\"sequencing\": \"single end (76 cycles)\",",
+                    "\t\t\"fastp_version\": \"0.1.0\",",
+                    "\t\t\"sequencing\": \"single end (150 cycles)\",",
                     "\t\t\"before_filtering\": {",
-                    "\t\t\t\"total_reads\": 9534,",
-                    "\t\t\t\"total_bases\": 724584,",
-                    "\t\t\t\"q20_bases\": 681052,",
-                    "\t\t\t\"q30_bases\": 662196,",
-                    "\t\t\t\"q20_rate\": 0.939921,",
-                    "\t\t\t\"q30_rate\": 0.913898,",
-                    "\t\t\t\"read1_mean_length\": 76,",
-                    "\t\t\t\"gc_content\": 0.218667",
+                    "\t\t\t\"total_reads\": 2500,",
+                    "\t\t\t\"total_bases\": 375000,",
+                    "\t\t\t\"q20_bases\": 368284,",
+                    "\t\t\t\"q30_bases\": 356222,",
+                    "\t\t\t\"q20_rate\": 0.982091,",
+                    "\t\t\t\"q30_rate\": 0.949925,",
+                    "\t\t\t\"read1_mean_length\": 150,",
+                    "\t\t\t\"gc_content\": 0.214909",
                     "\t\t},",
                     "\t\t\"after_filtering\": {",
-                    "\t\t\t\"total_reads\": 9530,",
-                    "\t\t\t\"total_bases\": 721079,",
-                    "\t\t\t\"q20_bases\": 678095,",
-                    "\t\t\t\"q30_bases\": 659406,",
-                    "\t\t\t\"q20_rate\": 0.940389,",
-                    "\t\t\t\"q30_rate\": 0.914471,",
-                    "\t\t\t\"read1_mean_length\": 75,",
-                    "\t\t\t\"gc_content\": 0.216831",
+                    "\t\t\t\"total_reads\": 2500,",
+                    "\t\t\t\"total_bases\": 371387,",
+                    "\t\t\t\"q20_bases\": 364731,",
+                    "\t\t\t\"q30_bases\": 352753,",
+                    "\t\t\t\"q20_rate\": 0.982078,",
+                    "\t\t\t\"q30_rate\": 0.949826,",
+                    "\t\t\t\"read1_mean_length\": 148,",
+                    "\t\t\t\"gc_content\": 0.211981",
                     "\t\t}",
                     "\t},",
                     "\t\"filtering_result\": {",
-                    "\t\t\"passed_filter_reads\": 9530,",
+                    "\t\t\"passed_filter_reads\": 2500,",
                     "\t\t\"low_quality_reads\": 0,",
                     "\t\t\"too_many_N_reads\": 0,",
                     "\t\t\"adapter_dimer_reads\": 0,",
-                    "\t\t\"too_short_reads\": 4,",
+                    "\t\t\"too_short_reads\": 0,",
                     "\t\t\"too_long_reads\": 0",
                     "\t},",
                     "\t\"duplication\": {"
@@ -75,40 +63,40 @@
             [
                 "markdup",
                 {
-                    "maxReadLength": 76,
-                    "minReadLength": 44,
-                    "meanReadLength": 75,
+                    "maxReadLength": 150,
+                    "minReadLength": 53,
+                    "meanReadLength": 146,
                     "maxQuality": 60,
                     "minQuality": 0,
-                    "meanQuality": 9,
-                    "readCount": 1101
+                    "meanQuality": 41,
+                    "readCount": 763
                 }
             ],
             [
                 "markdup_log",
                 [
                     "LIBRARY\tUNPAIRED_READS_EXAMINED\tREAD_PAIRS_EXAMINED\tSECONDARY_OR_SUPPLEMENTARY_RDS\tUNMAPPED_READS\tUNPAIRED_READ_DUPLICATES\tREAD_PAIR_DUPLICATES\tREAD_PAIR_OPTICAL_DUPLICATES\tPERCENT_DUPLICATION\tESTIMATED_LIBRARY_SIZE",
-                    "Oct25_PV_10ngR3_F6\t1100\t0\t1\t0\t81\t0\t0\t0.073636\t"
+                    "emseq-test1.ds.1\t745\t0\t18\t0\t14\t0\t0\t0.018792\t"
                 ]
             ],
             [
                 "idxstats",
                 [
-                    "chr1\t284940\t1101\t0",
+                    "chr1\t284940\t763\t0",
                     "*\t0\t0\t0"
                 ]
             ],
             [
                 "flagstats",
                 [
-                    "1095 + 6 in total (QC-passed reads + QC-failed reads)",
-                    "1094 + 6 primary",
-                    "1 + 0 secondary",
+                    "763 + 0 in total (QC-passed reads + QC-failed reads)",
+                    "745 + 0 primary",
+                    "18 + 0 secondary",
                     "0 + 0 supplementary",
-                    "81 + 0 duplicates",
-                    "81 + 0 primary duplicates",
-                    "1095 + 6 mapped (100.00% : 100.00%)",
-                    "1094 + 6 primary mapped (100.00% : 100.00%)",
+                    "14 + 0 duplicates",
+                    "14 + 0 primary duplicates",
+                    "763 + 0 mapped (100.00% : N/A)",
+                    "745 + 0 primary mapped (100.00% : N/A)",
                     "0 + 0 paired in sequencing",
                     "0 + 0 read1",
                     "0 + 0 read2",
@@ -123,59 +111,59 @@
                 "gc_bias",
                 [
                     "ACCUMULATION_LEVEL\tREADS_USED\tGC\tWINDOWS\tREAD_STARTS\tMEAN_BASE_QUALITY\tNORMALIZED_COVERAGE\tERROR_BAR_WIDTH\tSAMPLE\tLIBRARY\tREAD_GROUP",
-                    "All Reads\tALL\t0\t17252\t122\t6\t1.8295\t0.165635\t\t\t",
-                    "All Reads\tALL\t1\t3503\t37\t6\t2.732585\t0.449234\t\t\t",
-                    "All Reads\tALL\t2\t5640\t47\t6\t2.155911\t0.314472\t\t\t",
-                    "All Reads\tALL\t3\t3475\t40\t6\t2.977949\t0.470855\t\t\t",
-                    "All Reads\tALL\t4\t4275\t45\t5\t2.723256\t0.405959\t\t\t",
-                    "All Reads\tALL\t5\t3480\t18\t5\t1.338152\t0.315405\t\t\t",
-                    "All Reads\tALL\t6\t3400\t23\t5\t1.750093\t0.36492\t\t\t",
-                    "All Reads\tALL\t7\t3235\t19\t6\t1.519468\t0.34859\t\t\t",
-                    "All Reads\tALL\t8\t3640\t7\t6\t0.497518\t0.188044\t\t\t",
-                    "All Reads\tALL\t9\t3412\t11\t6\t0.834057\t0.251478\t\t\t",
-                    "All Reads\tALL\t10\t3608\t12\t6\t0.860452\t0.248391\t\t\t",
-                    "All Reads\tALL\t11\t3699\t12\t5\t0.839284\t0.24228\t\t\t",
-                    "All Reads\tALL\t12\t3840\t7\t6\t0.471606\t0.17825\t\t\t",
-                    "All Reads\tALL\t13\t3874\t8\t7\t0.534248\t0.188885\t\t\t",
-                    "All Reads\tALL\t14\t3693\t15\t6\t1.05081\t0.271318\t\t\t",
-                    "All Reads\tALL\t15\t3986\t22\t7\t1.427899\t0.304429\t\t\t",
-                    "All Reads\tALL\t16\t3911\t17\t7\t1.124536\t0.27274\t\t\t",
-                    "All Reads\tALL\t17\t3778\t16\t7\t1.095646\t0.273911\t\t\t",
-                    "All Reads\tALL\t18\t3793\t25\t7\t1.705176\t0.341035\t\t\t",
-                    "All Reads\tALL\t19\t3698\t30\t7\t2.098778\t0.383183\t\t\t",
-                    "All Reads\tALL\t20\t3735\t28\t7\t1.939454\t0.366522\t\t\t",
-                    "All Reads\tALL\t21\t3759\t34\t5\t2.340015\t0.401309\t\t\t",
-                    "All Reads\tALL\t22\t3461\t35\t6\t2.616246\t0.442226\t\t\t",
-                    "All Reads\tALL\t23\t3475\t41\t7\t3.052398\t0.476705\t\t\t",
-                    "All Reads\tALL\t24\t3393\t62\t7\t4.727374\t0.600377\t\t\t",
-                    "All Reads\tALL\t25\t3365\t52\t7\t3.997886\t0.554407\t\t\t",
-                    "All Reads\tALL\t26\t3200\t43\t6\t3.476407\t0.530147\t\t\t",
-                    "All Reads\tALL\t27\t2988\t38\t8\t3.290146\t0.533732\t\t\t",
-                    "All Reads\tALL\t28\t2852\t35\t6\t3.174904\t0.536657\t\t\t",
-                    "All Reads\tALL\t29\t2805\t29\t8\t2.674713\t0.496682\t\t\t",
-                    "All Reads\tALL\t30\t2833\t10\t5\t0.913199\t0.288779\t\t\t",
-                    "All Reads\tALL\t31\t2731\t23\t7\t2.178805\t0.454312\t\t\t",
-                    "All Reads\tALL\t32\t2760\t25\t8\t2.343382\t0.468676\t\t\t",
-                    "All Reads\tALL\t33\t2776\t16\t6\t1.49112\t0.37278\t\t\t",
-                    "All Reads\tALL\t34\t2475\t15\t5\t1.567935\t0.404839\t\t\t",
-                    "All Reads\tALL\t35\t2672\t14\t6\t1.355513\t0.362276\t\t\t",
-                    "All Reads\tALL\t36\t2796\t7\t8\t0.647699\t0.244807\t\t\t",
-                    "All Reads\tALL\t37\t2850\t9\t11\t0.816977\t0.272326\t\t\t",
-                    "All Reads\tALL\t38\t2826\t11\t7\t1.007007\t0.303624\t\t\t",
-                    "All Reads\tALL\t39\t3054\t4\t10\t0.338847\t0.169423\t\t\t",
-                    "All Reads\tALL\t40\t3449\t6\t8\t0.45006\t0.183736\t\t\t",
-                    "All Reads\tALL\t41\t4012\t9\t5\t0.580355\t0.193452\t\t\t",
-                    "All Reads\tALL\t42\t4971\t7\t5\t0.364306\t0.137695\t\t\t",
-                    "All Reads\tALL\t43\t5630\t5\t6\t0.22976\t0.102752\t\t\t",
-                    "All Reads\tALL\t44\t6409\t2\t11\t0.080733\t0.057087\t\t\t",
-                    "All Reads\tALL\t45\t7297\t2\t8\t0.070908\t0.05014\t\t\t",
-                    "All Reads\tALL\t46\t8146\t2\t10\t0.063518\t0.044914\t\t\t",
-                    "All Reads\tALL\t47\t8876\t1\t8\t0.029147\t0.029147\t\t\t",
+                    "All Reads\tALL\t0\t17252\t5\t8\t0.108195\t0.048386\t\t\t",
+                    "All Reads\tALL\t1\t3503\t2\t10\t0.21314\t0.150713\t\t\t",
+                    "All Reads\tALL\t2\t5640\t2\t9\t0.132381\t0.093608\t\t\t",
+                    "All Reads\tALL\t3\t3475\t0\t0\t0\t0\t\t\t",
+                    "All Reads\tALL\t4\t4275\t2\t12\t0.17465\t0.123496\t\t\t",
+                    "All Reads\tALL\t5\t3480\t2\t0\t0.214549\t0.151709\t\t\t",
+                    "All Reads\tALL\t6\t3400\t1\t0\t0.109798\t0.109798\t\t\t",
+                    "All Reads\tALL\t7\t3235\t3\t11\t0.346196\t0.199876\t\t\t",
+                    "All Reads\tALL\t8\t3640\t7\t30\t0.717913\t0.271345\t\t\t",
+                    "All Reads\tALL\t9\t3412\t6\t17\t0.656473\t0.268004\t\t\t",
+                    "All Reads\tALL\t10\t3608\t4\t28\t0.413874\t0.206937\t\t\t",
+                    "All Reads\tALL\t11\t3699\t15\t33\t1.513847\t0.390873\t\t\t",
+                    "All Reads\tALL\t12\t3840\t20\t20\t1.944347\t0.434769\t\t\t",
+                    "All Reads\tALL\t13\t3874\t25\t17\t2.409103\t0.481821\t\t\t",
+                    "All Reads\tALL\t14\t3693\t23\t16\t2.325003\t0.484797\t\t\t",
+                    "All Reads\tALL\t15\t3986\t38\t19\t3.558945\t0.577337\t\t\t",
+                    "All Reads\tALL\t16\t3911\t25\t14\t2.386311\t0.477262\t\t\t",
+                    "All Reads\tALL\t17\t3778\t18\t14\t1.778629\t0.419227\t\t\t",
+                    "All Reads\tALL\t18\t3793\t36\t16\t3.543191\t0.590532\t\t\t",
+                    "All Reads\tALL\t19\t3698\t38\t16\t3.836115\t0.6223\t\t\t",
+                    "All Reads\tALL\t20\t3735\t37\t14\t3.698163\t0.607974\t\t\t",
+                    "All Reads\tALL\t21\t3759\t40\t14\t3.972488\t0.628105\t\t\t",
+                    "All Reads\tALL\t22\t3461\t31\t14\t3.343759\t0.600557\t\t\t",
+                    "All Reads\tALL\t23\t3475\t31\t13\t3.330288\t0.598137\t\t\t",
+                    "All Reads\tALL\t24\t3393\t27\t13\t2.970673\t0.571706\t\t\t",
+                    "All Reads\tALL\t25\t3365\t44\t12\t4.881379\t0.735896\t\t\t",
+                    "All Reads\tALL\t26\t3200\t27\t12\t3.149841\t0.606187\t\t\t",
+                    "All Reads\tALL\t27\t2988\t33\t13\t4.122952\t0.717714\t\t\t",
+                    "All Reads\tALL\t28\t2852\t37\t12\t4.843141\t0.796207\t\t\t",
+                    "All Reads\tALL\t29\t2805\t38\t13\t5.057381\t0.820415\t\t\t",
+                    "All Reads\tALL\t30\t2833\t21\t12\t2.767245\t0.603862\t\t\t",
+                    "All Reads\tALL\t31\t2731\t19\t10\t2.597208\t0.59584\t\t\t",
+                    "All Reads\tALL\t32\t2760\t18\t11\t2.43466\t0.573855\t\t\t",
+                    "All Reads\tALL\t33\t2776\t23\t13\t3.093024\t0.64494\t\t\t",
+                    "All Reads\tALL\t34\t2475\t12\t14\t1.81001\t0.522505\t\t\t",
+                    "All Reads\tALL\t35\t2672\t8\t13\t1.117708\t0.39517\t\t\t",
+                    "All Reads\tALL\t36\t2796\t6\t12\t0.801104\t0.327049\t\t\t",
+                    "All Reads\tALL\t37\t2850\t13\t11\t1.702838\t0.472282\t\t\t",
+                    "All Reads\tALL\t38\t2826\t5\t12\t0.6605\t0.295385\t\t\t",
+                    "All Reads\tALL\t39\t3054\t4\t13\t0.488952\t0.244476\t\t\t",
+                    "All Reads\tALL\t40\t3449\t0\t0\t0\t0\t\t\t",
+                    "All Reads\tALL\t41\t4012\t6\t13\t0.558297\t0.227924\t\t\t",
+                    "All Reads\tALL\t42\t4971\t5\t12\t0.375492\t0.167925\t\t\t",
+                    "All Reads\tALL\t43\t5630\t1\t13\t0.066308\t0.066308\t\t\t",
+                    "All Reads\tALL\t44\t6409\t0\t0\t0\t0\t\t\t",
+                    "All Reads\tALL\t45\t7297\t1\t12\t0.05116\t0.05116\t\t\t",
+                    "All Reads\tALL\t46\t8146\t1\t8\t0.045828\t0.045828\t\t\t",
+                    "All Reads\tALL\t47\t8876\t2\t8\t0.084118\t0.05948\t\t\t",
                     "All Reads\tALL\t48\t9213\t0\t0\t0\t0\t\t\t",
                     "All Reads\tALL\t49\t9815\t0\t0\t0\t0\t\t\t",
-                    "All Reads\tALL\t50\t10134\t1\t6\t0.025529\t0.025529\t\t\t",
-                    "All Reads\tALL\t51\t9913\t1\t3\t0.026098\t0.026098\t\t\t",
-                    "All Reads\tALL\t52\t9189\t1\t2\t0.028154\t0.028154\t\t\t",
+                    "All Reads\tALL\t50\t10134\t1\t22\t0.036838\t0.036838\t\t\t",
+                    "All Reads\tALL\t51\t9913\t0\t0\t0\t0\t\t\t",
+                    "All Reads\tALL\t52\t9189\t0\t0\t0\t0\t\t\t",
                     "All Reads\tALL\t53\t8455\t0\t0\t0\t0\t\t\t",
                     "All Reads\tALL\t54\t7312\t0\t0\t0\t0\t\t\t",
                     "All Reads\tALL\t55\t5984\t0\t0\t0\t0\t\t\t",
@@ -230,18 +218,18 @@
                 "alignment_metrics",
                 [
                     "CATEGORY\tTOTAL_READS\tPF_READS\tPCT_PF_READS\tPF_NOISE_READS\tPF_READS_ALIGNED\tPCT_PF_READS_ALIGNED\tPF_ALIGNED_BASES\tPF_HQ_ALIGNED_READS\tPF_HQ_ALIGNED_BASES\tPF_HQ_ALIGNED_Q20_BASES\tPF_HQ_MEDIAN_MISMATCHES\tPF_MISMATCH_RATE\tPF_HQ_ERROR_RATE\tPF_INDEL_RATE\tMEAN_READ_LENGTH\tSD_READ_LENGTH\tMEDIAN_READ_LENGTH\tMAD_READ_LENGTH\tMIN_READ_LENGTH\tMAX_READ_LENGTH\tMEAN_ALIGNED_READ_LENGTH\tREADS_ALIGNED_IN_PAIRS\tPCT_READS_ALIGNED_IN_PAIRS\tPF_READS_IMPROPER_PAIRS\tPCT_PF_READS_IMPROPER_PAIRS\tBAD_CYCLES\tSTRAND_BALANCE\tPCT_CHIMERAS\tPCT_ADAPTER\tPCT_SOFTCLIP\tPCT_HARDCLIP\tAVG_POS_3PRIME_SOFTCLIP_LENGTH\tSAMPLE\tLIBRARY\tREAD_GROUP",
-                    "UNPAIRED\t1100\t1094\t0.994545\t0\t1094\t1\t80799\t224\t16598\t15805\t0\t0.205196\t0.161755\t0.004616\t75.754113\t2.037807\t76\t0\t44\t76\t74.196527\t0\t0\t0\t0\t0\t0.674589\t0.004464\t0\t0.020561\t0\t18.139535\t\t\t",
+                    "UNPAIRED\t745\t745\t1\t0\t745\t1\t99162\t537\t76242\t75002\t0\t0.034304\t0.014897\t0.002219\t148.559732\t6.956237\t150\t0\t71\t150\t133.465772\t0\t0\t0\t0\t0\t0.989262\t0.018622\t0\t0.101602\t0\t49.564103\t\t\t",
                     "## HISTOGRAM\tjava.lang.Integer",
                     "READ_LENGTH\tUNPAIRED_TOTAL_LENGTH_COUNT\tUNPAIRED_ALIGNED_LENGTH_COUNT"
                 ]
             ],
             [
                 "methyldackel_extract",
-                "91eac7636f2e617927f190e3e884b8c9"
+                "55ab0743f01e4d66921bacd7dd3ef411"
             ],
             [
                 "mbias",
-                "824e46917dfa852f1f3ed83571008eef"
+                "20c46a85d89d9fa53ed671a1372a7299"
             ],
             [
                 "nonconverted",
@@ -252,15 +240,17 @@
             [
                 "nonconverted_combined",
                 [
-                    "emseq-test1\tchr1\t0"
+                    "emseq-test1.ds.1\tchr1\t0"
                 ]
             ],
             [
                 "positional_summary",
                 [
                     "methylkit_file\tchr\ttarget_length\tposition\tcontext\tmean_methylation\tn_loci\tn_measurements",
-                    "emseq-test1\tchr1\t182\t178\tCG\t0\t1\t1",
-                    "emseq-test1\tchr1\t204\t189\tCG\t0\t1\t1"
+                    "emseq-test1.ds.1\tchr1\t208\t110\tCG\t100\t1\t1",
+                    "emseq-test1.ds.1\tchr1\t204\t189\tCG\t33.3333\t1\t1",
+                    "emseq-test1.ds.1\tchr1\t151\t142\tCG\t100\t1\t1",
+                    "emseq-test1.ds.1\tchr1\t182\t178\tCG\t33.3333\t1\t1"
                 ]
             ],
             [
@@ -270,17 +260,13 @@
             [
                 "region_summary",
                 [
-                    "library\ttarget_locus\ttarget_name\tcontext\tmean_methylation",
-                    "emseq-test2\tchr1:140839-141043\tStemLoop_140889_140992_2mm_22C_0CG\tCG\t0",
-                    "emseq-test2\tchr1:140850-141032\tStemLoop_140900_140981_0mm_29C_1CG\tCG\t0"
+                    "library\ttarget_locus\ttarget_name\tcontext\tmean_methylation"
                 ]
             ],
             [
                 "methylkit_intersections",
                 [
-                    "methylkit_file\tchr\tstart\tend\tcontext\tmethylation\ttarget_locus\ttarget_name",
-                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140840-141043\tStemLoop_140889_140992_2mm_22C_0CG",
-                    "emseq-test2\tchr1\t141027\t141028\tCG\t0\tchr1:140851-141032\tStemLoop_140900_140981_0mm_29C_1CG"
+                    "methylkit_file\tchr\tstart\tend\tcontext\tmethylation\ttarget_locus\ttarget_name"
                 ]
             ],
             [
@@ -294,36 +280,36 @@
             [
                 "ngs_agg",
                 [
-                    "--bam emseq-test1.md.bam ",
-                    "--bai emseq-test1.md.bai ",
-                    "--metadata_bam_file emseq-test1.bam ",
-                    "--fastp emseq-test1.fastp.json ",
-                    "--aln emseq-test1.alignment_summary_metrics.txt ",
-                    "--gc emseq-test1.gc_metrics ",
-                    "--dup emseq-test1.markdups_log ",
-                    "--idx_stats emseq-test1.idxstat ",
-                    "--flagstat emseq-test1.flagstat ",
-                    "--fastqc emseq-test1.md_fastqc.zip ",
-                    "--nonconverted_read_counts emseq-test1.nonconverted_counts.for_agg.tsv ",
-                    "--tasmanian emseq-test1.tasmanian.csv ",
-                    "--combined_mbias_records emseq-test1.combined_mbias.tsv ",
-                    "--fgbio_switchbacks emseq-test1.switchbacks.summary.txt",
+                    "--bam emseq-test1.ds.1.md.bam ",
+                    "--bai emseq-test1.ds.1.md.bai ",
+                    "--metadata_bam_file emseq-test1.ds.1.bam ",
+                    "--fastp emseq-test1.ds.1.fastp.json ",
+                    "--aln emseq-test1.ds.1.alignment_summary_metrics.txt ",
+                    "--gc emseq-test1.ds.1.gc_metrics ",
+                    "--dup emseq-test1.ds.1.markdups_log ",
+                    "--idx_stats emseq-test1.ds.1.idxstat ",
+                    "--flagstat emseq-test1.ds.1.flagstat ",
+                    "--fastqc emseq-test1.ds.1.md_fastqc.zip ",
+                    "--nonconverted_read_counts emseq-test1.ds.1.nonconverted_counts.for_agg.tsv ",
+                    "--tasmanian emseq-test1.ds.1.tasmanian.csv ",
+                    "--combined_mbias_records emseq-test1.ds.1.combined_mbias.tsv ",
+                    "--fgbio_switchbacks emseq-test1.ds.1.switchbacks.summary.txt",
                     "--workflow EM-seq"
                 ]
             ]
         ],
+        "timestamp": "2026-09-06T00:59:18.912472896",
         "meta": {
-            "nf-test": "0.9.5",
-            "nextflow": "24.10.5"
-        },
-        "timestamp": "2026-08-20T15:14:15.067200906"
+            "nf-test": "0.9.4",
+            "nextflow": "25.10.4"
+        }
     },
     "EM-seq workflow uBam": {
         "content": [
             {
-                "tasksCount": 49,
+                "tasksCount": 45,
                 "tasksFailed": 0,
-                "tasksSucceeded": 49
+                "tasksSucceeded": 45
             },
             [
                 "bwameth_file_1",
@@ -357,7 +343,7 @@
                 "fastp",
                 [
                     "\t\"summary\": {",
-                    "\t\t\"fastp_version\": \"1.3.6\",",
+                    "\t\t\"fastp_version\": \"0.1.0\",",
                     "\t\t\"sequencing\": \"paired end (76 cycles + 76 cycles)\",",
                     "\t\t\"before_filtering\": {",
                     "\t\t\t\"total_reads\": 9534,",
@@ -368,18 +354,18 @@
                     "\t\t\t\"q30_rate\": 0.913898,",
                     "\t\t\t\"read1_mean_length\": 76,",
                     "\t\t\t\"read2_mean_length\": 76,",
-                    "\t\t\t\"gc_content\": 0.218667",
+                    "\t\t\t\"gc_content\": 0.218668",
                     "\t\t},",
                     "\t\t\"after_filtering\": {",
                     "\t\t\t\"total_reads\": 9526,",
-                    "\t\t\t\"total_bases\": 719151,",
-                    "\t\t\t\"q20_bases\": 676526,",
-                    "\t\t\t\"q30_bases\": 657902,",
-                    "\t\t\t\"q20_rate\": 0.940729,",
-                    "\t\t\t\"q30_rate\": 0.914832,",
+                    "\t\t\t\"total_bases\": 719317,",
+                    "\t\t\t\"q20_bases\": 676675,",
+                    "\t\t\t\"q30_bases\": 658048,",
+                    "\t\t\t\"q20_rate\": 0.940719,",
+                    "\t\t\t\"q30_rate\": 0.914823,",
                     "\t\t\t\"read1_mean_length\": 75,",
                     "\t\t\t\"read2_mean_length\": 75,",
-                    "\t\t\t\"gc_content\": 0.216787",
+                    "\t\t\t\"gc_content\": 0.216795",
                     "\t\t}",
                     "\t},",
                     "\t\"filtering_result\": {",
@@ -429,20 +415,20 @@
             [
                 "flagstats",
                 [
-                    "1215 + 584 in total (QC-passed reads + QC-failed reads)",
-                    "1214 + 584 primary",
+                    "1799 + 0 in total (QC-passed reads + QC-failed reads)",
+                    "1798 + 0 primary",
                     "1 + 0 secondary",
                     "0 + 0 supplementary",
-                    "22 + 2 duplicates",
-                    "22 + 2 primary duplicates",
-                    "956 + 579 mapped (78.68% : 99.14%)",
-                    "955 + 579 primary mapped (78.67% : 99.14%)",
-                    "1214 + 584 paired in sequencing",
-                    "607 + 292 read1",
-                    "607 + 292 read2",
-                    "674 + 0 properly paired (55.52% : 0.00%)",
-                    "696 + 574 with itself and mate mapped",
-                    "259 + 5 singletons (21.33% : 0.86%)",
+                    "24 + 0 duplicates",
+                    "24 + 0 primary duplicates",
+                    "1535 + 0 mapped (85.33% : N/A)",
+                    "1534 + 0 primary mapped (85.32% : N/A)",
+                    "1798 + 0 paired in sequencing",
+                    "899 + 0 read1",
+                    "899 + 0 read2",
+                    "674 + 0 properly paired (37.49% : N/A)",
+                    "1270 + 0 with itself and mate mapped",
+                    "264 + 0 singletons (14.68% : N/A)",
                     "0 + 0 with mate mapped to a different chr",
                     "0 + 0 with mate mapped to a different chr (mapQ>=5)"
                 ]
@@ -558,9 +544,9 @@
                 "alignment_metrics",
                 [
                     "CATEGORY\tTOTAL_READS\tPF_READS\tPCT_PF_READS\tPF_NOISE_READS\tPF_READS_ALIGNED\tPCT_PF_READS_ALIGNED\tPF_ALIGNED_BASES\tPF_HQ_ALIGNED_READS\tPF_HQ_ALIGNED_BASES\tPF_HQ_ALIGNED_Q20_BASES\tPF_HQ_MEDIAN_MISMATCHES\tPF_MISMATCH_RATE\tPF_HQ_ERROR_RATE\tPF_INDEL_RATE\tMEAN_READ_LENGTH\tSD_READ_LENGTH\tMEDIAN_READ_LENGTH\tMAD_READ_LENGTH\tMIN_READ_LENGTH\tMAX_READ_LENGTH\tMEAN_ALIGNED_READ_LENGTH\tREADS_ALIGNED_IN_PAIRS\tPCT_READS_ALIGNED_IN_PAIRS\tPF_READS_IMPROPER_PAIRS\tPCT_PF_READS_IMPROPER_PAIRS\tBAD_CYCLES\tSTRAND_BALANCE\tPCT_CHIMERAS\tPCT_ADAPTER\tPCT_SOFTCLIP\tPCT_HARDCLIP\tAVG_POS_3PRIME_SOFTCLIP_LENGTH\tSAMPLE\tLIBRARY\tREAD_GROUP",
-                    "FIRST_OF_PAIR\t899\t607\t0.675195\t0\t493\t0.812191\t32309\t302\t19684\t18772\t3\t0.103312\t0.098954\t0.004364\t74.663921\t5.91042\t76\t0\t31\t76\t53.443163\t348\t0.705882\t156\t0.31643\t0\t0.89858\t0.010101\t0\t0.093312\t0\t15.835294\t\t\t",
-                    "SECOND_OF_PAIR\t899\t607\t0.675195\t0\t462\t0.76112\t30277\t299\t19999\t18469\t3\t0.102474\t0.09557\t0.004096\t74.710049\t5.864669\t76\t0\t31\t76\t50.116969\t348\t0.753247\t125\t0.270563\t0\t0.112554\t0.010453\t0\t0.086176\t0\t14.56701\t\t\t",
-                    "PAIR\t1798\t1214\t0.675195\t0\t955\t0.786656\t62586\t601\t39683\t37241\t3\t0.102909\t0.097258\t0.004234\t74.686985\t5.885207\t76\t0\t31\t76\t51.780066\t696\t0.728796\t281\t0.294241\t0\t0.518325\t0.010274\t0\t0.089743\t0\t15.159341\t\t\t"
+                    "FIRST_OF_PAIR\t899\t899\t1\t0\t781\t0.868743\t42522\t344\t22297\t21272\t0\t0.109413\t0.102292\t0.005362\t74.83426\t5.220772\t76\t0\t31\t76\t47.575083\t635\t0.81306\t444\t0.568502\t0\t0.806658\t0.010101\t0\t0.231137\t0\t23.036866\t\t\t",
+                    "SECOND_OF_PAIR\t899\t899\t1\t3\t753\t0.837597\t40929\t343\t22862\t21179\t0\t0.110193\t0.097406\t0.004984\t74.865406\t5.184858\t76\t0\t31\t76\t45.799778\t635\t0.843293\t416\t0.552457\t0\t0.203187\t0.010453\t0\t0.223375\t0\t20.209016\t\t\t",
+                    "PAIR\t1798\t1798\t1\t3\t1534\t0.85317\t83451\t687\t45159\t42451\t0\t0.109795\t0.09983\t0.005177\t74.849833\t5.201422\t76\t0\t31\t76\t46.68743\t1270\t0.827901\t860\t0.560626\t0\t0.51043\t0.010274\t0\t0.227255\t0\t21.54013\t\t\t"
                 ]
             ],
             [
@@ -674,10 +660,10 @@
                 ]
             ]
         ],
+        "timestamp": "2026-09-06T14:50:43.584038567",
         "meta": {
-            "nf-test": "0.9.5",
-            "nextflow": "24.10.5"
-        },
-        "timestamp": "2026-08-20T15:13:32.113269349"
+            "nf-test": "0.9.4",
+            "nextflow": "25.10.4"
+        }
     }
 }

@@ -1,5 +1,5 @@
 process idx_stats {
-    label 'medium_cpu'
+    label 'single_threaded_qc'
     tag { library }
     conda "bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/idxstats"
