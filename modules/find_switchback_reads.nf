@@ -2,7 +2,7 @@ process find_switchback_reads {
     label 'low_cpu'
     tag { library }
     publishDir "${params.outputDir}/stats/switchbacks"
-    conda "bioconda::fgbio"
+    conda "bioconda::fgbio openjdk>=17"
 
     input:
         tuple val(library), path(bam), path(bai)
