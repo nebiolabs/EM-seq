@@ -1,7 +1,7 @@
 process trimAndAlign {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::bamslice=0.2.1 bioconda::fgumi=0.7.0"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::bamslice=0.2.2 bioconda::fgumi=0.7.0"
     publishDir "${params.outputDir}/bwameth_align", mode: 'symlink'
 
     input:
@@ -28,7 +28,10 @@ process trimAndAlign {
     def trim_cpus  = 4
     def align_cpus = Math.max(1, (task.cpus * 7).intdiv(8))
     def zip_cpus   = 2
-    def sort_cpus  = Math.max(1, task.cpus.intdiv(8))
+    // Never spills (sort_mem_gb holds the whole chunk), so its real work only starts at
+    // EOF -- after bamadap/bwameth/zipper have already exited and freed their cpus.
+    def sort_cpus  = task.cpus
+    def sort_mem_gb = Math.max(1, (task.memory.toGiga() * 5).intdiv(8).intdiv(sort_cpus))
     def bwameth_pairing = params.single_end ? '' : '-p'
     def slice_path = "${params.tmp_dir}/${chunk}.slice.bam"
     """
@@ -52,7 +55,7 @@ process trimAndAlign {
     | fgumi zipper --unmapped ${slice_path} --reference ${genome_fa} \\
         --exclude-missing-reads true --threads ${zip_cpus} --compression-level 0 \\
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${sort_cpus} \\
-        -m ${(task.memory.toGiga()*5).intdiv(8)}G -o "${chunk}.aln.bam" /dev/stdin
+        -m ${sort_mem_gb}G -o "${chunk}.aln.bam" /dev/stdin
 
     rm -f ${slice_path}
     """
