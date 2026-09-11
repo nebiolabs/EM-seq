@@ -40,17 +40,17 @@ process multiqc {
             reads_MQ0_percent: True
         Samtools Flagstat:
             mapped_passed: False
-        samtools_idxstats_always:
-            - plasmid_puc19c
-            - phage_lambda
-            - phage_T4
-            - phage_Xp12
         FastQC:
             percent_duplicates: False
             total_sequences: False
             avg_sequence_length: False
             percent_fails: False
             total_sequences: False
+    samtools_idxstats_always:
+        - plasmid_puc19c
+        - phage_lambda
+        - phage_T4
+        - phage_Xp12
     disable_version_detection: true
 CONFIG
 
