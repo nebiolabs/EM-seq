@@ -28,8 +28,9 @@ process gc_bias_by_contig_group {
     cut -f 1 ${picard_reference}.fai > group_contigs.txt
     awk -v OFS='\\t' '{ print \$1, 0, \$2 }' ${picard_reference}.fai > group.bed
 
-    # picard demands the BAM header and the reference dictionary agree on name, length AND order.
-    # Checking here turns a stale contig list into a clear message rather than a picard stack trace.
+    # picard requires the BAM header's contigs to match the reference dictionary's in name and
+    # order, so comparing names catches a stale list here with a clear message rather than a picard
+    # stack trace. Lengths need no check: the subset FASTA is cut from the composite.
     samtools view -H ${bam} \\
       | awk -v contigs=group_contigs.txt '
           BEGIN { while ((getline line < contigs) > 0) { keep[line] = 1 } }
