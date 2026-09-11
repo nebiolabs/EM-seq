@@ -1,8 +1,6 @@
-// GC bias curves for one set of aligned BAMs: always the whole-reference curve, plus one curve per
-// organism when the genome is a composite that ships a gc_groups_dir.
-//
-// Encapsulated as a subworkflow so main.nf sees one call regardless of whether the genome has
-// contig groups, and so the conditional wiring and the per-library merge stay in one place.
+// GC bias curves for one set of aligned BAMs: always the whole-reference curve, plus one per
+// organism when the genome ships a gc_groups_dir. Wrapped as a subworkflow so main.nf sees one
+// call either way.
 
 include { hasContigGroups; readContigGroups; selectMultiqcGroup } from '../lib/contig_groups.nf'
 include { gc_bias }                           from '../modules/gc_bias.nf'
@@ -20,12 +18,9 @@ workflow gc_bias_curves {
             tuple(library, bam, bai, reference_list.genome_fa)
         })
         gc_curves = gc_bias.out.for_agg
-        // Falls through to the whole-reference curve for a genome with no contig groups; see the
-        // warning below for why that is not the curve we would rather show.
+        // Both fall through to the whole-reference curve for a genome with no contig groups.
         multiqc_curve = gc_bias.out.for_agg
 
-        // Each organism needs a matching pair -- its own reads and its own reference -- because
-        // picard normalizes against whatever reference it is handed.
         if (hasContigGroups(reference_list)) {
             contig_groups = readContigGroups(params.genome, reference_list)
 
@@ -37,8 +32,7 @@ workflow gc_bias_curves {
                 }
             )
 
-            // One group's curve, under the filename the whole-reference curve has always had, so
-            // the report stays comparable to historic runs.
+            // One group's curve, under the filename the whole-reference curve has always had.
             multiqc_group = selectMultiqcGroup(contig_groups, params.multiqc_gc_group)
             multiqc_curve = gc_bias_by_contig_group.out.for_multiqc
                 .filter { library, group, curve -> group == multiqc_group }
@@ -71,9 +65,7 @@ workflow gc_bias_curves {
 
     emit:
         for_agg = gc_curves
-        // A single curve, because MultiQC's picard/gcbias module is configured with
-        // use_filename_as_sample_name: every metrics block in a merged file resolves to one sample
-        // name and the last silently wins, so a combined file would plot one arbitrary organism's
-        // curve labelled as the library.
+        // A single curve: MultiQC's picard/gcbias module resolves every block in a merged file to
+        // one sample name and the last silently wins, so a combined file plots an arbitrary group.
         for_multiqc = multiqc_curve
 }

@@ -1,6 +1,5 @@
-// Picard normalizes coverage against the window-GC distribution of the reference it is handed
-//
-// Assignment is by exact contig name, read from the built contig_groups.tsv
+// Picard normalizes coverage against the window-GC distribution of the reference it is handed, so
+// each group gets its own. Contigs are assigned by exact name from the built contig_groups.tsv.
 
 def hasContigGroups(reference_list) {
     return reference_list?.get('gc_groups_dir') as boolean
@@ -23,11 +22,8 @@ def readContigGroups(genome, reference_list) {
         error "${tsv}: first four columns must be ${required.join(', ')}; got ${header}"
     }
 
-    // A generated gc_groups_dir is well-formed by construction, but a custom genome's TSV is
-    // written by hand against a reference this pipeline never built, so the rules below are
-    // enforced here rather than assumed.
-    // These are the contig types the aggregation database accepts; anything else is rejected only
-    // at load time, after the run has already finished.
+    // Validated here rather than assumed: a custom genome's TSV is hand-written, and an illegal
+    // contig_type is otherwise only caught at aggregation load time, after the run has finished.
     def legal_types = ['autosomal', 'sex_chromosome', 'organelle', 'unplaced', 'control', 'unknown']
 
     // [:] is a LinkedHashMap, so group order follows first appearance in the TSV.
@@ -107,10 +103,8 @@ def readContigGroups(genome, reference_list) {
     return groups
 }
 
-// A gc_groups_dir built from this same FASTA already agrees with it, but a TSV written by hand, or
-// carried over from a similar reference, has no such guarantee: picard compares each subset BAM's
-// header against the subset reference's dictionary, so a stale or mistyped contig otherwise
-// surfaces as a dictionary error once per library per group, after alignment has already run.
+// A TSV carried over from a similar reference otherwise surfaces as a picard dictionary error once
+// per library per group, after alignment has already run.
 def validateAgainstReferenceIndex(genome, tsv, reference_list, group_of, length_of) {
     // genome_fai is optional in a genome entry -- main.nf only ever checks for '<genome_fa>.fai',
     // which is what samtools faidx produces -- so fall back to that rather than dying on a null.
@@ -165,10 +159,8 @@ def validateContigGroupArtifacts(genome, dir, groups) {
               "${dir}:\n  ${missing.join('\n  ')}"
     }
 
-    // gc_bias_by_contig_group derives the group's contig list and BED from this subset .fai, while
-    // the TSV is what names the group and sizes it for --multiqc_gc_group. If the two disagree the
-    // directory was built against a different TSV, and the curve would not cover the contigs this
-    // run reports it as covering.
+    // gc_bias_by_contig_group works off the subset .fai; the TSV is what sizes the group for
+    // --multiqc_gc_group. Disagreement means the directory was built against a different TSV.
     def divergent = groups.findAll { group ->
         def fai_contigs = group.fai.readLines().findAll { it?.trim() }.collect { it.split('\t')[0] }
         fai_contigs != group.contigs
@@ -192,15 +184,11 @@ def validateContigGroupArtifacts(genome, dir, groups) {
     log.info "Per-organism GC bias enabled for '${genome}': ${group_summary.join(', ')}"
 }
 
-// MultiQC plots one GC bias curve per library, and its picard/gcbias module collapses a multi-block
-// file to a single series, so it has to be handed exactly one curve. The whole-reference curve is
-// the wrong one to show: it counts the spike-in controls, and pUC19 (51% GC), lambda (50%) and
-// especially Xp12 (68%) pull the visible curve away from the autosome-only curve EM-seq reported
-// before per-organism curves existed -- a ~24% shift in picard's GC_DROPOUT at a 1% spike-in.
+// MultiQC has to be handed exactly one curve, and the whole-reference one is the wrong choice: the
+// spike-in controls (Xp12 is 68% GC) shift picard's GC_DROPOUT ~24% at a 1% spike-in.
 //
-// Defaults to the group with the most picard windows rather than a fixed name like
-// 'human_autosome', because five of the configured genomes are not human; the largest group is the
-// host organism for every '+meth_controls' composite. --multiqc_gc_group names one explicitly.
+// Defaults to the group with the most windows -- the host organism in every '+meth_controls'
+// composite -- rather than a fixed name, since most of the configured genomes are not human.
 def selectMultiqcGroup(groups, requested) {
     if (requested) {
         def match = groups.find { it.name == requested }

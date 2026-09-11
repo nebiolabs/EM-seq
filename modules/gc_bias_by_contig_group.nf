@@ -1,21 +1,13 @@
-// One organism's GC bias curve from a composite alignment, computed without ever writing the
-// subset BAM to disk.
-//
-// CollectGcBiasMetrics is a single-pass reader and needs no index, so samtools can stream the
-// group's reads into it on stdin -- the same idiom gc_bias itself used before per-organism curves
-// existed. Materializing the subset BAM instead costs roughly one extra copy of the aligned BAM
-// per library (the groups partition the reference), plus its index and an indexing pass, for a
-// file nothing downstream reads.
+// One organism's GC bias curve, streamed out of a composite alignment so no subset BAM is written.
 //
 // picard_reference MUST be this group's subset reference, never the composite: CollectGcBiasMetrics
-// takes its window denominator from the whole reference it is handed, so the composite's other
-// organisms would drag this curve toward their own GC.
+// takes its window denominator from the reference it is handed.
 process gc_bias_by_contig_group {
     tag { "${library}:${group}" }
     label 'medium_cpu'
     conda "bioconda::picard=3.3.0 bioconda::samtools=1.22 conda-forge::gawk=5.3.1 conda-forge::sed=4.9"
-    // pattern keeps the multiqc/ copy below out of the published directory, where it would
-    // collide with the whole-reference ${library}.gc_metrics from gc_bias.
+    // pattern keeps the multiqc/ copy out of the published dir, where it would collide with the
+    // whole-reference ${library}.gc_metrics from gc_bias.
     publishDir "${params.outputDir}/stats/gc_bias", pattern: "*.gc_metrics"
 
     input:
@@ -29,20 +21,15 @@ process gc_bias_by_contig_group {
 
     script:
     def prefix = "${library}.${group}"
-    // The picard flags here must stay in step with modules/gc_bias.nf, which runs the same tool for
-    // the whole-reference curve.
+    // Keep the picard flags below in step with modules/gc_bias.nf.
     """
-    # The group's contig list and BED are the subset reference's own .fai, reshaped: the contigs to
-    # keep are exactly the contigs that reference contains, and each one's region is all of it. That
-    # keeps them from ever disagreeing with the FASTA picard normalizes against, and keeps
-    # gc_groups_dir down to the three files picard actually needs (.fa, .fa.fai, .dict).
+    # The contigs to keep and the regions to slice are just the subset reference's .fai, reshaped,
+    # so they cannot disagree with the FASTA picard normalizes against.
     cut -f 1 ${picard_reference}.fai > group_contigs.txt
     awk -v OFS='\\t' '{ print \$1, 0, \$2 }' ${picard_reference}.fai > group.bed
 
-    # picard compares the BAM header's sequence dictionary against the reference's and demands the
-    # same names, lengths AND order. Checking that up front turns a bad contig list into a clear
-    # message instead of a stack trace inside CollectGcBiasMetrics; counting @SQ lines alone would
-    # accept a list that merely disagrees on order, which picard then rejects.
+    # picard demands the BAM header and the reference dictionary agree on name, length AND order.
+    # Checking here turns a stale contig list into a clear message rather than a picard stack trace.
     samtools view -H ${bam} \\
       | awk -v contigs=group_contigs.txt '
           BEGIN { while ((getline line < contigs) > 0) { keep[line] = 1 } }
@@ -59,10 +46,8 @@ process gc_bias_by_contig_group {
         exit 1
     fi
 
-    # -M -L rather than naming regions as arguments: a draft assembly member can have >7000 contigs
-    # and would blow the argv limit. -L keeps the full composite header, so the @SQ filter is
-    # required rather than cosmetic -- picard rejects a header listing every composite contig
-    # against a subset reference.
+    # -M -L rather than region arguments: a draft assembly member can have >7000 contigs and would
+    # blow the argv limit. -L keeps the whole composite header, hence the @SQ filter.
     samtools view -h -M -L group.bed ${bam} \\
       | awk -v contigs=group_contigs.txt '
           BEGIN { while ((getline line < contigs) > 0) { keep[line] = 1 } }
@@ -79,17 +64,12 @@ process gc_bias_by_contig_group {
           -I /dev/stdin -O ${prefix}.gc_metrics -S ${prefix}.gc_summary_metrics \\
           --CHART /dev/null -R ${picard_reference}
 
-    # The group rides in ACCUMULATION_LEVEL because GcBias.parse in ngs-aggregate_results already
-    # reads that column and maps picard's own labels to 'all'. Anchoring on 'All Reads' leaves the
-    # ACCUMULATION_LEVEL header line alone. The group needs no escaping: readContigGroups in
-    # lib/contig_groups.nf constrains contig_group to [A-Za-z0-9_.-]+, so it cannot reach here
-    # containing sed metacharacters.
+    # The group rides in ACCUMULATION_LEVEL, which GcBias.parse in ngs-aggregate_results already
+    # reads. Safe unquoted: readContigGroups constrains contig_group to [A-Za-z0-9_.-]+.
     sed -i 's/^All Reads\\t/${group}\\t/' ${prefix}.gc_metrics
 
-    # MultiQC's picard/gcbias module is configured with use_filename_as_sample_name, so the file
-    # name becomes the series label. Copying to the name the whole-reference curve has always used
-    # keeps the report's sample labels identical to historic runs -- only the curve's content
-    # changes -- so the two are directly comparable.
+    # MultiQC's picard/gcbias module uses the filename as the sample name, so this copy keeps the
+    # report's labels identical to historic runs while the curve's content changes.
     mkdir -p multiqc
     cp ${prefix}.gc_metrics multiqc/${library}.gc_metrics
     """
