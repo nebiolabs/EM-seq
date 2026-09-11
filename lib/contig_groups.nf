@@ -93,8 +93,6 @@ def readContigGroups(genome, reference_list) {
             fasta      : file("${dir}/${name}.fa"),
             fai        : file("${dir}/${name}.fa.fai"),
             dict       : file("${dir}/${name}.dict"),
-            bed        : file("${dir}/${name}.bed"),
-            contig_list: file("${dir}/${name}.contigs.txt"),
         ]
     }
 
@@ -158,13 +156,29 @@ def validateAgainstReferenceIndex(genome, tsv, reference_list, group_of, length_
 // failure mid-run.
 def validateContigGroupArtifacts(genome, dir, groups) {
     def missing = groups.collectMany { group ->
-        ['fasta', 'fai', 'dict', 'bed', 'contig_list']
+        ['fasta', 'fai', 'dict']
             .findAll { !group[it].exists() }
             .collect { group[it].toString() }
     }
     if (missing) {
         error "Genome '${genome}' is missing pre-built per-organism GC bias references in " +
               "${dir}:\n  ${missing.join('\n  ')}"
+    }
+
+    // gc_bias_by_contig_group derives the group's contig list and BED from this subset .fai, while
+    // the TSV is what names the group and sizes it for --multiqc_gc_group. If the two disagree the
+    // directory was built against a different TSV, and the curve would not cover the contigs this
+    // run reports it as covering.
+    def divergent = groups.findAll { group ->
+        def fai_contigs = group.fai.readLines().findAll { it?.trim() }.collect { it.split('\t')[0] }
+        fai_contigs != group.contigs
+    }.collect {
+        "${it.fai.name} does not list the ${it.contigs.size()} contig(s) assigned to " +
+        "'${it.name}', in that order"
+    }
+    if (divergent) {
+        error "Genome '${genome}': per-organism GC bias references in ${dir} disagree with " +
+              "contig_groups.tsv:\n  ${divergent.join('\n  ')}"
     }
 
     groups.findAll { it.windows == 0L }.each {

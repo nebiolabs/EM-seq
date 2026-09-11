@@ -51,18 +51,22 @@ TSV=contig_groups.tsv
 FA=genome.fa            # must already have a .fai alongside it
 
 for grp in $(awk -F'\t' 'NR>1 && $4!=""{print $4}' "$TSV" | sort -u); do
-    # contig list and BED are taken in .fai order, which is the order picard requires
+    # contigs are taken in .fai order, which is the order picard requires
     awk -F'\t' -v g="$grp" 'NR==FNR{if(FNR>1&&$4==g)k[$1];next} $1 in k{print $1}' \
-        "$TSV" "$FA.fai" > "$grp.contigs.txt"
-    awk -F'\t' -v g="$grp" 'NR==FNR{if(FNR>1&&$4==g)k[$1];next} $1 in k{print $1"\t0\t"$2}' \
-        "$TSV" "$FA.fai" > "$grp.bed"
-    samtools faidx "$FA" -r "$grp.contigs.txt" > "$grp.fa"
+        "$TSV" "$FA.fai" > contigs.tmp
+    samtools faidx "$FA" -r contigs.tmp > "$grp.fa"
     samtools faidx "$grp.fa"
     samtools dict  "$grp.fa" > "$grp.dict"
 done
+rm -f contigs.tmp
 ```
 
+Three files per group is all the pipeline needs: the contigs to keep and the BED it slices the
+composite BAM with are both derived from `<group>.fa.fai` at run time, so they cannot fall out of
+step with the FASTA picard normalizes against.
+
 Each group's subset FASTA is a copy of those contigs' sequence, so the directory costs roughly as
-much disk as the reference itself. The pipeline validates the TSV against `genome_fai` and checks
-each group's contig order against its subset reference before running picard, so a mistake here
-fails at startup rather than part-way through a run.
+much disk as the reference itself. The pipeline validates the TSV against `genome_fai`, checks that
+each group's `.fa.fai` lists exactly the contigs the TSV assigns to it, and checks the BAM header
+against the subset reference before running picard, so a mistake here fails at startup or with a
+named error rather than part-way through a run.

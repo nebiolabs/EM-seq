@@ -19,7 +19,7 @@ process gc_bias_by_contig_group {
     publishDir "${params.outputDir}/stats/gc_bias", pattern: "*.gc_metrics"
 
     input:
-        tuple val(library), path(bam), path(bai), val(group), path(group_bed), path(group_contigs), val(picard_reference)
+        tuple val(library), path(bam), path(bai), val(group), val(picard_reference)
 
     output:
         tuple val(library), val(group), path("${library}.${group}.gc_metrics"), emit: for_agg
@@ -32,12 +32,19 @@ process gc_bias_by_contig_group {
     // The picard flags here must stay in step with modules/gc_bias.nf, which runs the same tool for
     // the whole-reference curve.
     """
+    # The group's contig list and BED are the subset reference's own .fai, reshaped: the contigs to
+    # keep are exactly the contigs that reference contains, and each one's region is all of it. That
+    # keeps them from ever disagreeing with the FASTA picard normalizes against, and keeps
+    # gc_groups_dir down to the three files picard actually needs (.fa, .fa.fai, .dict).
+    cut -f 1 ${picard_reference}.fai > group_contigs.txt
+    awk -v OFS='\\t' '{ print \$1, 0, \$2 }' ${picard_reference}.fai > group.bed
+
     # picard compares the BAM header's sequence dictionary against the reference's and demands the
     # same names, lengths AND order. Checking that up front turns a bad contig list into a clear
     # message instead of a stack trace inside CollectGcBiasMetrics; counting @SQ lines alone would
     # accept a list that merely disagrees on order, which picard then rejects.
     samtools view -H ${bam} \\
-      | awk -v contigs=${group_contigs} '
+      | awk -v contigs=group_contigs.txt '
           BEGIN { while ((getline line < contigs) > 0) { keep[line] = 1 } }
           /^@SQ/ {
               name = ""
@@ -45,11 +52,10 @@ process gc_bias_by_contig_group {
               if (name in keep) { print name }
           }
         ' FS='\\t' > bam_group_contigs.txt
-    cut -f 1 ${picard_reference}.fai > reference_contigs.txt
-    if ! cmp -s bam_group_contigs.txt reference_contigs.txt; then
+    if ! cmp -s bam_group_contigs.txt group_contigs.txt; then
         echo "ERROR: ${library} group '${group}': BAM header contigs do not match ${picard_reference}.fai" >&2
         echo "  '<' = subset reference, '>' = BAM header" >&2
-        diff reference_contigs.txt bam_group_contigs.txt >&2 || true
+        diff group_contigs.txt bam_group_contigs.txt >&2 || true
         exit 1
     fi
 
@@ -57,8 +63,8 @@ process gc_bias_by_contig_group {
     # and would blow the argv limit. -L keeps the full composite header, so the @SQ filter is
     # required rather than cosmetic -- picard rejects a header listing every composite contig
     # against a subset reference.
-    samtools view -h -M -L ${group_bed} ${bam} \\
-      | awk -v contigs=${group_contigs} '
+    samtools view -h -M -L group.bed ${bam} \\
+      | awk -v contigs=group_contigs.txt '
           BEGIN { while ((getline line < contigs) > 0) { keep[line] = 1 } }
           /^@SQ/ {
               name = ""

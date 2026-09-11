@@ -105,8 +105,9 @@ Picard measures GC bias by comparing where reads start against the GC of every w
 reference it is given, so a composite reference reports one curve blended across every organism in
 it. Setting `gc_groups_dir` for a genome adds a separate curve per organism alongside the
 whole-reference one. The directory holds a `contig_groups.tsv` assigning each contig to a group,
-plus a `<group>.fa`/`.fa.fai`/`.dict`/`.bed`/`.contigs.txt` per group; it is validated against
-`genome_fai` at startup.
+plus a `<group>.fa`/`.fa.fai`/`.dict` per group; the contigs to keep and the region BED are derived
+from each group's `.fa.fai` at run time. The directory is validated against `genome_fai` and
+against `contig_groups.tsv` at startup.
 
 MultiQC plots a single curve per library. By default that is the curve of the group with the most
 windows -- the host organism for the `+meth_controls` references -- because the whole-reference curve

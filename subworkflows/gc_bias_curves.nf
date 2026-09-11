@@ -32,8 +32,7 @@ workflow gc_bias_curves {
             gc_bias_by_contig_group(
                 md_bams.flatMap { library, bam, bai ->
                     contig_groups.collect { group ->
-                        tuple(library, bam, bai, group.name, group.bed, group.contig_list,
-                              group.fasta.toString())
+                        tuple(library, bam, bai, group.name, group.fasta.toString())
                     }
                 }
             )
