@@ -28,6 +28,7 @@ nextflow_pipeline {
             def idxstats = path("${launchDir}/test_output/stats/idxstats/emseq-test1.idxstat").text.tokenize('\n')
             def flagstats = path("${launchDir}/test_output/stats/flagstats/emseq-test1.flagstat").text.tokenize('\n')
             def gc_bias = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics").text.tokenize('\n')[5..-1]
+            def gc_bias_groups = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics.combined.tsv").text.tokenize('\n').findAll { !it.startsWith('#') && it.trim() }
             def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test1.alignment_summary_metrics.txt").text.tokenize('\n')[5..8]
             def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test1_CpG.methylKit.gz").md5
             def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test1.combined_mbias.tsv").md5
@@ -54,6 +55,7 @@ nextflow_pipeline {
                     ["idxstats", idxstats],
                     ["flagstats", flagstats],
                     ["gc_bias", gc_bias],
+                    ["gc_bias_groups", gc_bias_groups],
                     ["alignment_metrics", alignment_metrics],
                     ["methyldackel_extract", methyldackel_extract],
                     ["mbias", mbias],
@@ -95,6 +97,7 @@ nextflow_pipeline {
             def idxstats = path("${launchDir}/test_output/stats/idxstats/emseq-test1.idxstat").text.tokenize('\n')
             def flagstats = path("${launchDir}/test_output/stats/flagstats/emseq-test1.flagstat").text.tokenize('\n')
             def gc_bias = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics").text.tokenize('\n')[5..-1]
+            def gc_bias_groups = path("${launchDir}/test_output/stats/gc_bias/emseq-test1.gc_metrics.combined.tsv").text.tokenize('\n').findAll { !it.startsWith('#') && it.trim() }
             def alignment_metrics = path("${launchDir}/test_output/stats/picard_alignment_metrics/emseq-test1.alignment_summary_metrics.txt").text.tokenize('\n')[5..8]
             def methyldackel_extract = path("${launchDir}/test_output/methylDackelExtracts/emseq-test1_CpG.methylKit.gz").md5
             def mbias = path("${launchDir}/test_output/methylDackelExtracts/mbias/emseq-test1.combined_mbias.tsv").md5
@@ -120,6 +123,7 @@ nextflow_pipeline {
                     ["idxstats", idxstats],
                     ["flagstats", flagstats],
                     ["gc_bias", gc_bias],
+                    ["gc_bias_groups", gc_bias_groups],
                     ["alignment_metrics", alignment_metrics],
                     ["methyldackel_extract", methyldackel_extract],
                     ["mbias", mbias],
@@ -135,6 +139,38 @@ nextflow_pipeline {
                 ).match()
             }
         )
+        }
+    }
+
+    // gc_groups_dir is optional, and a genome without one takes the other branch of
+    // gc_bias_curves: the whole-reference curve alone, nothing to combine, and no
+    // --genome_contigs for the aggregate. Asserted directly rather than snapshotted, so the
+    // branch's contract is readable and there is no third snapshot to keep regenerated.
+    test("EM-seq workflow uBam - genome without gc_groups_dir") {
+        when {
+            params.ubam_dir = "$projectDir/tests/fixtures/ubam/"
+            params.genome = 'test_no_gc_groups'
+            params.email = 'foo@example.com'
+            params.flowcell = "test_pipeline"
+            params.bamslice_chunk_size = 250000
+            params.enable_neb_agg = true
+            params.adapter_set = "test"
+
+        }
+
+        then {
+            def gc_dir = "${launchDir}/test_output/stats/gc_bias"
+            def agg_args = path("${launchDir}/test_output/aggregate_results/emseq-test1.arguments.txt").text
+            def gc_agg_args = agg_args.readLines().findAll { it.startsWith('--gc ') }*.trim()
+
+            assertAll(
+                { assert workflow.success },
+                { assert new File("${gc_dir}/emseq-test1.gc_metrics").exists() },
+                { assert !new File("${gc_dir}/emseq-test1.gc_metrics.combined.tsv").exists() },
+                { assert gc_agg_args == ['--gc emseq-test1.gc_metrics'] },
+                { assert !agg_args.contains('--genome_contigs') },
+                { assert new File("${launchDir}/test_output/EM-seq-Alignment-Summary-test_pipeline_multiqc_report.html").exists() }
+            )
         }
     }
 }
