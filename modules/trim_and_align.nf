@@ -1,7 +1,7 @@
 process trimAndAlign {
     label 'high_cpu'
     tag { library }
-    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.7 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::bamslice=0.2.2 bioconda::fgumi=0.7.0"
+    conda "conda-forge::python=3.10 bioconda::bwameth=0.2.10 bioconda::mark-nonconverted-reads=1.2 bioconda::samtools=1.22 bioconda::bamslice=0.2.4 bioconda::fgumi=0.7.0"
     publishDir "${params.outputDir}/bwameth_align", mode: 'symlink'
 
     input:
