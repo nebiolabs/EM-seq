@@ -1,4 +1,5 @@
-def notificationHtml(String status) {
+// `wf` is the live WorkflowMetadata object captured by registerEmailNotifications
+def notificationHtml(String status, String pipelineName, wf) {
     def isSuccess = status == 'SUCCESS'
     def bannerBg = isSuccess ? '#dff0d8' : '#f2dede'
     def bannerBorder = isSuccess ? '#d6e9c6' : '#ebccd1'
@@ -6,35 +7,35 @@ def notificationHtml(String status) {
     def bannerMsg = isSuccess ? 'Execution completed successfully!' : 'Execution failed!'
 
     def rows = []
-    rows << ['Pipeline', params.workflow ?: '-']
-    rows << ['Run name', workflow.runName]
-    rows << ['Launch time', workflow.start]
-    if (workflow.complete) {
-        rows << ['Ending time', "${workflow.complete} (duration: ${workflow.duration})"]
+    rows << ['Pipeline', pipelineName ?: '-']
+    rows << ['Run name', wf.runName]
+    rows << ['Launch time', wf.start]
+    if (wf.complete) {
+        rows << ['Ending time', "${wf.complete} (duration: ${wf.duration})"]
     }
     def stats = null
-    try { stats = workflow.stats } catch (Exception e) { }
+    try { stats = wf.stats } catch (Exception e) { }
     if (stats) {
         rows << ['Tasks stats', "Succeeded: ${stats.succeededCount} &nbsp; Cached: ${stats.cachedCount} &nbsp; Ignored: ${stats.ignoredCount} &nbsp; Failed: ${stats.failedCount}"]
     }
-    rows << ['Launch directory', workflow.launchDir]
-    rows << ['Work directory', workflow.workDir]
-    rows << ['Project directory', workflow.projectDir]
-    rows << ['Script name', workflow.scriptName]
-    rows << ['Script ID', workflow.scriptId]
-    rows << ['Workflow session', workflow.sessionId]
-    if (workflow.profile) rows << ['Workflow profile', workflow.profile]
-    rows << ['Nextflow version', "${workflow.nextflow.version}, build ${workflow.nextflow.build}"]
+    rows << ['Launch directory', wf.launchDir]
+    rows << ['Work directory', wf.workDir]
+    rows << ['Project directory', wf.projectDir]
+    rows << ['Script name', wf.scriptName]
+    rows << ['Script ID', wf.scriptId]
+    rows << ['Workflow session', wf.sessionId]
+    if (wf.profile) rows << ['Workflow profile', wf.profile]
+    rows << ['Nextflow version', "${wf.nextflow.version}, build ${wf.nextflow.build}"]
 
     def rowsHtml = rows.collect { pair ->
         "    <tr><td style=\"padding:4px 10px;color:#666;width:180px;vertical-align:top;\">${pair[0]}</td><td style=\"padding:4px 10px;word-break:break-all;\">${pair[1] ?: '-'}</td></tr>"
     }.join('\n')
 
     def errorBlock = ''
-    if (!isSuccess && workflow.errorMessage) {
+    if (!isSuccess && wf.errorMessage) {
         errorBlock = """
   <p><b>Error:</b></p>
-  <pre style="background:#f9f2f2;padding:10px;border-radius:4px;color:#a94442;white-space:pre-wrap;">${workflow.errorMessage}</pre>
+  <pre style="background:#f9f2f2;padding:10px;border-radius:4px;color:#a94442;white-space:pre-wrap;">${wf.errorMessage}</pre>
 """
     }
 
@@ -44,14 +45,14 @@ def notificationHtml(String status) {
 <head><meta charset="utf-8"></head>
 <body style="font-family:Helvetica,Arial,sans-serif;max-width:800px;color:#333;padding:20px;">
   <h1 style="border-bottom:1px solid #ddd;padding-bottom:10px;">Workflow ${isSuccess ? 'completion' : 'failure'} notification</h1>
-  <h2 style="margin-top:0;">Run Name: ${workflow.runName}</h2>
+  <h2 style="margin-top:0;">Run Name: ${wf.runName}</h2>
 
   <div style="background:${bannerBg};border:1px solid ${bannerBorder};color:${bannerColor};padding:10px 15px;border-radius:4px;margin:15px 0;">
     ${bannerMsg}
   </div>
 ${errorBlock}
   <p>The command used to launch the workflow was as follows:</p>
-  <pre style="background:#f4f4f4;padding:10px;border-radius:4px;font-size:13px;white-space:pre-wrap;word-break:break-all;">${workflow.commandLine}</pre>
+  <pre style="background:#f4f4f4;padding:10px;border-radius:4px;font-size:13px;white-space:pre-wrap;word-break:break-all;">${wf.commandLine}</pre>
 
   <h2 style="border-bottom:1px solid #ddd;padding-bottom:10px;margin-top:30px;">Execution summary</h2>
   <table style="border-collapse:collapse;font-size:14px;">
@@ -65,15 +66,20 @@ ${rowsHtml}
 def registerEmailNotifications() {
     if (params.dry_run || workflow.stubRun) return
 
+    // workflow.onError/onComplete run detached from this binding, so bare `params.*`/`workflow.*`
+    // throw NPEs there; capture into locals below so closure capture picks them up instead.
+    def wf = workflow
+    def recipients = [params.email, params.admin_email].findAll { it }.join(',')
+    def pipelineName = params.workflow ?: 'unknown'
+
     def notified = false
 
     workflow.onError {
-        def recipients = [params.email, params.admin_email].findAll { it }.join(',')
         if (!recipients) return
         sendMail(
             to: recipients,
-            subject: "[Pipeline FAILED] ${params.workflow ?: 'unknown'} - ${workflow.runName}",
-            body: notificationHtml('FAILED'),
+            subject: "[Pipeline FAILED] ${pipelineName} - ${wf.runName}",
+            body: notificationHtml('FAILED', pipelineName, wf),
             type: 'text/html'
         )
         notified = true
@@ -81,13 +87,12 @@ def registerEmailNotifications() {
 
     workflow.onComplete {
         if (notified) return
-        def recipients = [params.email, params.admin_email].findAll { it }.join(',')
         if (!recipients) return
-        def status = workflow.success ? 'SUCCESS' : 'FAILED'
+        def status = wf.success ? 'SUCCESS' : 'FAILED'
         sendMail(
             to: recipients,
-            subject: "[Pipeline ${status}] ${params.workflow} - ${workflow.runName}",
-            body: notificationHtml(status),
+            subject: "[Pipeline ${status}] ${pipelineName} - ${wf.runName}",
+            body: notificationHtml(status, pipelineName, wf),
             type: 'text/html'
         )
     }
