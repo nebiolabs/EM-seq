@@ -1,4 +1,7 @@
-
+// The whole-reference GC bias curve for one library.
+//
+// Per-organism curves for a composite genome come from gc_bias_by_contig_group, which streams a
+// contig subset of the same BAM against that organism's own reference.
 process gc_bias {
     label 'single_threaded_qc'
     tag { library }
@@ -6,12 +9,10 @@ process gc_bias {
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
-        tuple val(library), path(bam), path(bai)
-        val(genome_fa)
-        val(genome_fai)
+        tuple val(library), path(bam), path(bai), val(picard_reference)
+
     output:
         tuple val(library), path("${library}.gc_metrics"), emit: for_agg
-        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
         tuple val("${task.process}"), val('picard'), eval('picard CollectGcBiasMetrics --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 
     script:
