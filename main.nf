@@ -169,7 +169,7 @@ workflow {
         ['--metadata_bam_file', bams],
         ['--fastp', mergeFastpJson.out.merged_json],
         ['--aln', picard_metrics.out.for_agg ],
-        ['--gc', gc_bias.out.for_agg ],
+        ['--gc', gc_bias_curves.out.for_agg ],
         ['--dup', mergeAndPicodup.out.log],
         ['--idx_stats', idx_stats.out.for_agg],
         ['--flagstat', flagstats.out.for_agg],

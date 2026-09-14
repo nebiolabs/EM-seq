@@ -32,6 +32,6 @@ process gc_bias {
     picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \
         --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
         -I /dev/stdin -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \
-        --CHART /dev/null -R ${genome_fa}
+        --CHART /dev/null -R ${picard_reference}
     """
 }
