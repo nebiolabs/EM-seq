@@ -206,9 +206,6 @@ nf-test test --updateSnapshot
 ```
 
 ## Upgrade
-Nextflow dropped upstream support for v24 and older in July 2026, but this pipeline still targets
-24.10.x -- that is what CI pins and what the reference runs use -- so *main.nf* ships with
-`nextflow.preview.topic = true` as its top line.
-
-Nextflow 25.x made topic channels stable and removed that directive. To run on 25.x or newer,
-comment out or delete that top line of *main.nf*. 
+This pipeline requires Nextflow >=25.04, where topic channels (used throughout for
+version reporting) are a stable feature rather than a preview one. `main.nf` checks
+this at startup and fails immediately with a clear message on older versions. 

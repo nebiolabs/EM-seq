@@ -11,7 +11,7 @@ process methylDackel_mbias {
         val(genome_fai)
 
     output:
-        path('*.svg'), emit: mbias_output_svg
+        path('*.svg'), optional: true, emit: mbias_output_svg
         path('*.tsv'), emit: mbias_output_tsv
         tuple val(library), path("${library}.combined_mbias.tsv"), emit: for_agg
         tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
@@ -19,6 +19,7 @@ process methylDackel_mbias {
 
     script:
     """
+    shopt -s nullglob
     echo -e "chr\tcontext\tstrand\tRead\tPosition\tnMethylated\tnUnmethylated\tnMethylated(+dups)\tnUnmethylated(+dups)" > ${library}.combined_mbias.tsv
     chrs=(`samtools view -H "${md_bam}" | grep @SQ | cut -f 2 | sed 's/SN://'| grep -v _random | grep -v chrUn | sed 's/|/\\|/'`)
 

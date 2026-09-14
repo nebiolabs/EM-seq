@@ -3,9 +3,9 @@
 // Per-organism curves for a composite genome come from gc_bias_by_contig_group, which streams a
 // contig subset of the same BAM against that organism's own reference.
 process gc_bias {
+    label 'single_threaded_qc'
     tag { library }
-    label 'medium_cpu'
-    conda "bioconda::picard=3.3.0"
+    conda "bioconda::picard-slim=3.5.0 bioconda::samtools=1.22"
     publishDir "${params.outputDir}/stats/gc_bias"
 
     input:
@@ -16,11 +16,22 @@ process gc_bias {
         tuple val("${task.process}"), val('picard'), eval('picard CollectGcBiasMetrics --version 2>&1 | cut -f 2 -d ":"'), topic: versions
 
     script:
-    // The picard flags here must stay in step with modules/gc_bias_by_contig_group.nf.
+    // CollectGcBiasMetrics checks for an Rscript on PATH even with --CHART /dev/null;
+    // picard-slim excludes R, so shim a no-op Rscript rather than add a real R dependency.
     """
-    picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \\
-        --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \\
-        -I ${bam} -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \\
+    mkdir -p fakebin
+    printf '#!/bin/sh\\nexit 0\\n' > fakebin/Rscript
+    chmod +x fakebin/Rscript
+    export PATH="\$PWD/fakebin:\$PATH"
+
+    samtools view -H ${bam} | grep "^@SQ" \
+    | grep -v "plasmid_puc19\\|phage_lambda\\|phage_Xp12\\|phage_T4\\|EBV\\|chrM" \
+    | awk -F":|\\t" '{print \$3"\\t"0"\\t"\$5}' > include_regions.bed
+
+    samtools view -h -L include_regions.bed ${bam} | \
+    picard -Xmx${task.memory.toGiga()}g CollectGcBiasMetrics \
+        --IS_BISULFITE_SEQUENCED true --VALIDATION_STRINGENCY SILENT \
+        -I /dev/stdin -O ${library}.gc_metrics -S ${library}.gc_summary_metrics \
         --CHART /dev/null -R ${picard_reference}
     """
 }
