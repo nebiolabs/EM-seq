@@ -7,6 +7,7 @@ def notificationHtml(String status) {
 
     def rows = []
     rows << ['Pipeline', params.workflow ?: '-']
+    rows << ['Workflow version', params.workflow_version ?: '-']
     rows << ['Run name', workflow.runName]
     rows << ['Launch time', workflow.start]
     if (workflow.complete) {
