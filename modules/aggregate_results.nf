@@ -34,6 +34,7 @@ process aggregate_results {
     val(workflow_name)
     val(workflow_version)
     val(workflow_name_modifier)
+    val(workflow_content_hash)
 
     output:
         path("*arguments.txt")
@@ -43,6 +44,7 @@ process aggregate_results {
     opt_val = opt_val.replaceFirst(/fastqc.zip/, "fastqc/fastqc_data.txt")
 
     def workflow_name_modifier_arg = workflow_name_modifier ? "--workflow_name_modifier \"${workflow_name_modifier}\"" : ''
+    def workflow_content_hash_arg = workflow_content_hash ? "--workflow_content_hash \"${workflow_content_hash}\"" : ''
 
     """
     echo "${opt_val}" | sed 's/--/\\n--/g' > ${library}.arguments.txt
@@ -57,6 +59,7 @@ process aggregate_results {
         --workflow "${workflow_name}" \\
         --workflow_version "${workflow_version}" \\
         ${workflow_name_modifier_arg} \\
+        ${workflow_content_hash_arg} \\
         --commit_hash \$GIT_HASH \\
         --contact_email "${params.email}" \\
         ${opt_val} \\
