@@ -518,7 +518,7 @@
                     "--combined_mbias_records emseq-test1.combined_mbias.tsv ",
                     "--fgbio_switchbacks emseq-test1.switchbacks.summary.txt ",
                     "--genome_contigs contig_groups.tsv",
-                    "--workflow EM-seq"
+                    "--workflow Development EM-seq workflow"
                 ]
             ]
         ],
@@ -1090,7 +1090,7 @@
                     "--fgbio_switchbacks emseq-test1.switchbacks.summary.txt ",
                     "--insert emseq-test1.insertsize_metrics ",
                     "--genome_contigs contig_groups.tsv",
-                    "--workflow EM-seq"
+                    "--workflow Development EM-seq workflow"
                 ]
             ]
         ],
