@@ -1,5 +1,6 @@
 nextflow.preview.topic = true
 
+include { workflowContentHash; writeWorkflowContentManifest }  from './lib/workflow_content_hash.nf'
 include { createVersionsFile }                                from './lib/versions.nf'
 include { format_ngs_agg_opts }                               from './modules/aggregate_results'
 include { fastp }                                             from './modules/fastp'
@@ -44,6 +45,33 @@ def checkFileSize (path) {
 
 workflow {
     main:
+
+        if (!params.workflows.containsKey(params.workflow)) {
+            error "The provided workflow '${params.workflow}' is not available. Available workflows: ${params.workflows.keySet().join(', ')}"
+        }
+        if (!params.workflow_version) {
+            error "No version configured for workflow '${params.workflow}' in conf/workflow_versions.config"
+        }
+        if (!params.workflow_label) {
+            error "No label configured for workflow '${params.workflow}' in conf/workflow_versions.config"
+        }
+
+        def workflow_content_hash = ''
+        if (params.workflow_version != 'unspecified') {
+            def project_dir = file("$workflow.projectDir")
+            def workflow_entry_script = project_dir.resolve(params.workflows[params.workflow].entry_script)
+            workflow_content_hash = workflowContentHash(workflow_entry_script, project_dir)
+
+            if (!workflow.stubRun) {
+                writeWorkflowContentManifest(
+                    params.workflow,
+                    workflow_content_hash,
+                    workflow_entry_script,
+                    project_dir,
+                    "${params.outputDir}/pipeline_info/workflow_content_manifest_${params.trace_timestamp}.tsv"
+                )
+            }
+        }
 
         passed_bams = bams.filter { library, bam -> checkFileSize(bam) }
         failed_bams = bams.filter { library, bam -> !checkFileSize(bam) }
@@ -169,7 +197,7 @@ workflow {
         if (params.enable_neb_agg) {
             agg_tuple = format_ngs_agg_opts(agg_opts)
             workflow_name_modifier = params.workflow_name_modifier ? "-${params.workflow_name_modifier}" : ""
-            aggregate_results( agg_tuple, "${params.workflow}", 'unspecified', params.workflow_name_modifier ?: '' )
+            aggregate_results( agg_tuple, params.workflow_label, params.workflow_version, params.workflow_name_modifier ?: '', workflow_content_hash )
             }
 
         ////////// MultiQC analysis ///////////
