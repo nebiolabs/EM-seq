@@ -1,47 +1,39 @@
 process tasmanian {
-    tag "${library}"
-    label 'process_low'
-        
-	
-    conda 'bioconda::samtools=1.21 bioconda::tasmanian-mismatch=2.0.5'
+    label 'medium_cpu'
+    tag { library }
+    publishDir "${params.outputDir}/stats/tasmanian"
+    conda "bioconda::tasmanian-mismatch=2.1.0"
+
+    errorStrategy { task.attempt <= 1 ? 'retry' : 'terminate' }
+    maxRetries 1
+    memory { task.attempt > 1 ? '16 GB' : '8 GB' }
 
     input:
         tuple val(library), path(bam), path(bai)
-        each path(reference_fasta)
-        each path (masked_bedgraph)
+        val(genome_fa)
+        val(genome_fai)
 
     output:
-        tuple val(library), path("${library}.tasmanian.tsv"), emit: tasmanian_for_aggregate
-        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
-        tuple val("${task.process}"), val('tasmanian-mismatch'), val('*should be* 2.0.5'), topic: versions
+        tuple val(library), path("${library}.tasmanian.tsv"), emit: for_agg
+        tuple val("${task.process}"), val('tasmanian-mismatch'), val('*should be* 2.1.0'), topic: versions
 
     script:
     """
     set +e
     set +o pipefail
+    for mode in read insert; do
+        tasmanian-mismatch ${bam} ${genome_fa} \
+            --position-mode \${mode} \
+            --methylation-mode \
+            --min-base-quality 20 \
+            --min-map-quality 30 \
+            -F 3840 \
+            -o ${library}.tasmanian.\${mode}.tsv
+    done
 
-    ln -s \$(readlink -f ${reference_fasta}) ref.fa
-    samtools faidx ref.fa
-
-    tasmanian-mismatch ${bam} ref.fa \
-        --position-mode read \
-        --min-base-quality 20 \
-        --min-map-quality 20 \
-        -b ${masked_bedgraph} \
-        --bed-filter-mode mask \
-        -o ${library}.tasmanian.read.tsv
-
-
-    tasmanian-mismatch ${bam} ref.fa \
-        --position-mode insert \
-        --min-base-quality 20 \
-        --min-map-quality 20 \
-        -b ${masked_bedgraph} \
-        --bed-filter-mode mask \
-        -o ${library}.tasmanian.insert.tsv
-
-	head -n1 ${library}.tasmanian.read.tsv | awk '{print $0"\tpair_mode"}' > ${library}.tasmanian.tsv 
-	tail -n +2 ${library}.tasmanian.read.tsv | awk '{print $0"\tread"}' >> ${library}.tasmanian.tsv
-	tail -n +2 ${library}.tasmanian.insert.tsv | awk '{print $0"\tinsert"}' >> ${library}.tasmanian.tsv
+    head -n1 ${library}.tasmanian.read.tsv | awk '{print \$0"\tpair_mode"}' > ${library}.tasmanian.tsv
+    tail -n +2 ${library}.tasmanian.read.tsv | awk '{print \$0"\tread"}' >> ${library}.tasmanian.tsv
+    tail -n +2 ${library}.tasmanian.insert.tsv | awk '{print \$0"\tinsert"}' >> ${library}.tasmanian.tsv
     """
+
 }
