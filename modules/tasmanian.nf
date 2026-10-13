@@ -19,8 +19,7 @@ process tasmanian {
 
     script:
     """
-    set +e
-    set +o pipefail
+    set -euo pipefail
     for mode in read insert; do
         tasmanian-mismatch ${bam} ${genome_fa} \
             --position-mode \${mode} \
