@@ -2,7 +2,7 @@ process tasmanian {
     label 'medium_cpu'
     tag { library }
     publishDir "${params.outputDir}/stats/tasmanian"
-    conda "bioconda::samtools=1.22 bioconda::tasmanian-mismatch=1.0.9"
+    conda "bioconda::tasmanian-mismatch=2.1.0"
 
     errorStrategy { task.attempt <= 1 ? 'retry' : 'terminate' }
     maxRetries 1
@@ -14,15 +14,26 @@ process tasmanian {
         val(genome_fai)
 
     output:
-        tuple val(library), path("${library}.tasmanian.csv"), emit: for_agg
-        tuple val("${task.process}"), val('samtools'), eval('samtools --version | head -n 1 | sed \'s/^samtools //\''), topic: versions
-        tuple val("${task.process}"), val('tasmanian'), val('*should be* 1.0.9'), topic: versions
+        tuple val(library), path("${library}.tasmanian.tsv"), emit: for_agg
+        tuple val("${task.process}"), val('tasmanian-mismatch'), val('*should be* 2.1.0'), topic: versions
 
     script:
     """
-    set +e
-    set +o pipefail
-    samtools view -q 30 -F 3840 ${bam} | head -n 2000000 | run_tasmanian -r ${genome_fa} > ${library}.tasmanian.csv
+    set -euo pipefail
+    for mode in read insert; do
+        tasmanian-mismatch ${bam} ${genome_fa} \
+            --threads ${task.cpus} \
+            --position-mode \${mode} \
+            --methylation-mode \
+            --min-base-quality 20 \
+            --min-map-quality 30 \
+            -F 3840 \
+            -o ${library}.tasmanian.\${mode}.tsv
+    done
+
+    head -n1 ${library}.tasmanian.read.tsv | awk '{print \$0"\tpair_mode"}' > ${library}.tasmanian.tsv
+    tail -n +2 ${library}.tasmanian.read.tsv | awk '{print \$0"\tread"}' >> ${library}.tasmanian.tsv
+    tail -n +2 ${library}.tasmanian.insert.tsv | awk '{print \$0"\tinsert"}' >> ${library}.tasmanian.tsv
     """
 
 }
