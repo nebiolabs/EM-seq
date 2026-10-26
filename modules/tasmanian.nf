@@ -22,6 +22,7 @@ process tasmanian {
     set -euo pipefail
     for mode in read insert; do
         tasmanian-mismatch ${bam} ${genome_fa} \
+            --threads ${task.cpus} \
             --position-mode \${mode} \
             --methylation-mode \
             --min-base-quality 20 \
