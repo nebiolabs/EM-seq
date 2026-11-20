@@ -13,7 +13,6 @@ import sys
 
 import numpy as np
 import polars as pl
-from bokeh.io import output_file, save
 from bokeh.layouts import column as bk_column, row as bk_row
 from bokeh.models import (
     BasicTicker,
@@ -35,6 +34,9 @@ from bokeh.models import (
 from bokeh.palettes import Category10, Viridis256
 from bokeh.plotting import figure
 from bokeh.util.hex import cartesian_to_axial, hexbin
+
+from library_order import natural_key, natural_sorted
+from report_overlay import save_report
 
 # Depth threshold options available in the HTML UI dropdown.
 # Each value counts features with depth_orig >= that threshold.
@@ -60,7 +62,7 @@ def analyze_name_components(libraries):
 
     The last component  serves as ``replicate`` (x-axis tick label)
     if it looks like a replicate
-        r'^(?:rep(?:licate)?|r)?\d+$'
+        r'^(?:rep(?:licate)?|r)?\\d+$'
         r'|^[A-Za-z]$'
 
     Returns ``(group_idx, subgroup_idx)``.  Either may be ``None`` when there
@@ -138,7 +140,7 @@ def chr_sort_key(c):
     return (2, 0, s)
 
 
-def main():
+def make_parser():
     ap = argparse.ArgumentParser()
     ap.add_argument('counts_tsv')
     ap.add_argument('-o', '--out', default='feature_depth_bokeh.html')
@@ -146,9 +148,9 @@ def main():
                     help='hex tile size in x data units (default 0.06)')
     ap.add_argument('--outlier-threshold', type=int, default=2,
                     help='hexes with this count or fewer render as points (default 2)')
-    ap.add_argument('--y-scale', choices=['log', 'linear'], default='log',
-                    help="initial vertical axis scale: 'log' (depth log10-transformed, "
-                         "default) or 'linear' (raw depth, includes zeros). Switchable in HTML UI.")
+    ap.add_argument('--y-scale', choices=['log', 'linear'], default='linear',
+                    help="initial vertical axis scale: 'linear' (raw depth, includes zeros, default) "
+                         "or 'log' (depth log10-transformed). Switchable in HTML UI.")
     ap.add_argument('--plot-type', choices=['hex', 'violin'], default='hex',
                     help="initial plot type: 'hex' (hexbin density + outliers, default) "
                          "or 'violin' (per-library kernel density). Switchable in HTML UI.")
@@ -158,18 +160,22 @@ def main():
     ap.add_argument('--violin-bins', type=int, default=40,
                     help='histogram bins per library for violin density estimate (default 40)')
     ap.add_argument('--depth-cap', type=float, default=None,
-                    help='cap raw depth at this value (rows above stack at the cap, '
-                         'preventing single outliers from compressing the visible scale).')
+                    help='cap raw depth at this value in every feature category. Points above '
+                         'are drawn on the cap line, so outliers cannot compress the scale.')
     ap.add_argument('--depth-cap-percentile', type=float, default=99.0,
-                    help='cap at this percentile of non-zero depths (default 99). '
-                         'Ignored if --depth-cap is given. Pass 100 to disable.')
+                    help='cap each feature category at this percentile of its non-zero depths '
+                         '(default 99). Ignored if --depth-cap is given. Pass 100 to disable.')
     ap.add_argument('--strip-suffix', default=DEFAULT_STRIP_SUFFIX,
                     help='Suffix to strip from BAM column names when building library labels. '
                          'Plain text (e.g. ".ds.md.bam") is matched literally at end-of-string. '
                          'A value containing regex metacharacters is used as a raw pattern '
                          '(e.g. r"(\\.[a-z]+)*\\.bam$"). '
                          'Default: strip any trailing lowercase dot-tags before .bam.')
-    args = ap.parse_args()
+    return ap
+
+
+def build_layout(args):
+    """Build the full interactive layout; per_locus_report.py embeds it as a tab."""
     strip_re = build_strip_re(args.strip_suffix)
 
     with open(args.counts_tsv) as fh:
@@ -208,28 +214,29 @@ def main():
     # Snapshot original (pre-cap) depths for the per-library threshold counter.
     long = long.with_columns(pl.col('depth').alias('depth_orig'))
 
-    # Apply optional depth cap. Rows above the cap collapse onto the cap value
-    # so a few extreme outliers can't compress the visible distribution.
-    depth_cap = None
+    # Cap each feature category separately, so one deep category cannot set the scale for
+    # the rest. Rows above their category's cap are flagged and drawn on the cap line as
+    # individual markers; the hex and violin densities use only the rows below it.
+    caps = {}
     if args.depth_cap is not None:
-        depth_cap = float(args.depth_cap)
-    elif args.depth_cap_percentile is not None:
-        nonzero = long.filter(pl.col('depth') > 0)['depth']
-        if nonzero.len() > 0:
-            depth_cap = float(nonzero.quantile(args.depth_cap_percentile / 100.0))
-    if depth_cap is not None and depth_cap > 0:
-        n_over = long.filter(pl.col('depth') > depth_cap).height
-        print(
-            f'[feature_depth_bokeh] depth cap = {depth_cap:g} '
-            f'(clipping {n_over} of {long.height} rows; '
-            f'depth max before clip = {float(long["depth"].max()):g})',
-            file=sys.stderr,
-        )
-        long = long.with_columns(
-            pl.when(pl.col('depth') > depth_cap).then(depth_cap).otherwise(pl.col('depth')).alias('depth')
-        )
-    else:
-        print('[feature_depth_bokeh] no depth cap applied', file=sys.stderr)
+        caps = {f: float(args.depth_cap) for f in long['File'].unique().to_list()}
+    elif args.depth_cap_percentile is not None and args.depth_cap_percentile < 100:
+        q = args.depth_cap_percentile / 100.0
+        caps = {f: float(c) for f, c in (
+            long.filter(pl.col('depth') > 0).group_by('File')
+                .agg(pl.col('depth').quantile(q)).iter_rows())}
+    cap_label = (f'cap at {args.depth_cap:g}' if args.depth_cap is not None
+                 else f'{args.depth_cap_percentile:g}th percentile cap')
+    long = (
+        long.with_columns(pl.col('File').replace_strict(caps, default=None, return_dtype=pl.Float64)
+                          .alias('cap'))
+            .with_columns((pl.col('cap').is_not_null() & (pl.col('depth') > pl.col('cap'))).alias('capped'))
+            .with_columns(pl.when(pl.col('capped')).then(pl.col('cap')).otherwise(pl.col('depth'))
+                          .alias('depth'))
+    )
+    for f, c in sorted(caps.items()):
+        n_over = long.filter((pl.col('File') == f) & pl.col('capped')).height
+        print(f'[feature_depth_bokeh] {f}: {cap_label} = {c:g} ({n_over} rows above)', file=sys.stderr)
 
     libraries = long['library'].unique().to_list()
     group_idx, subgroup_idx = analyze_name_components(libraries)
@@ -241,15 +248,13 @@ def main():
         group    = get_component(lib, group_idx) or lib   # fall back to full name if no grouping
         subgroup = get_component(lib, subgroup_idx)
         meta_rows.append({'library': lib, 'group': group, 'subgroup': subgroup, 'replicate': replicate})
-    meta = pl.DataFrame(meta_rows)
+    # Sort by group → subgroup → replicate. Numbers compare by value, so 0.1ng, 1ng, 10ng,
+    # 100ng appear in that order rather than string order.
+    meta_rows.sort(key=lambda r: (natural_key(r['group']), natural_key(r['subgroup']),
+                                  natural_key(r['replicate'])))
+    meta = pl.DataFrame(meta_rows).with_columns(pl.int_range(0, pl.len()).alias('idx'))
 
-    # Sort by group → subgroup → replicate for a consistent, predictable x-axis ordering
-    meta = (
-        meta.sort(['group', 'subgroup', 'replicate'])
-            .with_columns(pl.int_range(0, pl.len()).alias('idx'))
-    )
-
-    groups = meta['group'].unique(maintain_order=False).sort().to_list()
+    groups = natural_sorted(meta['group'].unique().to_list())
     n_groups = len(groups)
     palette_size = max(3, min(n_groups, 10))
     palette = Category10[palette_size]
@@ -296,12 +301,6 @@ def main():
     size = args.hex_size_x
 
     FIG_W, FIG_H = 1500, 600
-
-    # cap value in y_raw space for both scales (None if no cap)
-    cap_y_raw = {
-        'log': np.log10(depth_cap) if depth_cap is not None and depth_cap > 0 else None,
-        'linear': depth_cap if depth_cap is not None else None,
-    }
 
     lib_color = dict(zip(meta['idx'].to_list(), meta['color'].to_list()))
     n_bins = args.violin_bins
@@ -350,6 +349,8 @@ def main():
                 [lib_idx - 0.4, lib_idx + 0.4], [median, median],
                 line_color=color, line_width=2, line_alpha=0.9,
             )
+
+    capped_sources = {}  # feature -> ColumnDataSource shared by every variant
 
     def build_column(scale, plot_type, y_mode):
         col_key = (scale, plot_type, y_mode)
@@ -427,7 +428,9 @@ def main():
             sub_all = sub_all.with_columns(
                 ((pl.col('y_raw') - y_raw_min) * y_to_norm).alias('y')
             )
-            sub = sub_all.filter(pl.col('y').is_not_null())
+            sub_plotted = sub_all.filter(pl.col('y').is_not_null())
+            sub = sub_plotted.filter(~pl.col('capped'))
+            sub_capped = sub_plotted.filter(pl.col('capped'))
 
             y_top = y_norm_scale * 1.55
             y_bot = -y_norm_scale * 0.05
@@ -440,6 +443,10 @@ def main():
             else:
                 title_suffix = '(per-library histogram density; median line at horizontal tick)'
 
+            cap = caps.get(feature)
+            if cap is not None and cap > 0:
+                title_suffix += (f' \u2014 {cap_label} for all libraries: depth {cap:g}; '
+                                 f'{sub_capped.height:,} points above it sit on the red line (\u25b2)')
             p = figure(
                 x_range=Range1d(start=-0.6, end=N - 0.4),
                 y_range=Range1d(start=y_bot, end=y_top),
@@ -519,20 +526,33 @@ def main():
             else:
                 render_violin(p, sub)
 
-            cap_raw = cap_y_raw['log' if use_log else 'linear']
-            if cap_raw is not None and y_raw_min <= cap_raw <= y_raw_max:
+            if cap is not None and cap > 0:
+                cap_raw = math.log10(cap) if use_log else cap
                 cap_y = (cap_raw - y_raw_min) * y_to_norm
                 p.add_layout(Span(
                     location=cap_y, dimension='width',
                     line_color='#cc3333', line_width=1,
-                    line_dash='dashed', line_alpha=0.6,
+                    line_dash='dashed', line_alpha=0.8,
                 ))
-                p.add_layout(Label(
-                    x=N - 0.4, y=cap_y,
-                    text=f'cap @ depth={depth_cap:g}',
-                    text_align='right', text_baseline='bottom',
-                    text_font_size='8pt', text_color='#cc3333',
-                ))
+                if sub_capped.height > 0:
+                    # Capped points sit on the cap line, so their y is one value per panel
+                    # and everything else is the same in all eight scale/type/range variants.
+                    # One source per feature category, shared by every variant, keeps the
+                    # page from carrying eight copies (30 MB on a human genome).
+                    if feature not in capped_sources:
+                        capped_sources[feature] = ColumnDataSource(dict(
+                            x=sub_capped['x'].to_numpy().astype(np.float32),
+                            depth=sub_capped['depth_orig'].to_numpy().astype(np.float32),
+                            library=sub_capped['library'].to_list(),
+                            chrom=sub_capped['Chr'].to_list(),
+                            geneid=sub_capped['Geneid'].cast(pl.Utf8).to_list(),
+                        ))
+                    rc = p.scatter(x='x', y=cap_y, source=capped_sources[feature], marker='triangle', size=6,
+                                   color='#cc3333', alpha=0.7, line_color=None, level='overlay')
+                    p.add_tools(HoverTool(renderers=[rc], tooltips=[
+                        ('library', '@library'), ('chr', '@chrom'), ('geneid', '@geneid'),
+                        ('depth (above cap)', '@depth'),
+                    ]))
 
             # threshold marker line, position updated via JS on dropdown change.
             # level='overlay' forces it above hex tiles / violins.
@@ -737,10 +757,13 @@ def main():
     for col in cols.values():
         if col is not None:
             children.append(col)
-    layout = bk_column(*children)
+    return bk_column(*children)
 
-    output_file(args.out, title='Feature depth per library')
-    save(layout)
+
+def main():
+    args = make_parser().parse_args()
+    layout = build_layout(args)
+    save_report(layout, args.out, 'Feature depth per library', 'feature depth plots')
 
 
 if __name__ == '__main__':

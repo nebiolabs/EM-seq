@@ -9,3 +9,4 @@ test_data/tmp
 log/
 .nf-test*
 .conda
+__pycache__/

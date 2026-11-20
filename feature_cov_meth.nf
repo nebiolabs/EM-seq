@@ -355,6 +355,7 @@ process feature_depth_bokeh {
 
     script:
     """
+    : library_order.py report_overlay.py  # imported modules, named so edits to them invalidate the cache
     feature_depth_bokeh.py ${combined_counts} -o feature_depth_bokeh.html
     """
 }
