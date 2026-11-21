@@ -190,7 +190,7 @@ process cpg_island_counts{
         path('*')
 
     output:
-        path 'cpg_island_counts.tsv'
+        path 'cpg_island_counts.tsv', emit: counts
 
     script:
     """
@@ -360,6 +360,87 @@ process feature_depth_bokeh {
     """
 }
 
+// One BED of every feature region, category in column 4, for mosdepth --by. RefSeq
+// categories come from their flattened SAFs (no overlaps within a category); CpG islands
+// and EPD promoters from their GTF exon lines.
+process feature_regions_bed {
+    conda "conda-forge::gawk=5.3.1 conda-forge::coreutils=9.5"
+
+    input:
+        path(safs)          // <feature>_flat.saf, one per RefSeq category
+        path(cpg_islands_gtf)
+        path(epd_promoters_gtf)
+
+    output:
+        path('feature_regions.bed')
+
+    script:
+    """
+    for saf in ${safs}; do
+        feature=\$(basename "\${saf}" _flat.saf)
+        awk -v FS='\\t' -v OFS='\\t' -v f="\${feature}" 'NR > 1 { print \$2, \$3 - 1, \$4, f }' "\${saf}"
+    done > regions.unsorted.bed
+    awk -v FS='\\t' -v OFS='\\t' '\$3 == "exon" && \$1 != "" { print \$1, \$4 - 1, \$5, "cpg_island" }' ${cpg_islands_gtf} >> regions.unsorted.bed
+    awk -v FS='\\t' -v OFS='\\t' '\$3 == "exon" && \$1 != "" { print \$1, \$4 - 1, \$5, "epd_promoter" }' ${epd_promoters_gtf} >> regions.unsorted.bed
+    sort -k1,1 -k2,2n -k3,3n regions.unsorted.bed > feature_regions.bed
+    """
+}
+
+// Mean per-base depth over every feature region. The read filters follow featureCounts
+// where mosdepth can. Both use MAPQ >= 10 and primary alignments only (no secondary or
+// supplementary). Both drop duplicates unless --count_dup_reads. featureCounts also requires
+// properly paired reads, which mosdepth cannot test for both paired and single-end data, so
+// mosdepth keeps the reads of improper pairs. mosdepth counts the overlapping part of a read
+// pair once.
+process mosdepth_feature_depth {
+    tag { id }
+    cpus 4
+    memory '8 GB'
+    conda "bioconda::mosdepth=0.3.14"
+
+    input:
+        tuple val(id), path(bam_and_index)
+        path(regions_bed)
+
+    output:
+        path("${id}.regions.bed.gz"), emit: regions
+        path("${id}.mosdepth.summary.txt"), emit: summary
+
+    script:
+    def bam = bam_and_index.find { f -> f.name.endsWith('.bam') }
+    // Unmapped, secondary, QC fail and supplementary, plus duplicate unless counting duplicates.
+    def exclude_flags = params.count_dup_reads ? 2820 : 3844
+    """
+    mosdepth --threads ${task.cpus} --no-per-base --mapq 10 --flag ${exclude_flags} \\
+        --by ${regions_bed} ${id} ${bam}
+    """
+}
+
+process feature_cov_meth_bokeh {
+    cpus 1
+    memory '8 GB'
+    conda "conda-forge::python=3.12 conda-forge::polars=1.31.0 conda-forge::bokeh=3.7.3 conda-forge::numpy=2.5.4"
+    publishDir "${params.output_dir}", mode: 'copy'
+
+    input:
+        path(mosdepth_regions)
+        path(mosdepth_summaries)
+        path(methylation_files)
+
+    output:
+        path('feature_cov_meth.html')
+        path('feature_cov_meth_summary.tsv')
+
+    script:
+    """
+    : feature_depth_bokeh.py library_order.py report_overlay.py report_style.py  # imported modules, named so edits to them invalidate the cache
+    feature_cov_meth_bokeh.py \\
+        --regions ${mosdepth_regions} \\
+        --summaries ${mosdepth_summaries} \\
+        --methylation ${methylation_files}
+    """
+}
+
 process combine_counts {
     publishDir "${params.output_dir}", mode: 'copy'
 
@@ -404,7 +485,8 @@ workflow {
     epd_promoters_gtf = clean_epd_gtf(channel.value(params.ref.epd_promoter_bed_url), ncbi_assembly_report, chain_file)
     epd_counts        = epd_promoter_counts(epd_promoters_gtf, bams.map{ it -> it[1] }.collect())
     cpg_islands_gtf   = clean_cpg_islands_gtf(channel.fromPath(params.ref.ucsc_cpg_islands_gtf, checkIfExists: true).first(), ncbi_assembly_report)
-    cpg_counts        = cpg_island_counts(cpg_islands_gtf, bams.map{ it -> it[1] }.collect())
+    cpg_island_counts(cpg_islands_gtf, bams.map{ it -> it[1] }.collect())
+    cpg_counts        = cpg_island_counts.out.counts
     refseq_gff        = refseq_feature_download(channel.value(params.ref.refseq_gff_url))
 
     // Define feature types
@@ -422,7 +504,7 @@ workflow {
         .combine(methylkits)
 
     feature_methylation_out = feature_methylation(feature_methylation_ch)
-    combine_feature_methylation(feature_methylation_out.groupTuple(by: [0,1]))
+    feature_methylation_files = combine_feature_methylation(feature_methylation_out.groupTuple(by: [0,1]))
 
     // Feature counts
     all_bam_files = bams.map{ it -> it[1] }.flatten().collect()
@@ -434,4 +516,19 @@ workflow {
 
     // Bokeh dot plot of depth per library, per feature category
     feature_depth_bokeh(combined_counts)
+
+    // One dot per feature category per library: relative coverage (mean per-base depth
+    // from mosdepth) and mean methylation. Replaces the Tableau "Feature Coverage vs
+    // Methylation" sheet.
+    regions_bed = feature_regions_bed(
+        feature_saf_for_counts.map { _feature, saf -> saf }.collect(),
+        cpg_islands_gtf,
+        epd_promoters_gtf
+    )
+    mosdepth_feature_depth(bams, regions_bed)
+    feature_cov_meth_bokeh(
+        mosdepth_feature_depth.out.regions.collect(),
+        mosdepth_feature_depth.out.summary.collect(),
+        feature_methylation_files.collect()
+    )
 }

@@ -183,7 +183,7 @@ process depth_dependent_report {
     def stats_arg = read_stats ? "--read-stats ${read_stats}" : ''
     def check_arg = depth_check ? "--depth-check ${depth_check}" : ''
     """
-    : feature_depth_bokeh.py feature_cov_meth_bokeh.py library_order.py report_overlay.py depth_dependent_merge.py  # imported modules, named so edits to them invalidate the cache
+    : feature_depth_bokeh.py feature_cov_meth_bokeh.py library_order.py report_overlay.py report_style.py depth_dependent_merge.py  # imported modules, named so edits to them invalidate the cache
     depth_dependent_report.py ${depth_hists} ${merge_arg} ${feature_args} ${stats_arg} ${check_arg} \\
         --min-depth ${params.depth_dependent_min_depth}
     """

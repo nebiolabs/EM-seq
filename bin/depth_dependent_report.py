@@ -44,23 +44,13 @@ from feature_depth_bokeh import RE_REPLICATE_LIKE, analyze_name_components, get_
 from report_overlay import save_report  # noqa: E402
 from library_order import masses, natural_sorted  # noqa: E402
 from depth_dependent_merge import DEPTH_BIN_WIDTH, DEPTH_BINS  # noqa: E402
+from report_style import (BLUES, DASHES, FIG_W, GRID, OTHER, SERIES, TEXT, TEXT_2,  # noqa: E402
+                          note, style)
 
 # The All pairs depth axis stops at this percentile of covered depth, pooled over every
 # library. Deeper Cs share the top bin, so a few very deep Cs cannot squeeze the rest into
 # a corner of each cell.
 DEPTH_AXIS_PERCENTILE = 99
-
-# Categorical slots in fixed order (dataviz reference palette, light mode).
-SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']
-OTHER = '#9b9a95'
-TEXT = '#0b0b0b'
-TEXT_2 = '#52514e'
-GRID = '#e6e5e0'
-# Sequential blue ramp, light to dark.
-BLUES = ['#cde2fb', '#b7d3f6', '#9ec5f4', '#86b6ef', '#6da7ec', '#5598e7', '#3987e5',
-         '#2a78d6', '#256abf', '#1c5cab', '#184f95', '#104281', '#0d366b']
-DASHES = ['solid', 'dashed', 'dotted', 'dotdash', 'dashdot']
-FIG_W = 1100
 
 
 def label_px(labels):
@@ -71,25 +61,6 @@ def label_px(labels):
     alignment, but it lays out wrongly inside a tab that is hidden at load.
     """
     return max(90, 7 * max((len(x) for x in labels), default=0) + 24)
-
-
-def style(p):
-    p.outline_line_color = None
-    p.xgrid.grid_line_color = GRID
-    p.ygrid.grid_line_color = GRID
-    p.axis.axis_line_color = TEXT_2
-    p.axis.major_tick_line_color = TEXT_2
-    p.axis.minor_tick_line_color = None
-    p.axis.major_label_text_color = TEXT_2
-    p.axis.axis_label_text_color = TEXT
-    p.axis.axis_label_text_font_style = 'normal'
-    p.title.text_color = TEXT
-    p.toolbar.logo = None
-    return p
-
-
-def note(html):
-    return Div(text=f'<div style="color:{TEXT_2};max-width:{FIG_W}px">{html}</div>')
 
 
 def library_styles(libs):

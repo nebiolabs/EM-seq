@@ -129,6 +129,19 @@ def build_strip_re(raw):
     return re.escape(raw) + '$'
 
 
+def library_sort_key(lib, group_idx, subgroup_idx):
+    """Sort key: group, then subgroup, then replicate, then the full name.
+
+    Numbers compare by value, so 0.1ng, 1ng, 10ng and 100ng appear in that order rather than
+    string order. The full name breaks ties, so the order does not depend on the input order.
+    feature_cov_meth_bokeh.py sorts with this too, so both feature plots agree.
+    """
+    parts = re.split(r'[_\-]', lib)
+    replicate = parts[-1] if len(parts) > 1 else lib
+    return (natural_key(get_component(lib, group_idx) or lib), natural_key(get_component(lib, subgroup_idx)),
+            natural_key(replicate), natural_key(lib))
+
+
 def chr_sort_key(c):
     s = str(c)
     m = re.match(r'(?:chr)?(\d+|X|Y|M|MT|Mt|Mito)$', s, re.IGNORECASE)
@@ -248,11 +261,7 @@ def build_layout(args):
         group    = get_component(lib, group_idx) or lib   # fall back to full name if no grouping
         subgroup = get_component(lib, subgroup_idx)
         meta_rows.append({'library': lib, 'group': group, 'subgroup': subgroup, 'replicate': replicate})
-    # Sort by group → subgroup → replicate. Numbers compare by value, so 0.1ng, 1ng, 10ng,
-    # 100ng appear in that order rather than string order. The full name breaks ties, so the
-    # order does not depend on the input column order.
-    meta_rows.sort(key=lambda r: (natural_key(r['group']), natural_key(r['subgroup']),
-                                  natural_key(r['replicate']), natural_key(r['library'])))
+    meta_rows.sort(key=lambda r: library_sort_key(r['library'], group_idx, subgroup_idx))
     meta = pl.DataFrame(meta_rows).with_columns(pl.int_range(0, pl.len()).alias('idx'))
 
     groups = natural_sorted(meta['group'].unique(maintain_order=True).to_list())

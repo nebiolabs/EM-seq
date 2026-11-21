@@ -33,6 +33,14 @@ Quantifies read depth and CpG methylation across major genomic feature categorie
 
 ![Feature depth per library — hex-density view showing read depth across genomic feature categories](example_feature_cov.png)
 
+- `feature_cov_meth.html` — one dot per feature category per library. The views are
+  mean methylation against relative coverage, coverage by library, and methylation by library.
+  Relative coverage is the mean per-base read depth over a category's features (mosdepth)
+  divided by the genome-wide mean depth, so 1 is the genome average. Per-base depth is
+  used rather than overlapping-fragment counts, which inflate short features such as
+  60 bp promoters several-fold. This replaces the Tableau
+  "Feature Coverage vs Methylation" sheet.
+- `feature_cov_meth_summary.tsv` — the values behind `feature_cov_meth.html`
 - `combined_feature_counts.tsv` — merged featureCounts table across all feature types
 - Per-sample methylation TSVs under `<output_dir>/features/<sample>/<context>/`
 
