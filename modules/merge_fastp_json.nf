@@ -1,7 +1,7 @@
 process mergeFastpJson {
 	tag "${library}"
     label 'low_cpu'
-    conda 'bioconda::bamslice=0.2.1'
+    conda 'bioconda::bamslice=0.2.4'
     publishDir "${params.outputDir}/fastp"
 
     input:
