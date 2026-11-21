@@ -10,7 +10,7 @@ This repository contains Nextflow-based analysis tools for Enzymatic Methylation
 - `fastq_to_ubam.nf` - Converts fastq files to uBam format before running main pipeline
 
 ### Key Directories
-- `modules/` - Modular Nextflow processes for various pipeline steps (fastp, alignment, methylation calling, QC, etc.)
+- `modules/` - Modular Nextflow processes for various pipeline steps (trimming, alignment, duplicate marking, methylation calling , QC, etc.)
 - `conf/` - Configuration files including base settings and reference genomes
 - `lib/` - Shared library code (versions tracking)
 - `tests/` - nf-test test suite with fixtures and snapshots

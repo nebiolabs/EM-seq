@@ -6,10 +6,12 @@ This repository contains Nextflow-based analysis tools for [Enzymatic Methylatio
 
 ### Main Analysis Pipeline (`main.nf`)
 Complete EM-seq processing pipeline that accepts UBAM inputs:
-- Adapter trimming and read alignment with (fastp, bwa-meth)
-- Duplicate marking (Picard)
+- Parallel processing of byte-range chunks of each uBAM (bamslice)
+- Adapter trimming with fastp-compatible QC reports (bamadap)
+- Read alignment (bwa-meth) and restoration of uBAM tags onto the alignments (fgumi zipper)
+- Duplicate marking (picodup)
 - Methylation calling (MethylDackel)
-- Quality control metrics and statistics (Picard, Samtools, FastQC, MultiQC)
+- Quality control metrics and statistics (Picard, Samtools, Falco, tasmanian-mismatch, MultiQC)
 - Optional BED file intersection for targeted analysis (bedtools)
 - Depth-dependent analyses of CpG-context Cs when enough libraries pass a depth check (see [Depth-dependent analyses](#depth-dependent-analyses))
 
