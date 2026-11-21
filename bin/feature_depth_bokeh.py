@@ -33,7 +33,7 @@ from bokeh.models import (
 )
 from bokeh.palettes import Category10, Viridis256
 from bokeh.plotting import figure
-from bokeh.util.hex import cartesian_to_axial, hexbin
+from bokeh.util.hex import cartesian_to_axial
 
 from library_order import natural_key, natural_sorted
 from report_overlay import save_report
@@ -175,7 +175,7 @@ def make_parser():
 
 
 def build_layout(args):
-    """Build the full interactive layout; per_locus_report.py embeds it as a tab."""
+    """Build the full interactive layout; depth_dependent_report.py embeds it as a tab."""
     strip_re = build_strip_re(args.strip_suffix)
 
     with open(args.counts_tsv) as fh:
@@ -238,7 +238,7 @@ def build_layout(args):
         n_over = long.filter((pl.col('File') == f) & pl.col('capped')).height
         print(f'[feature_depth_bokeh] {f}: {cap_label} = {c:g} ({n_over} rows above)', file=sys.stderr)
 
-    libraries = long['library'].unique().to_list()
+    libraries = long['library'].unique(maintain_order=True).to_list()
     group_idx, subgroup_idx = analyze_name_components(libraries)
 
     meta_rows = []
@@ -249,12 +249,13 @@ def build_layout(args):
         subgroup = get_component(lib, subgroup_idx)
         meta_rows.append({'library': lib, 'group': group, 'subgroup': subgroup, 'replicate': replicate})
     # Sort by group → subgroup → replicate. Numbers compare by value, so 0.1ng, 1ng, 10ng,
-    # 100ng appear in that order rather than string order.
+    # 100ng appear in that order rather than string order. The full name breaks ties, so the
+    # order does not depend on the input column order.
     meta_rows.sort(key=lambda r: (natural_key(r['group']), natural_key(r['subgroup']),
-                                  natural_key(r['replicate'])))
+                                  natural_key(r['replicate']), natural_key(r['library'])))
     meta = pl.DataFrame(meta_rows).with_columns(pl.int_range(0, pl.len()).alias('idx'))
 
-    groups = natural_sorted(meta['group'].unique().to_list())
+    groups = natural_sorted(meta['group'].unique(maintain_order=True).to_list())
     n_groups = len(groups)
     palette_size = max(3, min(n_groups, 10))
     palette = Category10[palette_size]
@@ -459,18 +460,14 @@ def build_layout(args):
             if plot_type == 'hex':
                 x = sub['x'].to_numpy()
                 y = sub['y'].to_numpy()
-                hb = hexbin(x, y, size)
-                bins = pl.DataFrame({
-                    'q': np.asarray(hb.q).astype(np.int64),
-                    'r': np.asarray(hb.r).astype(np.int64),
-                    'counts': np.asarray(hb.counts).astype(np.int64),
-                })
+                # Assign each point to its hex once, then count points per hex. This is what
+                # bokeh's hexbin() does, without its pandas round trip.
                 qs, rs = cartesian_to_axial(x, y, size, 'pointytop')
                 sub_qr = sub.with_columns([
                     pl.Series('q', qs.astype(np.int64)),
                     pl.Series('r', rs.astype(np.int64)),
                 ])
-                # hexbin() already returns per-bin counts; reuse them instead of a fresh groupby.
+                bins = sub_qr.group_by(['q', 'r']).len('counts').sort(['q', 'r'])
                 outlier_qr = bins.filter(pl.col('counts') <= thr).select(['q', 'r'])
                 outliers = sub_qr.join(outlier_qr, on=['q', 'r'], how='inner')
                 keep_bins = bins.filter(pl.col('counts') > thr)

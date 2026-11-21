@@ -2,9 +2,9 @@
     "EM-seq workflow uBam - single-end": {
         "content": [
             {
-                "tasksCount": 45,
+                "tasksCount": 48,
                 "tasksFailed": 0,
-                "tasksSucceeded": 45
+                "tasksSucceeded": 48
             },
             [
                 "bwameth_file_1",
@@ -508,18 +508,18 @@
                 ]
             ]
         ],
-        "timestamp": "2026-09-14T18:18:06.511679526",
+        "timestamp": "2026-11-20T12:02:21.476840919",
         "meta": {
-            "nf-test": "0.9.5",
+            "nf-test": "0.9.4",
             "nextflow": "25.10.4"
         }
     },
     "EM-seq workflow uBam": {
         "content": [
             {
-                "tasksCount": 49,
+                "tasksCount": 52,
                 "tasksFailed": 0,
-                "tasksSucceeded": 49
+                "tasksSucceeded": 52
             },
             [
                 "bwameth_file_1",
@@ -1080,9 +1080,9 @@
                 ]
             ]
         ],
-        "timestamp": "2026-09-14T18:16:48.752140047",
+        "timestamp": "2026-11-20T12:02:01.7824569",
         "meta": {
-            "nf-test": "0.9.5",
+            "nf-test": "0.9.4",
             "nextflow": "25.10.4"
         }
     }

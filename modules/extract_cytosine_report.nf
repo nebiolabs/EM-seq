@@ -17,7 +17,7 @@ process extract_cytosine_report {
     """
     MethylDackel extract --cytosine_report \\
         -q ${params.methyl_quality_threshold} \\
-        --nOT 0,0,0,5 --nOB 0,0,5,0 \\
+        ${params.methyldackel_trim} \\
         -@ ${task.cpus} \\
         --CHH --CHG \\
         -o ${library} \\

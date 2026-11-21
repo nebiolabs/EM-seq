@@ -140,6 +140,45 @@ nextflow_pipeline {
         }
     }
 
+    // The fixture libraries are far too shallow for the default depth check, so the other
+    // tests run only the check. Dropping the check's threshold to any depth above 0x lets both libraries
+    // through, which runs the merge and the full report.
+    test("EM-seq workflow uBam - depth-dependent analyses past the depth check") {
+        when {
+            params.ubam_dir = "$projectDir/tests/fixtures/ubam/"
+            params.genome = 'test'
+            params.email = 'foo@example.com'
+            params.flowcell = "test_pipeline"
+            params.bamslice_chunk_size = 250000
+            params.adapter_set = "test"
+            params.depth_dependent_min_depth = 1
+            params.depth_dependent_min_contig_depth = 0
+        }
+
+        then {
+            def pl_dir = "${launchDir}/test_output/depth_dependent"
+            // One row per pair at each report depth (1, 3, 5, 10, 20, 30); check the 1x row.
+            def pairwise = path("${pl_dir}/depth_dependent_pairwise.tsv").text.readLines()
+            def header = pairwise[0].split('\t') as List
+            def rows = pairwise.drop(1).collect { line -> [header, line.split('\t') as List].transpose().collectEntries() }
+            def row = rows.find { r -> r.min_depth == '1' }
+            def upset = path("${pl_dir}/depth_dependent_upset.tsv").text.readLines()
+
+            assertAll(
+                { assert workflow.success },
+                { assert rows.size() == 6 },
+                { assert row.lib_a == 'emseq-test1' && row.lib_b == 'emseq-test2' },
+                { assert (row.n_shared as long) > 0 },
+                { assert upset.size() > 1 },
+                { assert new File("${launchDir}/test_output/emseq_depth_dependent_report.html").exists() },
+                { assert new File("${pl_dir}/depth_dependent_clusters.tsv").exists() },
+                { assert new File("${pl_dir}/depth_dependent_matrix.parquet").exists() },
+                { assert new File("${pl_dir}/depth/emseq-test1.depth_hist.tsv").exists() },
+                { assert path("${pl_dir}/depth_dependent_check.tsv").text.readLines().drop(1).every { l -> l.endsWith('\tyes') } }
+            )
+        }
+    }
+
     // gc_groups_dir is optional, and a genome without one takes the other branch of
     // gc_bias_curves: the whole-reference curve alone, nothing to combine, and no
     // --genome_contigs for the aggregate. Asserted directly rather than snapshotted, so the

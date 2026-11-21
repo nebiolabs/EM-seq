@@ -11,6 +11,7 @@ Complete EM-seq processing pipeline that accepts UBAM inputs:
 - Methylation calling (MethylDackel)
 - Quality control metrics and statistics (Picard, Samtools, FastQC, MultiQC)
 - Optional BED file intersection for targeted analysis (bedtools)
+- Depth-dependent analyses of CpG-context Cs when enough libraries pass a depth check (see [Depth-dependent analyses](#depth-dependent-analyses))
 
 ### Fastq to uBam pipeline (`fastq_to_ubam.nf`)
 If your files are in fastq format, you will need to convert them to uBams prior to running the main pipeline, e.g.:
@@ -88,7 +89,92 @@ nextflow run main.nf \
 | `--outputDir` | Output directory | `em-seq_output` |
 | `--enable_neb_agg` | Enable NEB aggregation reporting | `False` |
 | `--adapter_set` | adapter set found in conf/adapter_sequences.config (`Illumina`, `Element`, `MGI`,  `Nextera-mosaic`) | Required |
+| `--methyl_quality_threshold` | Minimum MAPQ for a read to count in MethylDackel's calls | `20` |
+| `--methyldackel_trim` | Read positions MethylDackel ignores in every extract (`--nOT`/`--nOB`) | `--nOT 0,0,0,5 --nOB 0,0,5,0` |
 | `--multiqc_gc_group` | contig group whose GC bias curve MultiQC plots (see [GC bias curves](#gc-bias-curves)) | largest group |
+
+### Depth-dependent analyses
+
+After alignment, `main.nf` checks whether the libraries are deep enough to reason about
+individual cytosines. mosdepth measures the mean depth of every contig in each library, counting
+only the reads MethylDackel uses (MAPQ ≥ `--methyl_quality_threshold`, no duplicates, secondary,
+supplementary or QC-failed reads). A library passes when every checked contig has a mean depth above
+`--depth_dependent_min_contig_depth` (5x). Checked contigs are the autosomes: the `contig_groups.tsv` types
+in `--depth_dependent_check_contig_types`, or, for a genome without `gc_groups_dir`, every contig that is
+not a control, organelle, sex chromosome or unplaced. Sex chromosomes are left out because chrY
+has no coverage in female samples. The depth-dependent analyses run only when at least
+`--depth_dependent_min_libraries` (2) libraries pass. Otherwise none of their tasks start.
+`depth_dependent/depth_dependent_check.tsv` and `depth_dependent/depth_dependent_contig_depth.tsv` record the
+decision for every run.
+
+Every count in the analyses is of CpG-context Cs: the two Cs of a CpG, one per strand, count
+separately, and each C's depth is the number of strand-specific overlapping reads (as MethylDackel reports them).
+Reference Cs exclude spike-in controls and organelles; with `gc_groups_dir` set, only
+`autosomal` and `sex_chromosome` contigs count.
+
+Once enough libraries pass, the pipeline merges every library, shallow ones included, into one per-C
+table and writes `<tag>_depth_dependent_report.html` at the top of the output directory, next
+to the MultiQC report. The tag comes from the library names, split on `_` and `-`. It holds up to
+three of the name parts that the most libraries share, as long as at least half of them use it.
+`EMseq_NA12878_10ng_1`, `EMseq_NA12878_1ng_2`, `EMseq_HeLa_10ng_1` and `EMseq_HeLa_1ng_2` give
+`EMseq_NA12878_HeLa`. Masses, replicate numbers and single letters never count, because they mark
+the design rather than the experiment. Without a shared part the tag is the range of input
+amounts in the names, such as `0.1ng-100ng`. Without either the name has no tag. A toggle at the top sets the minimum depth a C needs to
+count as covered (`--depth_dependent_report_depths`, opening at `--depth_dependent_min_depth`); every
+cross-library tab follows it. The report has these tabs:
+
+- **Overview** — one row per library: the parts of its name (input amount, replicate, others),
+  primary reads, % mapped, % duplicates, % usable reads (the reads MethylDackel uses: mapped,
+  not duplicates, QC failures or supplementary, MAPQ ≥ `--methyl_quality_threshold`, and properly
+  paired when paired) and effective coverage (mean depth per reference C) as a labelled bar.
+  Read counts need the BAMs, which `main.nf` has; `depth_dependent.nf` takes them with `--bam_files`.
+- **Depth** — fraction (or number) of reference Cs covered at depth ≥ X for every library, and
+  each library's shallowest checked contig and depth check result.
+- **Upset** — reference Cs per coverage pattern.
+- **Correlation** — pairwise methylation Pearson r on shared Cs, coverage r over all reference
+  Cs, and Jaccard index of covered Cs. A pair explorer plots methylation in one library
+  against another, with each library's histogram along its axis. A "not observed" strip and bar
+  hold Cs that one library covers and the other does not.
+- **All pairs** — one matrix of every library pair: depth of every reference C below the
+  diagonal (grey), methylation histograms on the diagonal, and methylation of shared Cs above
+  it, each cell with its Pearson r and the number of Cs it shows. Checkboxes hide libraries,
+  and a line gives the Cs covered in every shown library. A **core set** view drops libraries
+  that would shrink the common Cs drastically: it is the largest set of libraries (whole name
+  groups when the names group) whose set Jaccard of covered Cs (common / union) reaches
+  `--depth_dependent_core_jaccard` at `--depth_dependent_core_depth`. In that view every cell and histogram
+  uses only the Cs that every core library covers.
+- **Clustering** — average-linkage dendrograms over 1 − r and 1 − Jaccard.
+- **Library-specific Cs** — Cs covered in exactly one library, and their methylation.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--depth_dependent_min_contig_depth` | A library passes the depth check when every checked contig's mean depth is above this | `5` |
+| `--depth_dependent_min_libraries` | Libraries that must pass for the analyses to run (0 runs them regardless of depth) | `2` |
+| `--depth_dependent_check_contig_types` | `contig_groups.tsv` types the depth check covers | `autosomal` |
+| `--depth_dependent_min_depth` | Depth a C needs to count as covered when the report opens | `10` |
+| `--depth_dependent_report_depths` | Minimum depths offered by the report's depth toggle | `1,3,5,10,20,30` |
+| `--depth_dependent_core_jaccard` | Set Jaccard the core set must reach (0 disables the core view) | `0.85` |
+| `--depth_dependent_core_depth` | Depth at which a C counts as covered when choosing the core set | `1` |
+| `--depth_dependent_write_matrix` | Write `depth_dependent_matrix.parquet`: depth and methylated count per C per library | `true` |
+| `--skip_depth_dependent` | Skip these analyses | `false` |
+
+The tables behind the report are in `depth_dependent/`. They include `depth_dependent_pairwise.tsv`,
+`depth_dependent_upset.tsv` and `depth_dependent_clusters.tsv` (leaf order and Newick tree per metric).
+Changing the depth check settings with `-resume` re-runs only the check's decision; the mosdepth tasks
+are reused.
+
+To run the analyses on BAMs that are already aligned and duplicate-marked:
+```bash
+nextflow run depth_dependent.nf --genome T2T_chm13v2.0+meth_controls --bam_files 'bams/*.bam'
+```
+The BAMs need an index (`<name>.bam.bai` or `<name>.bai`). Library names are the BAM names
+with trailing lowercase dot-tags removed (`1ng_x_1.ds.md.bam` becomes `1ng_x_1`). The BAMs go
+through the depth check, and MethylDackel extracts CpG methylKit files only after enough pass.
+To reuse methylKit files from an earlier run, add
+`--mk_files 'em-seq_output/methylDackelExtracts/*_CpG.methylKit.gz'`. `--mk_files` without
+`--bam_files` runs the analyses without the depth check and without read counts on the Overview tab. Add
+`--feature_cov_dir <feature_cov_meth.nf output_dir>` to include that run's feature coverage and
+depth plots in the same report, under a **Feature coverage** tab.
 
 ### References Config
 

@@ -21,9 +21,10 @@ include { concatenate_files as concat_intersections;
           concatenate_files as concat_positional_summaries;
           concatenate_files as concat_region_summaries;}      from './modules/concatenate_files'
 include { gc_bias_curves }                                    from './subworkflows/gc_bias_curves.nf'
+include { check_library_depth; depth_dependent_analysis }         from './subworkflows/depth_dependent_analysis.nf'
 include { hasContigGroups }                                   from './lib/contig_groups.nf'
 include { idx_stats }                                         from './modules/idx_stats'
-include { flagstats }                                        from './modules/flagstats'
+include { flagstats }                                         from './modules/flagstats'
 include { fastqc }                                            from './modules/fastqc'
 include { insert_size_metrics }                               from './modules/insert_size_metrics'
 include { picard_metrics }                                    from './modules/picard_metrics'
@@ -120,8 +121,23 @@ workflow {
         md_bams = mergeAndPicodup.out.md_bams
 
         ///////// Methylation Calling //////////
-        methylDackel_extract( md_bams, genome_fa, genome_fai )
+        methylDackel_extract( md_bams, genome_fa, genome_fai, 'all' )
         methylDackel_mbias( md_bams, genome_fa, genome_fai )
+
+        //////// Depth-dependent analyses, run only when enough libraries pass the depth check ////////
+        if (!params.skip_depth_dependent) {
+            def contig_groups = hasContigGroups(reference_list) ? file("${reference_list.gc_groups_dir}/contig_groups.tsv") : []
+            check_library_depth( md_bams, contig_groups )
+            depth_dependent_analysis(
+                methylDackel_extract.out.cpg,
+                genome_fa,
+                contig_groups,
+                [],
+                md_bams,
+                check_library_depth.out.ready,
+                check_library_depth.out.table
+            )
+        }
 
         //////// Intersect methylKit files with target BED file ////////
         if (reference_list.target_bed && !params.skip_target_bed) {
