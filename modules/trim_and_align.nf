@@ -35,6 +35,9 @@ process trimAndAlign {
     def bwameth_pairing = params.single_end ? '' : '-p'
     def slice_path = "${params.tmp_dir}/${chunk}.slice.bam"
     """
+    # Remove the local slice however the task exits, so failed and retried chunks don't fill tmp_dir.
+    trap "rm -f ${slice_path}" EXIT
+
     set +o pipefail
     inst_name=\$(samtools view ${bam} | head -n 1 | cut -d ":" -f 1)
     rg_line=\$(samtools view -H ${bam} | grep "^@RG" | sed 's/\\t/\\\\t/g' | head -n1)
@@ -56,8 +59,6 @@ process trimAndAlign {
         --exclude-missing-reads true --threads ${zip_cpus} --compression-level 0 \\
     | samtools sort -T ${params.tmp_dir}/samtools_sort_tmp -@ ${sort_cpus} \\
         -m ${sort_mem_gb}G -o "${chunk}.aln.bam" /dev/stdin
-
-    rm -f ${slice_path}
     """
 
     stub:
