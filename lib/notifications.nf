@@ -1,5 +1,5 @@
 // `wf` is the live WorkflowMetadata object captured by registerEmailNotifications
-def notificationHtml(String status, String pipelineName, wf) {
+def notificationHtml(String status, String pipelineName, String workflowVersion, wf) {
     def isSuccess = status == 'SUCCESS'
     def bannerBg = isSuccess ? '#dff0d8' : '#f2dede'
     def bannerBorder = isSuccess ? '#d6e9c6' : '#ebccd1'
@@ -8,6 +8,7 @@ def notificationHtml(String status, String pipelineName, wf) {
 
     def rows = []
     rows << ['Pipeline', pipelineName ?: '-']
+    rows << ['Workflow version', workflowVersion ?: '-']
     rows << ['Run name', wf.runName]
     rows << ['Launch time', wf.start]
     if (wf.complete) {
@@ -71,6 +72,7 @@ def registerEmailNotifications() {
     def wf = workflow
     def recipients = [params.email, params.admin_email].findAll { it }.join(',')
     def pipelineName = params.workflow ?: 'unknown'
+    def workflowVersion = params.workflow_version
 
     def notified = false
 
@@ -79,7 +81,7 @@ def registerEmailNotifications() {
         sendMail(
             to: recipients,
             subject: "[Pipeline FAILED] ${pipelineName} - ${wf.runName}",
-            body: notificationHtml('FAILED', pipelineName, wf),
+            body: notificationHtml('FAILED', pipelineName, workflowVersion, wf),
             type: 'text/html'
         )
         notified = true
@@ -92,7 +94,7 @@ def registerEmailNotifications() {
         sendMail(
             to: recipients,
             subject: "[Pipeline ${status}] ${pipelineName} - ${wf.runName}",
-            body: notificationHtml(status, pipelineName, wf),
+            body: notificationHtml(status, pipelineName, workflowVersion, wf),
             type: 'text/html'
         )
     }
